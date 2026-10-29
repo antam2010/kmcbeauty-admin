@@ -25,3 +25,19 @@ dist-ssr
 
 .env
 .env.*
+
+# MoAI-ADK: 설정/SPEC/프로젝트 문서는 커밋, 세션별 런타임 산출물은 제외
+.moai/logs/
+.moai/reports/
+.moai/state/
+.moai/learning/
+.moai/evolution/
+.moai/plans/
+.moai/harness/
+.moai/cache/
+.moai/lessons-inbox.jsonl
+
+# Claude Code: 개인 로컬 설정(+ .lock)/에이전트 메모리/에이전트 격리 worktree 는 제외
+.claude/settings.local.json*
+.claude/agent-memory/
+.claude/worktrees/
