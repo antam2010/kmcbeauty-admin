@@ -1,0 +1,184 @@
+{
+  "design_system": {
+    "color": {
+      "palette_type": "monochromatic",
+      "primary": {
+        "hex": "#ffffff",
+        "role": "면적 지배색(--panel): 패널, 사이드바, 상단바 면. 목표 시스템의 토큰 card에 대응하며, 브랜드색 primary와는 다른 개념이다"
+      },
+      "secondary": {
+        "hex": "#f7f8fa",
+        "role": "보조 면(--bg): 페이지 바탕, 보드 레인과 개수 칩의 오목한 면. 목표 시스템의 토큰 background에 대응"
+      },
+      "accent": {
+        "hex": "#2563eb",
+        "role": "행동 유도색: 기본 버튼, 활성 메뉴 틴트, 배지 글자, 차트 선. template.config.json의 accent=blue 선택으로 --wt-accent에 --wt-blue가 들어간 값. 기본 --accent(#5654e8)는 워크스페이스에서 덮어쓰인다. 목표 시스템의 토큰 primary에 대응"
+      },
+      "neutral_scale": ["#ffffff", "#f7f8fa", "#e3e7ee", "#637083", "#19212e"],
+      "semantic": {
+        "success": "의미 토큰으로는 관찰되지 않음. #047857(--wt-green)은 강조색 선택지로만 존재",
+        "warning": "의미 토큰으로는 관찰되지 않음. #c2410c(--wt-orange)는 강조색 선택지로만 존재",
+        "error": "#bf2846 (--danger, 다크 #ff9aaa). 단, 위험 버튼은 토큰 대신 하드코딩된 Tailwind rose-700/rose-800을 쓴다",
+        "info": "관찰되지 않음"
+      },
+      "surface": {
+        "background": "#f7f8fa",
+        "raised": "#ffffff",
+        "sunken": "#f7f8fa — 패널 안 보드 레인과 개수 칩에서 바탕색을 다시 쓴다(별도 토큰 없음)"
+      },
+      "contrast_strategy": "dark-on-light dominant",
+      "dark_variant": {
+        "neutral_scale": ["#11141e", "#1a1f2c", "#303748", "#a3aec0", "#e9edf7"],
+        "accent": "#a29fff (기본 --accent의 다크 값만 존재)",
+        "soft": "#2b2852",
+        "error": "#ff9aaa",
+        "observation": "styles.css에 .dark 값이 정의돼 있지만 워크스페이스는 .dark를 켜지 않는다. 강조색 팔레트(--wt-violet/blue/green/orange)에는 다크 값이 없어, 다크에서 #2563eb 텍스트는 패널 위 3.18:1, 기본 버튼의 dark:text-slate-950 라벨은 #2563eb 위 3.90:1이 된다(측정값)"
+      },
+      "variants_named": "강조색 선택지: violet #6254df, blue #2563eb(선택됨), green #047857, orange #c2410c. 강조색 10% 틴트는 color-mix(in srgb, accent 10%, panel)로 런타임 계산"
+    },
+    "typography": {
+      "font_families": {
+        "heading": "\"Noto Sans KR Variable\" (본문과 같음)",
+        "body": "\"Noto Sans KR Variable\", Inter, \"Pretendard\", -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif — 워크스페이스 루트는 \"Noto Sans KR Variable\", sans-serif",
+        "mono": "ui-monospace, Consolas, \"Noto Sans KR Variable\", monospace"
+      },
+      "type_scale": {
+        "display": { "size": "30px (.page-title)", "weight": "700 (h1 기본값)", "line_height": "normal", "tracking": "-1px" },
+        "h1": { "size": "26px (.wt-heading h1), 760px 이하 23px", "weight": "700", "line_height": "normal", "tracking": "-0.8px" },
+        "h2": { "size": "15px (.wt-panel h2)", "weight": "700", "line_height": "normal", "tracking": "0" },
+        "h3": { "size": "12~13px (.wt-item-card h3, .wt-task h3)", "weight": "700", "line_height": "normal, 작업 카드 1.8", "tracking": "0" },
+        "body": { "size": "13px (워크스페이스 루트), 전역 table 14px", "weight": "400", "line_height": "normal, 문단 1.8", "tracking": "0" },
+        "body_small": { "size": "11~12px (워크스페이스 표 본문 11px, 설명 12px)", "weight": "400, 행 이름 500", "line_height": "normal, 설명 1.8", "tracking": "0" },
+        "caption": { "size": "9~10px (표 머리글 10px, small 9px)", "weight": "400~600", "line_height": "normal", "tracking": "0" },
+        "overline": { "size": "9px", "weight": "600", "line_height": "normal", "tracking": "1~1.2px, 영문 대문자(WORKSPACE, CRM / OVERVIEW), 강조색" }
+      },
+      "font_style_notes": "제목:본문 비율 약 2.0(26/13, 30/14), 패널 제목:본문 1.15(15/13), 핵심 수치 27~30px·650·-1px(본문 대비 2.08). 한글 UI에 영문 대문자 머리말과 최대 -0.033em 자간을 쓴다. 8~11px 글자가 여러 곳에 있다(작업 배지 8px, 머리말·보조 9px, 표 머리글 10px, 표 본문 11px)"
+    },
+    "spacing": {
+      "base_unit": "엄격한 격자 없음. 4·5·6·8·9·10·12·14·16·17·18·20·22·24·28·30·32px가 섞여 있고, 자주 쓰이는 값은 12·14·16·22·24px",
+      "scale": [4, 6, 8, 9, 10, 12, 14, 16, 18, 22, 24, 28, 30, 32],
+      "content_density": "comfortable",
+      "section_rhythm": "섹션 간격 22px로 일정(.wt-content gap), 패널 안쪽 22px. 변형: compact 밀도는 패널 17px, 표 셀 9px×10px, 본문 여백 24px"
+    },
+    "layout": {
+      "grid_system": "flex 앱 셸(사이드바 + 본문 열), 지표 3열 grid, 카드 auto-fit minmax(210px / 260px, 1fr)",
+      "max_content_width": "1400px (.wt-content), 1250px (.template-page)",
+      "columns": "3 (지표, 보드), auto-fit (카드)",
+      "gutter": "14~20px",
+      "breakpoints": "760px 하나. 이하에서 사이드바 66px 아이콘 전용, 보드 1열",
+      "alignment_tendency": "strict grid"
+    },
+    "shape": {
+      "border_radius": {
+        "small": "4~5px (개수 칩 4px, 배지 5px, 체크박스 4px) — 배지 높이(약 24px) 대비 0.21",
+        "medium": "8px (입력, 메뉴 항목, 브랜드 마크, 아바타) — 40px 컨트롤 대비 0.2",
+        "large": "12px (--radius: 패널, 카드, 모달). --radius-lg를 12px로 덮어써서 rounded-lg를 쓰는 Button·Alert·Toast도 12px가 된다 — 컨트롤 중 Button만 0.3으로 튀는 변형",
+        "pill": "관찰되지 않음"
+      },
+      "border_usage": "subtle 1px",
+      "divider_style": "1px solid --line(#e3e7ee) 가로 구분선(표 행, 활동 목록). 세로 구분선 없음. 변형: .wt-sharp는 패널 반경 5px"
+    },
+    "elevation": {
+      "shadow_style": "none",
+      "levels": {
+        "low": "없음 — 패널은 테두리만",
+        "medium": "관찰되지 않음",
+        "high": "Tailwind shadow-xl (Modal, Toast) — 오버레이에만 쓰는 변형"
+      },
+      "depth_cues": "colour intensity"
+    },
+    "iconography": {
+      "style": "outline (lucide-react)",
+      "stroke_weight": "2 (lucide 기본값)",
+      "size_scale": "13·14·15·16px(본문, 버튼), 18px(로딩), 20px(모달 닫기), 26px(카드 아이콘)",
+      "preferred_set": "lucide-react 0.468.0"
+    },
+    "motion": {
+      "easing": "Tailwind 기본 전환 이징 (transition-colors)",
+      "duration_scale": {
+        "micro": "150ms (transition-colors, Tailwind 기본값)",
+        "normal": "관찰되지 않음",
+        "macro": "관찰되지 않음"
+      },
+      "entrance": "없음 — Radix Dialog에 진입 애니메이션 클래스가 없다",
+      "exit": "없음",
+      "philosophy": "minimal functional",
+      "reduced_motion": "전역 규칙으로 * { animation: none !important; transition: none !important; }. 로딩 스피너(animate-spin)도 멈추고 '불러오는 중…' 텍스트가 의미를 전달한다"
+    },
+    "components": {
+      "button": "CVA 변형 default(강조색 채움, 흰 라벨, hover opacity-90) / outline(--line 테두리, 패널 면) / ghost(muted 텍스트) / destructive(하드코딩 rose-700). 크기 32/40/48px, 반경 12px(--radius-lg 재정의), loading 시 Loader2 스피너 + aria-busy + disabled, asChild는 Radix Slot. 포커스는 ring-2 ring-primary + outline-none",
+      "input": "전역 요소 스타일: 패널 면, 1px --line 테두리(패널 대비 1.24:1), 8px 반경, 10px×12px 여백, 컴포넌트는 className='w-full'만 지정. Select는 options: string[]로 값과 라벨이 같다",
+      "card": "전역 .panel: 흰 면, 1px 테두리, 12px 반경, 24px 여백(워크스페이스 22px), 그림자 없음, title prop을 h3로 렌더링",
+      "nav": "190px 왼쪽 사이드바, 흰 면, 오른쪽 테두리. 항목은 <button> + 아이콘 16px + 12px 라벨, 8px 반경, 활성은 강조색 10% 틴트 + 강조색 글자 600, hover는 페이지 바탕색. 영문 대문자 묶음 이름 'WORKSPACE' 9px. compact 변형 70px 아이콘 전용. ui-core의 Sidebar는 별도로 문자열 배열 + Button으로 구성되어 라우팅·아이콘이 없다",
+      "modal": "Radix Dialog, bg-black/50 스크림, 12px 반경, p-6, shadow-xl, max-w-lg, 오른쪽 위 X 닫기(aria-label '닫기'), 설명이 없으면 범용 문구를 채운다",
+      "list": "표: 워크스페이스 본문 11px, 머리글 10px muted, 셀 14px×10px, 행 구분선, 첫 열은 이니셜 아바타 + 이름, 상태 열은 단색 배지(신규·상담중·계약완료 모두 같은 색), 행 동작은 아이콘 버튼(수정·삭제, aria-label 있음). 빈 상태는 가운데 한 줄 muted 문장"
+    }
+  },
+  "design_style": {
+    "aesthetic": {
+      "mood": "차분함, 정돈됨, 중립적, 실용적",
+      "visual_metaphor": "정리된 업무 장부 / 작업 공간",
+      "era_influence": "2020년대 shadcn/ui 시대의 SaaS 관리 화면",
+      "genre": "corporate SaaS admin (백오피스 CRUD 템플릿)",
+      "personality_traits": "질서 있는, 절제된, 효율적인, 무난한",
+      "adjectives": "깔끔한, 밝은, 평면적인, 차가운 회색"
+    },
+    "visual_language": {
+      "complexity": "minimal",
+      "ornamentation": "none",
+      "whitespace_usage": "패널 둘레는 넉넉하고 표 안은 촘촘하다",
+      "visual_weight_distribution": "왼쪽 사이드바에 기대고, 본문은 위쪽(제목·지표)이 무겁다",
+      "focal_strategy": "distributed interest",
+      "contrast_level": "면과 테두리의 대비는 낮고(1.05~1.24:1), 텍스트 대비는 높다(15:1 이상)",
+      "texture_usage": "없음"
+    },
+    "composition": {
+      "hierarchy_method": "typographic hierarchy",
+      "balance_type": "asymmetric",
+      "flow_direction": "위에서 아래, 왼쪽에서 오른쪽(F자형)",
+      "grouping_strategy": "테두리 있는 패널 + 간격",
+      "negative_space_role": "패널 사이를 띄워 묶음을 나눈다"
+    },
+    "imagery": {
+      "photo_treatment": "관찰되지 않음(사진 없음)",
+      "illustration_style": "관찰되지 않음",
+      "graphic_elements": "lucide 외곽선 아이콘, 틴트 사각형 위 이니셜 아바타, 단일 선 SVG 차트",
+      "pattern_usage": "없음",
+      "image_shape": "8px 모서리 사각형 아바타"
+    },
+    "interaction_feel": {
+      "feedback_style": "오른쪽 아래 토스트(한 번에 하나) + aria-live 상태 알림",
+      "hover_behavior": "옅은 배경 틴트, 기본 버튼은 불투명도 90%",
+      "transition_personality": "snappy",
+      "loading_style": "스피너 + '불러오는 중…' 텍스트",
+      "microinteraction_density": "낮음"
+    },
+    "brand_voice_in_ui": {
+      "tone": "정보 전달 위주, 담백함",
+      "formality": "혼용 — 합니다체('항목을 수정했습니다.', '검색 결과가 없습니다.')와 '-하세요'('5 MB 이하의 파일을 선택하세요.')가 섞여 있다",
+      "cta_style": "direct imperative",
+      "empty_state_approach": "가운데 정렬 muted 한 문장, 동작 없음('조건에 맞는 항목이 없습니다.')",
+      "error_tone": "짧은 지시문('파일당 5 MB 이하로 선택하세요.')"
+    }
+  },
+  "visual_effects": {
+    "overview": {
+      "effect_intensity": "none",
+      "performance_tier": "lightweight",
+      "fallback_strategy": "disable effects",
+      "primary_technology": "CSS only"
+    },
+    "background_effects": { "enabled": false, "type": "none", "description": "레퍼런스 소스에서 관찰되지 않음", "params": {} },
+    "particle_systems": { "enabled": false, "type": "none", "description": "레퍼런스 소스에서 관찰되지 않음", "params": { "interaction": "none", "count": 0 } },
+    "3d_elements": { "enabled": false, "type": "none", "description": "레퍼런스 소스에서 관찰되지 않음", "params": {} },
+    "shader_effects": { "enabled": false, "type": "none", "description": "레퍼런스 소스에서 관찰되지 않음", "params": {} },
+    "scroll_effects": { "enabled": false, "type": "none", "description": "레퍼런스 소스에서 관찰되지 않음(IntersectionObserver, 시차 스크롤 없음)", "params": {} },
+    "text_effects": { "enabled": false, "type": "none", "description": "레퍼런스 소스에서 관찰되지 않음", "params": {} },
+    "cursor_effects": { "enabled": false, "type": "none", "description": "레퍼런스 소스에서 관찰되지 않음", "params": {} },
+    "image_effects": { "enabled": false, "type": "none", "description": "레퍼런스 소스에서 관찰되지 않음", "params": {} },
+    "glassmorphism_neumorphism": { "enabled": false, "type": "none", "description": "레퍼런스 소스에서 관찰되지 않음(backdrop-filter 없음)", "params": {} },
+    "canvas_drawings": { "enabled": false, "type": "none", "description": "캔버스 없음. 차트는 정적 SVG polyline(role='img')이며 데이터 시각화 컴포넌트로 분류한다", "params": {} },
+    "svg_animations": { "enabled": false, "type": "none", "description": "SVG 애니메이션(SMIL, 경로 그리기) 없음", "params": {} },
+    "composite_notes": "레퍼런스는 스크린숏이 아니라 소스 코드(Template Hub export의 CSS + TSX)이므로 모든 값은 추정이 아닌 소스에 적힌 값이다. 움직임은 transition-colors와 로딩 스피너 회전뿐이다. 이 파일은 레퍼런스를 있는 그대로 기록한 것이며, 약점을 고친 목표 시스템은 .moai/design/system.md, 결정 근거는 같은 폴더의 design-direction.md에 있다. 생성·구현 단계는 이 파일이 아니라 system.md의 토큰을 따른다."
+  }
+}
