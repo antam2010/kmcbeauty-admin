@@ -80,6 +80,35 @@
 - 계획 문서 저장: `.moai/design/system.md`와 이 SPEC 문서 9개를 `main`에 커밋하고 푸시한다. `reference/my-workspace.zip`은 공개 저장소에 올리면 되돌리기 어려우므로 커밋하지 않고 이 체크아웃에만 둔다.
 - 실행 방식: tmux가 없어 하위 에이전트 순차 실행(`--solo`)이고, 새 브랜치 없이 `main`에서 작업한다(Late-branch, C3).
 
+### A.9 run 단계 계획 감사 관문 결과(3회차, 2026-11-01)
+
+- 이유: A.7에 적은 대로 계획 산출물이 2회차 PASS 뒤에 v0.3.1로 바뀌었다(2회차 보고서의 감사 대상은 spec.md 0.3.0). 건너뛰기 조건을 잃어 `/moai run`의 Phase 1이 다시 감사했다.
+- audit_verdict: PASS
+- audit_score: 0.95(Tier L 통과 기준 0.85, 점수 흐름 0.83 → 0.88 → 0.95)
+- audit_report: `.moai/reports/plan-audit/SPEC-UI-001-review-3.md`
+- audit_at: 2026-11-01T08:43:02Z
+- auditor_version: plan-auditor, Claude 단독 감사(`audit_model` 설정과 MCP 감사 도구가 없어 다른 모델의 교차 검증은 없다)
+- plan_artifact_hash: 계산하지 못했다(이 세션에는 `moai audit` 명령도 MCP `audit_cache` 도구도 없다)
+- 2회차 결함 D14~D19: 모두 해결
+- 새 결함 D20~D26: 모두 minor·optional이고 막는 결함은 없다. 계획 산출물(spec·plan·acceptance·design·research)은 이번 run에서 고치지 않는다. 고치면 해시가 바뀌어 이 PASS를 건너뛰기에 쓸 수 없다. 다음 개정 때 D20·D21·D22·D25·D26을 함께 고친다.
+
+| ID | 내용 | 이번 run의 처리 방침 |
+|---|---|---|
+| D20 | spec.md §5 [EXISTING] 예외가 M1의 spec.md `status`·`updated` 전환을 빠뜨렸다 | manager-develop 위임 프롬프트 Section D에 M1 커밋의 전환 허용을 적는다(plan.md §A.9) |
+| D21 | REQ-006이 분류표에서는 Unwanted인데 §4 머리말 규약으로는 복합이다 | 조치 없음(규범 효과 없음) |
+| D22 | plan.md §A.2-1 등이 배포 중지 시작점 확인을 아직 미래형으로 적는다 | 결정 지점 3에서 확인이 끝났으므로(A.8) 다시 묻지 않는다 |
+| D23 | 계획 커밋 제목이 한국어라 `moai spec lint`에 `StatusGitConsistency` 경고 1건이 난다 | 기준선 경고로 표시해 새 결함과 구분한다. 다음 SPEC의 계획 커밋 제목에는 `plan-phase artifacts` 토큰을 남긴다 |
+| D24 | `reference/my-workspace.zip`이 무시 목록에 없다 | 착수 승인 때 확인받은 뒤 `.git/info/exclude`에 `reference/`를 더하고, 스테이징은 파일 경로로만 한다 |
+| D25 | AC-14가 토큰 견본 렌더링을 확인하지 않는다(범위 밖) | 조치 없음 |
+| D26 | "충분히 짧아야"는 판정할 수 없는 표현이다(범위 밖) | 조치 없음 |
+
+### A.10 run 단계 실행 위치 결정(2026-11-01)
+
+- 발견: manager-develop 정의(`.claude/agents/moai/manager-develop.md` 2행)에 `isolation: worktree`가 있어, 런타임이 에이전트를 `.claude/worktrees/agent-…`의 임시 로컬 브랜치에 격리해 실행한다. 첫 M1 위임은 사전 점검(위치·브랜치·`git status` 불일치)에서 코드를 바꾸지 않고 멈췄다(바뀐 파일 0, 커밋 0, 푸시 없음). 착수 승인 때 오케스트레이터가 "워크트리는 만들지 않는다"고 가정한 것은 에이전트 정의를 미리 확인하지 않은 탓이다.
+- 사용자 결정: 임시 워크트리에서 작업하고 `main`으로 빨리 감기(`git merge --ff-only`) 통합한다. 이 결정에 두 가지 허락이 들어 있다: (a) 이 기록 커밋 1개를 `origin/main`에 먼저 푸시, (b) 주 체크아웃에서 `git merge --ff-only`로 로컬 `main` 앞당기기.
+- 마일스톤마다의 통합 절차: 오케스트레이터가 기록을 `main`에 커밋·푸시 → manager-develop이 격리 폴더에서 커밋(푸시하지 않음) → 오케스트레이터가 그 폴더에서 검증 → 주 체크아웃에서 `git merge --ff-only <임시 브랜치>` → `git push origin main` → 검증 증거를 주 체크아웃의 `.moai/state/verify/`로 옮긴 뒤 워크트리 정리.
+- C3와의 관계: 최종 `main` 이력은 직접 커밋한 것과 같고 원격 브랜치는 생기지 않는다. 임시 브랜치는 로컬에만 있고 푸시 뒤 지운다. spec.md의 C3 문구는 고치지 않았다(고치면 계획 산출물 해시가 바뀐다). 다음 개정 때 C3를 "임시 워크트리 허용"으로 맞춘다.
+
 ## §E.1 Plan-phase Audit-Ready Signal
 
 - plan_complete_at: 2026-10-31T22:06:33+09:00
@@ -99,7 +128,43 @@ _<pending sync-phase — manager-docs가 기록한다>_
 
 ## §F Phase 4 Mode Selection
 
-_<오케스트레이터가 첫 run 단계 에이전트 호출 전에 기록한다>_
+- Decision: serial (`--solo`로 강제 — 마일스톤마다 manager-develop 하나를 순서대로 보낸다)
+- 기록 시점: 2026-11-01, 착수 승인(Implementation Kickoff Approval)을 받은 뒤 첫 run 단계 에이전트 호출 전
+- 사용자 선택(착수 승인 질문): 착수 승인, 진행 방식 = 자율(autonomous), 푸시 방식 = 마일스톤마다 검증 직후 `origin/main`에 푸시(오케스트레이터가 검증 뒤에 푸시하고 manager-develop은 푸시하지 않는다)
+- 가정 5가지(착수 승인 보고 ⑥)를 승인과 함께 받았다: `main`에서 작업·브랜치 없음, `reference/`는 커밋하지 않고 로컬 제외(`.git/info/exclude`), 계획 산출물은 고치지 않되 M1에서 spec.md `status`·`updated`만 전환, 프로젝트 문서는 만들지 않음, 구현 에이전트는 모델 정책(medium)에 따라 opus
+
+### 입력값
+
+| 항목 | 값 |
+|---|---|
+| tier | L |
+| 범위(파일 수) | 새 87 · 삭제 59 · 수정 9와 이후 마일스톤의 갱신(plan.md §F.7) |
+| 도메인 수 | 4 — 스타일·토큰, 컴포넌트, 테스트 장치, 빌드·배포 설정 |
+| 파일 언어 구성 | TypeScript·TSX·CSS 중심, JSON·shell·markdown 소량 |
+| 동시 실행 이득 | 낮음 — 코딩 중심이고 마일스톤이 서로 의존한다 |
+| Agent Teams 전제 | 해당 없음 — 명시 요청 없음 |
+
+### 모드 평가
+
+| 모드 | 선택 | 근거 |
+|---|---|---|
+| direct | 아니오 | 오탈자·한 줄 수정이 아니라 구현 규모가 크다 |
+| serial | 예 | `--solo`가 강제했고, 코딩 중심 작업의 기본값이다 |
+| fanout | 아니오 | 읽기 전용 조사가 아니고, 마일스톤이 서로 의존한다 |
+| sweep | 아니오 | 균일한 기계적 변환이 아니다. 새 코드가 대부분이다 |
+
+### 경계 사례
+
+- manager-lead 진입 조건(마일스톤 3개 이상, 파일 10개 이상, 여러 도메인)을 충족하지만 쓰지 않는다. `--solo`가 순차 실행을 강제했고, manager-lead는 워크트리로 격리한 리프 작업자를 병렬로 돌리는데 이 SPEC은 `main`에서 브랜치 없이 작업한다(C3).
+
+### 근거
+
+코딩 중심이고 마일스톤이 앞 단계의 규약(토큰 이름, `cn` 병합 규칙, 테스트 환경, 공개 내보내기)에 기대므로 순차 실행이 맞다. 병렬로 얻는 이득이 작고 쓰기 충돌 위험이 크다. `sweep` 확인 항목은 해당 없음(선택하지 않았다).
+
+### 실행 방식 정정(2026-11-01)
+
+- 위의 "`main`에서 작업·브랜치 없음" 가정은 manager-develop의 `isolation: worktree` 때문에 지켜지지 않았고, A.10의 결정(임시 워크트리 + 빨리 감기 통합)으로 대체했다.
+- 자율 진행은 `moai goal`을 걸지 않고 구현 에이전트의 완료 알림으로 마일스톤을 이어간다. 목표를 걸어 보니 완료 조건 문장이 셸 명령 1개(`type: mechanical`)로 등록돼 평가 0회에서 바로 지웠고, 모델 조건 목표는 오케스트레이터가 지울 때까지 모든 턴 끝을 막아 에이전트를 기다리는 동안 상한만 소모하기 때문이다. 완료 조건은 마일스톤마다와 마지막에 오케스트레이터가 증거로 판정한다.
 
 ## §H Recursive Self-Diagnosis Log
 
