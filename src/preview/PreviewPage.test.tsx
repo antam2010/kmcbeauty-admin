@@ -88,6 +88,7 @@ const DELIVERED_COMPONENTS = [
   "Select",
   "Filter",
   "Combobox",
+  "Calendar",
   "Modal",
   "ConfirmDialog",
   "Toast",
@@ -188,7 +189,8 @@ describe("미리보기 페이지(AC-UI-001-14, M4까지의 범위)", () => {
     expect(document.documentElement).toHaveClass("dark");
     expect(missingShowcaseElements(container)).toEqual([]);
     await expectNoAxeViolations(container);
-  });
+    // 페이지 전체 axe 검사 두 번은 커버리지 계측과 병렬 실행에서 기본 제한(5초)에 닿는다(M4 실측 4.6~5.0초).
+  }, 20_000);
 
   it("토큰 섹션은 라이트·다크 판에 색 36개와 예약 상태 15개를 나란히 보인다", () => {
     mockSystemTheme(false);

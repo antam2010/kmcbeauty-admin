@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useRef, useState } from "react";
-import { Combobox, type ComboboxOption, Field } from "@/ui-core";
+import { Calendar, Combobox, type ComboboxOption, Field } from "@/ui-core";
 import { PreviewSection } from "../PreviewSection";
 
 function Panel({ title, children }: { title: string; children: ReactNode }) {
@@ -113,7 +113,32 @@ function CreateDemo() {
   );
 }
 
-/** 고급 입력 섹션: Combobox(design.md §7.1). */
+/** 휴무일(월요일)을 고를 수 없게 막는 시연 */
+const isClosedDay = (date: Date) => date.getDay() === 1;
+
+function CalendarDemo({
+  showcase,
+  label,
+  disabled,
+}: {
+  showcase: string;
+  label: string;
+  disabled?: boolean;
+}) {
+  const [value, setValue] = useState<Date | null>(null);
+  return (
+    <div data-showcase={showcase} className="rounded-panel border border-border">
+      <Calendar
+        aria-label={label}
+        value={value}
+        onValueChange={setValue}
+        isDateDisabled={disabled ? isClosedDay : undefined}
+      />
+    </div>
+  );
+}
+
+/** 고급 입력 섹션: Combobox(design.md §7.1), Calendar(design.md §7.2). */
 export function AdvancedInputsSection() {
   return (
     <PreviewSection
@@ -126,6 +151,15 @@ export function AdvancedInputsSection() {
           <LocalDemo />
           <RemoteDemo />
           <CreateDemo />
+        </Panel>
+        <Panel title="Calendar">
+          <div className="flex flex-wrap gap-4">
+            <CalendarDemo showcase="Calendar:default" label="기본 달력" />
+            <div className="flex flex-col gap-2">
+              <CalendarDemo showcase="Calendar:disabled-dates" label="휴무일 달력" disabled />
+              <p className="text-body-sm text-muted-foreground">월요일은 휴무라 고를 수 없어요.</p>
+            </div>
+          </div>
         </Panel>
       </div>
     </PreviewSection>

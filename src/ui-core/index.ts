@@ -6,6 +6,8 @@ export type { BadgeProps, Tone } from "./badge";
 export { Badge } from "./badge";
 export type { ButtonProps } from "./button";
 export { Button } from "./button";
+export type { CalendarProps } from "./calendar";
+export { Calendar } from "./calendar";
 export type { CardTitleProps } from "./card";
 export {
   Card,
