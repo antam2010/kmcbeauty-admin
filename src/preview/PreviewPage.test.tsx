@@ -71,7 +71,7 @@ const SECTION_TITLES = [
   "검증",
 ];
 
-// 지금까지 만든 것(M1 + M2) — 이후 마일스톤에서 늘린다(AC-UI-001-14: M1~M5는 그때까지 만든 컴포넌트 기준)
+// 지금까지 만든 것(M1 + M2 + M3) — 이후 마일스톤에서 늘린다(AC-UI-001-14: M1~M5는 그때까지 만든 컴포넌트 기준)
 const DELIVERED_COMPONENTS = [
   "Button",
   "Badge",
@@ -85,6 +85,8 @@ const DELIVERED_COMPONENTS = [
   "Textarea",
   "Checkbox",
   "Search",
+  "Select",
+  "Filter",
   "ThemeProvider",
   "ThemeToggle",
 ];
@@ -140,7 +142,7 @@ function nonHaeyoSentences(text: string): string[] {
     .filter((sentence) => /[가-힣][.?]$/.test(sentence) && !/요[.?]$/.test(sentence));
 }
 
-describe("미리보기 페이지(AC-UI-001-14, M2까지의 범위)", () => {
+describe("미리보기 페이지(AC-UI-001-14, M3까지의 범위)", () => {
   it("전시 목록 표는 29개 컴포넌트이고 showcase.ts는 지금까지 만든 컴포넌트의 행과 같다", () => {
     expect(SHOWCASE_TABLE).toHaveLength(29);
     expect(SHOWCASE).toEqual(expectedShowcase());

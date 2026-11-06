@@ -1,6 +1,17 @@
 import { Clock } from "lucide-react";
 import { type ReactNode, useState } from "react";
-import { Checkbox, Field, Input, Search, Textarea } from "@/ui-core";
+import {
+  Checkbox,
+  Field,
+  Filter,
+  type FilterOption,
+  Input,
+  Search,
+  Select,
+  type SelectGroup,
+  type SelectOption,
+  Textarea,
+} from "@/ui-core";
 import { PreviewSection } from "../PreviewSection";
 
 function Panel({ title, children }: { title: string; children: ReactNode }) {
@@ -14,7 +25,42 @@ function Panel({ title, children }: { title: string; children: ReactNode }) {
 
 const noop = () => undefined;
 
-/** Field와 입력 컨트롤의 상태를 보여 준다(acceptance.md AC-UI-001-14 전시 목록의 Field~Search 행). */
+const TREATMENTS: SelectOption[] = [
+  { value: "gel", label: "젤 네일" },
+  { value: "lash", label: "속눈썹 연장" },
+  { value: "care", label: "손톱 관리" },
+];
+
+const GROUPED_TREATMENTS: Array<SelectOption | SelectGroup> = [
+  {
+    label: "네일",
+    options: [
+      { value: "gel", label: "젤 네일" },
+      { value: "care", label: "손톱 관리" },
+    ],
+  },
+  {
+    label: "속눈썹",
+    options: [
+      { value: "lash", label: "속눈썹 연장" },
+      { value: "perm", label: "속눈썹 펌(준비 중)", disabled: true },
+    ],
+  },
+];
+
+const PERIODS: FilterOption[] = [
+  { value: "all", label: "전체" },
+  { value: "today", label: "오늘" },
+  { value: "week", label: "이번 주" },
+];
+
+const PERIODS_WITH_COUNT: FilterOption[] = [
+  { value: "all", label: "전체", count: 128 },
+  { value: "today", label: "오늘", count: 12 },
+  { value: "week", label: "이번 주", count: 47 },
+];
+
+/** Field와 입력 컨트롤의 상태를 보여 준다(acceptance.md AC-UI-001-14 전시 목록의 Field~Filter 행). */
 export function FormsSection() {
   const [customerName, setCustomerName] = useState("김민지");
   const [phone, setPhone] = useState("");
@@ -25,6 +71,11 @@ export function FormsSection() {
   const [consent, setConsent] = useState(false);
   const [customerQuery, setCustomerQuery] = useState("");
   const [menuQuery, setMenuQuery] = useState("젤 네일");
+  const [treatment, setTreatment] = useState<string | undefined>("gel");
+  const [groupedTreatment, setGroupedTreatment] = useState<string | undefined>(undefined);
+  const [designer, setDesigner] = useState<string | undefined>(undefined);
+  const [period, setPeriod] = useState("all");
+  const [countedPeriod, setCountedPeriod] = useState("today");
 
   return (
     <PreviewSection
@@ -170,6 +221,66 @@ export function FormsSection() {
             value={menuQuery}
             onValueChange={setMenuQuery}
           />
+        </Panel>
+
+        <Panel title="Select">
+          <Field label="시술">
+            <Select
+              data-showcase="Select:default"
+              options={TREATMENTS}
+              value={treatment}
+              onValueChange={setTreatment}
+            />
+          </Field>
+          <Field label="시술 분류" description="분류별로 묶어 보여 줘요.">
+            <Select
+              data-showcase="Select:grouped"
+              options={GROUPED_TREATMENTS}
+              placeholder="시술을 골라요"
+              value={groupedTreatment}
+              onValueChange={setGroupedTreatment}
+            />
+          </Field>
+          <Field label="담당자" error="담당자를 골라 주세요." required>
+            <Select
+              data-showcase="Select:invalid"
+              options={[
+                { value: "kim", label: "김하늘" },
+                { value: "lee", label: "이서준" },
+              ]}
+              value={designer}
+              onValueChange={setDesigner}
+            />
+          </Field>
+          <Field label="매장">
+            <Select
+              data-showcase="Select:disabled"
+              disabled
+              options={[{ value: "gangnam", label: "강남점" }]}
+              value="gangnam"
+              onValueChange={noop}
+            />
+          </Field>
+        </Panel>
+
+        <Panel title="Filter">
+          <Filter
+            data-showcase="Filter:default"
+            aria-label="예약 기간"
+            options={PERIODS}
+            value={period}
+            onValueChange={setPeriod}
+          />
+          <Filter
+            data-showcase="Filter:count"
+            aria-label="예약 기간(개수 표시)"
+            options={PERIODS_WITH_COUNT}
+            value={countedPeriod}
+            onValueChange={setCountedPeriod}
+          />
+          <p className="text-body-sm text-muted-foreground">
+            방향키로 옮기면 선택도 함께 바뀌어요. 선택한 항목을 다시 눌러도 해제되지 않아요.
+          </p>
         </Panel>
       </div>
     </PreviewSection>

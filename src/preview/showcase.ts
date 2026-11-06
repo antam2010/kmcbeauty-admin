@@ -54,6 +54,8 @@ export const SHOWCASE: ShowcaseEntry[] = [
     states: ["unchecked", "checked", "indeterminate", "disabled", "invalid"],
   },
   { component: "Search", states: ["empty", "filled"] },
+  { component: "Select", states: ["default", "grouped", "invalid", "disabled"] },
+  { component: "Filter", states: ["default", "count"] },
   { component: "ThemeProvider", states: ["root"] },
   { component: "ThemeToggle", states: ["default"] },
 ];
