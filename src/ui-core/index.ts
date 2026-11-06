@@ -18,6 +18,8 @@ export {
 export type { CheckboxProps } from "./checkbox";
 export { Checkbox } from "./checkbox";
 export { cn } from "./cn";
+export type { ConfirmDialogProps, ConfirmOptions } from "./confirm-dialog";
+export { ConfirmDialog, ConfirmDialogHost, showConfirm } from "./confirm-dialog";
 export type { EmptyStateProps } from "./empty-state";
 export { EmptyState } from "./empty-state";
 export type { FieldProps } from "./field";
@@ -28,6 +30,8 @@ export type { InputProps } from "./input";
 export { Input } from "./input";
 export type { LoadingProps } from "./loading";
 export { Loading } from "./loading";
+export type { ModalProps } from "./modal";
+export { Modal } from "./modal";
 export type { SearchProps } from "./search";
 export { Search } from "./search";
 export type { SelectGroup, SelectOption, SelectProps } from "./select";

@@ -3,6 +3,7 @@ import { ActionsSection } from "./sections/ActionsSection";
 import { DataSection } from "./sections/DataSection";
 import { FeedbackSection } from "./sections/FeedbackSection";
 import { FormsSection } from "./sections/FormsSection";
+import { OverlaysSection } from "./sections/OverlaysSection";
 import { TokensSection } from "./sections/TokensSection";
 
 const THEME_LABELS: Record<ThemePreference, string> = {
@@ -42,6 +43,7 @@ export function PreviewPage() {
         <ActionsSection />
         <FeedbackSection />
         <FormsSection />
+        <OverlaysSection />
         <DataSection />
       </main>
     </div>

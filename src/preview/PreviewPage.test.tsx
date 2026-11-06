@@ -87,10 +87,12 @@ const DELIVERED_COMPONENTS = [
   "Search",
   "Select",
   "Filter",
+  "Modal",
+  "ConfirmDialog",
   "ThemeProvider",
   "ThemeToggle",
 ];
-const DELIVERED_SECTIONS = ["토큰", "동작", "피드백", "폼", "데이터"];
+const DELIVERED_SECTIONS = ["토큰", "동작", "피드백", "폼", "오버레이", "데이터"];
 
 // system.md §9의 임시 표시 순서
 const STATUS_ORDER = ["reserved", "visited", "completed", "cancelled", "no-show"];

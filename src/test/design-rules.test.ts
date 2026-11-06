@@ -125,11 +125,14 @@ const DELIVERED_PUBLIC_NAMES = [
   "CardHeader",
   "CardTitle",
   "Checkbox",
+  "ConfirmDialog",
+  "ConfirmDialogHost",
   "EmptyState",
   "Field",
   "Filter",
   "Input",
   "Loading",
+  "Modal",
   "Search",
   "Select",
   "Skeleton",
@@ -138,6 +141,7 @@ const DELIVERED_PUBLIC_NAMES = [
   "ThemeProvider",
   "ThemeToggle",
   "cn",
+  "showConfirm",
   "useTheme",
 ];
 const DELIVERED_COMPONENT_FILES = [
@@ -155,6 +159,8 @@ const DELIVERED_COMPONENT_FILES = [
   "search.tsx",
   "select.tsx",
   "filter.tsx",
+  "modal.tsx",
+  "confirm-dialog.tsx",
   "theme-provider.tsx",
   "theme-toggle.tsx",
 ];
