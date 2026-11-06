@@ -8,6 +8,23 @@ export interface ShowcaseEntry {
 }
 
 export const SHOWCASE: ShowcaseEntry[] = [
+  {
+    component: "Button",
+    states: [
+      "default",
+      "outline",
+      "ghost",
+      "destructive",
+      "link",
+      "sm",
+      "lg",
+      "icon",
+      "icon-sm",
+      "loading",
+      "disabled",
+      "as-child",
+    ],
+  },
   { component: "ThemeProvider", states: ["root"] },
   { component: "ThemeToggle", states: ["default"] },
 ];

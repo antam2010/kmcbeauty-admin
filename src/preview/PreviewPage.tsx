@@ -1,4 +1,5 @@
 import { type ThemePreference, ThemeToggle, useTheme } from "@/ui-core";
+import { ActionsSection } from "./sections/ActionsSection";
 import { TokensSection } from "./sections/TokensSection";
 
 const THEME_LABELS: Record<ThemePreference, string> = {
@@ -35,6 +36,7 @@ export function PreviewPage() {
       </header>
       <main id="main" className="mx-auto flex max-w-content flex-col gap-6 p-6 lg:p-8">
         <TokensSection />
+        <ActionsSection />
       </main>
     </div>
   );

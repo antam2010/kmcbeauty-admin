@@ -113,9 +113,9 @@ const CONFINED_PACKAGES: Record<string, string[]> = {
   cmdk: ["combobox.tsx"],
 };
 
-// M1까지 만든 것 — 마일스톤마다 RED를 본 뒤 늘린다(M5에서 40개·29개 완성)
-const DELIVERED_PUBLIC_NAMES = ["ThemeProvider", "ThemeToggle", "cn", "useTheme"];
-const DELIVERED_COMPONENT_FILES = ["theme-provider.tsx", "theme-toggle.tsx"];
+// 지금까지 만든 것(M1 + M2) — 마일스톤마다 RED를 본 뒤 늘린다(M5에서 40개·29개 완성)
+const DELIVERED_PUBLIC_NAMES = ["Button", "ThemeProvider", "ThemeToggle", "cn", "useTheme"];
+const DELIVERED_COMPONENT_FILES = ["button.tsx", "theme-provider.tsx", "theme-toggle.tsx"];
 
 // ── 설치된 패키지에서 만드는 이름 집합 ─────────────────────────────────────────────────
 
