@@ -264,7 +264,67 @@
 #### 커밋
 
 - `b8f387a` Select·Filter와 방향키 선택 훅 공유, `562406a` ConfirmDialog·Modal과 오버레이 섹션.
-- 마지막 커밋(Tooltip·Toast·`main.tsx`·이 기록)의 SHA는 커밋이 만들어진 뒤에 정해지므로 다음 기록 커밋에서 채운다.
+- `557b632` Tooltip·Toast와 앱 루트 Host, M3 진행 기록.
+
+### M4 — 고급 입력 3개(2026-11-06 확인)
+
+- 구현·기록: manager-develop(워크트리 `agent-aebfeaac1aea49e27`, 브랜치 `worktree-agent-aebfeaac1aea49e27`, TDD).
+- 기준 트리: HEAD `ce06735` + 커밋 전 M4 마지막 변경(DateTimePicker·고급 입력 섹션의 예약 일시 시연·이 기록, 이번 실행, 이 트리).
+- 증거 경로(워크트리, git 제외): `.moai/state/verify/spec-ui-001-m4/`. 앞의 두 커밋은 같은 게이트를 `c1-*`·`c2-*`로 남겼다.
+
+#### E.1 마일스톤 게이트
+
+| 확인 | 명령 | 관찰한 출력 |
+|---|---|---|
+| 타입 | `npm run typecheck` | exit 0, `tsc --noEmit` 출력 없음(`final-typecheck.txt`) |
+| 린트·서식 | `npm run lint` | exit 0, `Checked 80 files in 43ms. No fixes applied.`(`final-lint.txt`) |
+| 테스트 | `npm test` | exit 0, `Test Files 32 passed (32)`, `Tests 438 passed (438)`, 13.74s(`final-test.txt`) |
+| 커버리지(커밋 직전) | `npm run test:coverage` | exit 0, Statements 99.16% (474/478), Branches 96.96% (384/396), Functions 100% (160/160), Lines 100% (423/423)(`final-coverage.txt`). M4 세 파일만 잰 실행(`final-coverage-m4-files.txt`): 합계 Statements 191/195, Branches 177/189이고 빠진 4·12개가 모두 combobox.tsx(96.72·91.24·100·100)에 있어 calendar.tsx·date-time-picker.tsx는 100%다(표는 100% 행을 싣지 않는다) |
+| 빌드 | `npm run build` | exit 0, `✓ built in 781ms`(`final-build.txt`) |
+| 게이트 실측 | pre-commit `moai gate` | 커밋마다 훅이 실행했고 커밋이 만들어졌다. 실행 단계는 확인할 수 없다 — 공백(M1~M3과 같음) |
+| 배포 중지 가드 | `npx vitest run src/test/deploy-guard.test.ts` | exit 0, `Tests 5 passed (5)`(`final-deploy-guard.txt`) |
+| 경계·옛 의존성 | E.1 코드 블록 세 줄 | 경계 출력 없음, 자체 확인 `2`, 옛 의존성 출력 없음(`final-grep-*.txt`) |
+| 작업 트리 | `git status --short` | M4 계획 경로와 아래 '계획과 다른 점'의 두 파일, 이 기록만 변경 |
+
+#### M4 완료 조건(plan.md §F M4)
+
+- 컴포넌트 3개(Combobox, Calendar, DateTimePicker)와 고급 입력 섹션(로컬 거르기, 400ms 지연 응답 목업의 원격 검색, 빈 결과와 "새 고객 등록", 휴무일을 막은 달력, 예약 일시·날짜만·오류 표시), 전시 목록 3행을 더했다. `@/ui-core` 런타임 공개 이름은 34개(M3까지 31 + M4 3)다. 컴포넌트 파일은 23개(M3까지 20 + M4 3)다.
+- E.4 6(react-day-picker 10 API): `calendar.test.tsx` 18개·`date-time-picker.test.tsx` 23개가 통과한다. classNames는 UI 요소 키(`months`·`month`·`nav`·`button_previous`·`button_next`·`month_caption`·`caption_label`·`month_grid`·`weekday`·`day`·`day_button`·`outside`·`hidden` 등)를 토큰 유틸리티로 지정하고 패키지 CSS는 가져오지 않는다. 로캘은 `react-day-picker/locale`의 `ko`, 주말은 `modifiers`(`dayOfWeek` 0·6)와 `modifiersClassNames`(`text-destructive`·`text-primary`), 오늘·선택 표시는 `components.DayButton`에서 수정자를 읽어 그린다. 키마다 도착 날짜(→ 10-30, ← 10-29, ↓ 11-05, ↑ 10-29, PageDown 11-29, PageUp 10-29, Shift+PageDown 2027-10-29, Shift+PageUp 2026-10-29, Home 10-25, End 10-31)는 jsdom에서 실제 포커스 이동으로 확인했다(research.md §6.4의 [미검증] 해소). 월 머리 "2026년 10월", 요일 머리 일~토. 확인 결과: 예.
+- E.4 7(cmdk + Popover의 ARIA): `combobox.test.tsx` 37개가 통과한다. `role="combobox"`는 입력 하나, 닫힘 `aria-expanded="false"`, 열림 `aria-controls`=listbox id, 첫 옵션 자동 하이라이트와 `aria-activedescendant`, Popover의 `role="dialog"`를 `presentation`으로 덮어씀, 목록 이름 "<이름> 검색 결과". 확인 결과: 예.
+- 가짜 타이머: Calendar·DateTimePicker는 `Date`만 가짜로 두고(2026-10-29 10:00) user-event를 쓴다. 원격 지연 응답 사례 하나는 가짜 타이머 전체로 `fireEvent` + `advanceTimersByTime(400)`. 전체 스위트 13.74s(게이트 제한 120s).
+- axe 위반 0: 세 컴포넌트 테스트가 닫힌 상태·열린 목록(로컬·빈 결과·로딩)·열린 대화상자·필수/오류 트리거를 검사하고, 미리보기 테스트가 라이트·다크 전체 페이지를 검사한다.
+- 포커스 클래스와 선택 단서: Combobox 입력, 날짜 버튼, 달 이동 버튼, DateTimePicker 트리거가 포커스 클래스 세 개를 가진다. 배경 채움 선택 쌍: Calendar 선택 날짜(`bg-primary` + `forced-colors:outline-2`, 다른 날짜에는 없음), Combobox 하이라이트 옵션(`forced-colors:outline-2`, 하이라이트된 항목에만 붙고 ↓로 옮기면 따라감). 테두리는 Combobox 입력·DateTimePicker 트리거 모두 `border-input`. `AC-UI-001-11` 표지 파일은 13개(M5에서 16개 목표).
+- 감속 모드: 두 팝업의 애니메이션 클래스는 `motion-safe:` 아래에만 있다(테스트로 확인).
+
+#### TDD 증거
+
+- RED: 컴포넌트마다 구현 전 실패 출력 `m4-red-{combobox,calendar,date-time-picker}.txt` 3개(모두 `Failed to resolve import`).
+- **Combobox 구조**(AC-UI-001-19, K9-a): 1순위(직접 만든 `<input>` + cmdk 목록·키보드·하이라이트)를 채택했다. 근거 RED `m4-red-combobox-structure-probe.txt`: 2순위의 바탕인 `Command.Input`에 `aria-expanded={false}`·`id="field-control"`을 주어도 `aria-expanded="true"`·`id="radix-_r_5_"`로 덮이고, Home 키가 `preventDefault`된다(`expected true to be false`, 3 failed). 1순위 구현은 첫 GREEN 실행(`m4-green-combobox-1.txt`, 8 failed)에서 두 가지를 고친 뒤 `m4-green-combobox-2.txt`에서 37 passed: (1) 목록 id·하이라이트 id를 포털 ref에서 읽는 레이아웃 효과가 첫 커밋에 목록을 못 찾아, `Command.List`를 콜백 ref로 받아 다시 렌더링하게 했다. (2) Radix DismissableLayer가 문서 캡처 단계에서 Esc를 `preventDefault`해 입력의 Esc 처리가 `defaultPrevented` 검사에서 멈췄다 — 그 검사를 없앴다. 하이라이트 id는 `[cmdk-item]`의 `data-value`가 제어형 하이라이트 값과 같은 항목의 id로 읽는다(cmdk의 `data-selected`는 제어형 값 변경 뒤 같은 커밋 안에서 아직 갱신되지 않는다). 첫 하이라이트 되돌리기·포커스 이탈 되돌리기·Home/End(EC-12)는 RED 단계 테스트 목록에 있었다. 2순위로 바꿀 필요는 없었고 D9 밖의 구조 변경도 없다.
+- **react-day-picker 10 사용법**(K9-b): 위 E.4 6. 요일 머리는 라이브러리가 `thead`를 `aria-hidden`으로 두고 날짜 버튼 이름에 요일을 넣는다("2026년 10월 29일 목요일") — 첫 GREEN(`m4-green-calendar-1.txt`, 1 failed)에서 `columnheader`를 찾지 못해 테스트를 숨김 포함 검색으로 고쳤다. shadcn v9 예제는 옮기지 않았다.
+- **DateTimePicker 첫 포커스와 진행 중 날짜**(K9-c, A.6-10): 보강 없이 만든 첫 구현으로 RED를 먼저 봤다(`m4-red-date-time-picker-focus.txt`, 5 failed: 열 때 포커스된 날짜 `expected undefined to be '2026-10-29'`, 날짜 뒤 시간 칸 포커스 실패). 채택한 규칙: 열 때 Calendar `autoFocus`가 선택 날짜 → 오늘 → 이 달의 첫 활성 날짜 순으로 날짜 버튼에 먼저 포커스를 두고, Radix FocusScope는 이미 안에 포커스가 있어 옮기지 않는다(고를 날짜가 없으면 FocusScope 기본값인 "이전 달로 이동"). 날짜를 고르면 렌더링 뒤의 효과에서 시간 칸 트리거로 포커스를 옮긴다(react-day-picker 날짜 버튼의 포커스 효과보다 늦게 실행되게). 진행 중 날짜는 값이 없을 때만 대화상자 안에 두고 닫으면 버린다(EC-24). 시간을 먼저 고르면 진행 중 시간으로 두고 날짜를 고를 때 합쳐 알린다. GREEN `m4-green-date-time-picker-1.txt` 21 passed(이후 사례 2개를 더해 23).
+- 통합 RED: 공개 이름·컴포넌트 파일·전시 목록·섹션을 테스트 목록에 먼저 더해 실패를 본 `m4-red-integration-{combobox,calendar,date-time-picker}.txt` 3개, GREEN `m4-green-integration-*.txt`.
+- REFACTOR: Combobox 테스트의 내부 컴포넌트 정의를 파일 수준으로 옮겼다(Biome `noComponentHookFactories`). DateTimePicker는 쓰이지 않던 `onOpenAutoFocus` 막기를 지우고 위 첫 포커스 규칙을 주석으로 남겼다.
+
+#### 계획과 다른 점
+
+- `src/test/design-rules.test.ts`·`src/preview/PreviewPage.test.tsx`도 고쳤다(plan.md §F M4의 수정 3개 밖). M2·M3과 같은 이유로 AC-UI-001-09·AC-UI-001-14의 '지금까지 만든 것' 목록(공개 이름 3개, 컴포넌트 파일 3개, 전시 컴포넌트 3개, 섹션 '고급 입력')을 늘렸다. 여기에 더해 `PreviewPage.test.tsx`의 페이지 전체 axe 사례(라이트·다크 두 번)에 테스트별 제한 시간 20초를 주었다. 달력 두 개가 들어가며 커버리지 계측 + 병렬 실행에서 4.6~5.0초로 기본 5초에 닿았고 한 번은 넘었다(`c2-coverage.txt`의 첫 실행 `Test timed out in 5000ms`, 마지막 실측 6178ms — `final-coverage-verbose.txt`). 단독 실행은 1.56초다.
+- `src/test/setup.ts`는 고치지 않았다(cmdk·react-day-picker·Radix Popover에 더 필요한 대체 구현이 없었다).
+- DateTimePicker 트리거는 `role="combobox"` + `aria-haspopup="dialog"`인 버튼이다. 버튼 역할은 `aria-required`를 받지 못해 필수 표시가 있으면 axe `aria-allowed-attr` 위반이 났다(미리보기 오류 시연에서 발견). APG 날짜 선택 콤보박스 형태로 두어 AC-UI-001-16의 `aria-required="true"`를 유지한다. Enter·Space로 여는 동작은 버튼 그대로다.
+- `CalendarProps`에 `autoFocus`(DateTimePicker가 첫 포커스에 씀)·`className`·`aria-label`을 더했다(A.5 머리말 "네이티브 속성도 받는다"). `aria-label`은 이동 모음 이름 "<이름> 달 이동"에 쓴다 — 미리보기에 달력이 둘이라 기본 이름 "탐색 모음"이 겹쳐 axe `landmark-unique` 위반이 났다.
+- `ComboboxProps`·`DateTimePickerProps`는 A.5의 필드에 더해 감싸는 요소의 네이티브 속성(각각 입력, 트리거 버튼)을 받는다. 미리보기의 `data-showcase`가 이 경로로 붙는다. Combobox 목록 이름은 `aria-label`이 있으면 "<이름> 검색 결과", 없으면 "검색 결과"다(cmdk 기본값은 영어 "Suggestions").
+- Combobox의 불러오는 중 표시(`role="status"`)와 빈 결과 문구는 팝업 안, listbox 요소 바깥에 둔다(listbox 안의 `status` 역할은 허용되지 않는 자식이다). 새 값 만들기는 listbox 안의 옵션이다.
+- `getTimeSlots`는 date-fns가 아니라 분 단위 산술로 만든다(design.md §7.2는 date-fns를 적었다 — 표준 기능으로 충분하다). 표기 `formatDateTime`은 date-fns `format` + `ko` 로캘이다. `timeRange`가 없으면 하루 전체(00:00~23:30, 30분)다.
+
+#### 공백(미검증)
+
+- `moai gate`가 실행한 단계(M1~M3과 같음).
+- 실제 브라우저에서의 팝업 위치·애니메이션, 한글 IME의 실제 조합 이벤트 순서(테스트는 `isComposing`·`keyCode 229` 이벤트를 흉내 낸다), 스크린 리더 낭독은 확인하지 않았다.
+- Combobox가 Modal 안에 있을 때 닫힌 목록의 두 번째 Esc가 Modal도 닫는지는 확인하지 않았다.
+
+#### 커밋
+
+- `02b3be0` Combobox와 고급 입력 섹션, `ce06735` Calendar와 고급 입력 섹션의 달력 시연.
+- 마지막 커밋(DateTimePicker·예약 일시 시연·이 기록)의 SHA는 커밋이 만들어진 뒤에 정해지므로 다음 기록 커밋에서 채운다.
 
 ## §E.3 Run-phase Audit-Ready Signal
 

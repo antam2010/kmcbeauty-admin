@@ -58,6 +58,7 @@ export const SHOWCASE: ShowcaseEntry[] = [
   { component: "Filter", states: ["default", "count"] },
   { component: "Combobox", states: ["local", "remote", "create"] },
   { component: "Calendar", states: ["default", "disabled-dates"] },
+  { component: "DateTimePicker", states: ["datetime", "date", "invalid"] },
   { component: "Modal", states: ["sm", "md", "lg", "dirty", "submitting"] },
   { component: "ConfirmDialog", states: ["default", "destructive", "async-failure"] },
   {

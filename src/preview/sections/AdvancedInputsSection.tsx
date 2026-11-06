@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useRef, useState } from "react";
-import { Calendar, Combobox, type ComboboxOption, Field } from "@/ui-core";
+import { Calendar, Combobox, type ComboboxOption, DateTimePicker, Field } from "@/ui-core";
 import { PreviewSection } from "../PreviewSection";
 
 function Panel({ title, children }: { title: string; children: ReactNode }) {
@@ -138,7 +138,55 @@ function CalendarDemo({
   );
 }
 
-/** 고급 입력 섹션: Combobox(design.md §7.1), Calendar(design.md §7.2). */
+const BUSINESS_HOURS = { start: "10:00", end: "20:00" };
+
+/** 예약 일시: 날짜와 시간을 모두 골라야 값이 정해진다 */
+function ReservationDemo() {
+  const [value, setValue] = useState<Date | null>(null);
+  return (
+    <Field label="예약 일시" description="영업시간 10:00~20:00, 30분 단위예요.">
+      <DateTimePicker
+        data-showcase="DateTimePicker:datetime"
+        value={value}
+        onValueChange={setValue}
+        timeRange={BUSINESS_HOURS}
+        isDateDisabled={isClosedDay}
+      />
+    </Field>
+  );
+}
+
+/** 날짜만 고르기 */
+function DateOnlyDemo() {
+  const [value, setValue] = useState<Date | null>(null);
+  return (
+    <Field label="방문일">
+      <DateTimePicker
+        data-showcase="DateTimePicker:date"
+        granularity="date"
+        value={value}
+        onValueChange={setValue}
+      />
+    </Field>
+  );
+}
+
+/** 오류 표시 */
+function InvalidDemo() {
+  const [value, setValue] = useState<Date | null>(null);
+  return (
+    <Field label="예약 일시" error={value ? undefined : "예약 일시를 골라 주세요."} required>
+      <DateTimePicker
+        data-showcase="DateTimePicker:invalid"
+        value={value}
+        onValueChange={setValue}
+        timeRange={BUSINESS_HOURS}
+      />
+    </Field>
+  );
+}
+
+/** 고급 입력 섹션: Combobox(design.md §7.1), Calendar·DateTimePicker(design.md §7.2). */
 export function AdvancedInputsSection() {
   return (
     <PreviewSection
@@ -160,6 +208,11 @@ export function AdvancedInputsSection() {
               <p className="text-body-sm text-muted-foreground">월요일은 휴무라 고를 수 없어요.</p>
             </div>
           </div>
+        </Panel>
+        <Panel title="DateTimePicker">
+          <ReservationDemo />
+          <DateOnlyDemo />
+          <InvalidDemo />
         </Panel>
       </div>
     </PreviewSection>

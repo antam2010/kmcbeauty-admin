@@ -89,6 +89,7 @@ const DELIVERED_COMPONENTS = [
   "Filter",
   "Combobox",
   "Calendar",
+  "DateTimePicker",
   "Modal",
   "ConfirmDialog",
   "Toast",
