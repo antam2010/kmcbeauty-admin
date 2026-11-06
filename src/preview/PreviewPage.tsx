@@ -1,5 +1,6 @@
 import { type ThemePreference, ThemeToggle, useTheme } from "@/ui-core";
 import { ActionsSection } from "./sections/ActionsSection";
+import { DataSection } from "./sections/DataSection";
 import { FeedbackSection } from "./sections/FeedbackSection";
 import { FormsSection } from "./sections/FormsSection";
 import { TokensSection } from "./sections/TokensSection";
@@ -41,6 +42,7 @@ export function PreviewPage() {
         <ActionsSection />
         <FeedbackSection />
         <FormsSection />
+        <DataSection />
       </main>
     </div>
   );

@@ -33,6 +33,7 @@ export const SHOWCASE: ShowcaseEntry[] = [
   { component: "Skeleton", states: ["block", "text", "group"] },
   { component: "EmptyState", states: ["with-action"] },
   { component: "Alert", states: ["info", "success", "warning", "destructive", "live"] },
+  { component: "Card", states: ["parts"] },
   { component: "Field", states: ["description", "error", "required"] },
   {
     component: "Input",

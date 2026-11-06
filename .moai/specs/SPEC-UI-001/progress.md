@@ -164,7 +164,50 @@
 
 #### 커밋
 
-- 커밋 SHA는 커밋이 만들어진 뒤에 정해지므로 다음 기록 커밋에서 채운다.
+- 커밋: `818b209`
+
+### M2 — 기본 동작·피드백·폼 컨트롤 12개(2026-11-06 확인)
+
+- 구현·기록: manager-develop(워크트리 `agent-a3372b0378407d0da`, 브랜치 `worktree-agent-a3372b0378407d0da`, TDD).
+- 기준 트리: HEAD `c3326e8` + 커밋 전 M2 마지막 변경(Card·DataSection·이 기록, 이번 실행, 이 트리).
+- 증거 경로(워크트리, git 제외): `.moai/state/verify/spec-ui-001-m2/`. 커밋 단위마다 같은 게이트를 `c1-*`~`c3-*`로 남겼다.
+
+#### E.1 마일스톤 게이트
+
+| 확인 | 명령 | 관찰한 출력 |
+|---|---|---|
+| 타입 | `npm run typecheck` | exit 0, `tsc --noEmit` 출력 없음(`final-typecheck.txt`) |
+| 린트·서식 | `npm run lint` | exit 0, `Checked 60 files in 21ms. No fixes applied.`(`final-lint.txt`) |
+| 테스트 | `npm test` | exit 0, `Test Files 23 passed (23)`, `Tests 269 passed (269)`, 5.38s(`final-test.txt`) |
+| 커버리지(커밋 직전) | `npm run test:coverage` | exit 0, Statements 100% (146/146), Branches 100% (146/146), Functions 100% (52/52), Lines 100% (128/128)(`final-coverage.txt`) |
+| 빌드 | `npm run build` | exit 0, `✓ built in 388ms`(`final-build.txt`) |
+| 게이트 실측 | `moai gate; echo "gate exit=$?"` | `gate exit=0`, 출력 0줄(`final-moai-gate.txt`). 실행 단계는 확인할 수 없다 — 공백(M1과 같음) |
+| 배포 중지 가드 | `npx vitest run src/test/deploy-guard.test.ts` | exit 0, `Tests 5 passed (5)`(`final-deploy-guard.txt`) |
+| 경계·옛 의존성 | E.1 코드 블록 세 줄 | 경계 출력 없음, 자체 확인 `2`, 옛 의존성 출력 없음(`final-grep-*.txt`) |
+| 작업 트리 | `git status --short` | M2 계획 경로와 아래 '계획과 다른 점'의 두 파일, 이 기록만 변경 |
+
+#### M2 완료 조건(plan.md §F M2)
+
+- 컴포넌트 12개(Button → Field → Input → Textarea → Checkbox → Search → Alert → Badge → Loading → Skeleton → EmptyState → Card)와 미리보기 섹션 4개(동작·피드백·폼·데이터), 전시 목록 12행을 더했다. `@/ui-core` 런타임 공개 이름은 22개(M1 4 + M2 18)다.
+- axe 위반 0: 컴포넌트 테스트 12개마다 주요 상태의 axe 사례가 있고, 미리보기 테스트가 라이트·다크 전체 페이지를 검사한다.
+- 포커스 클래스: Button·Checkbox·Search 테스트가 `focus-visible:outline-2`·`outline-offset-2`·`outline-ring`(텍스트 입력은 `focus-visible:border-ring`도)을 확인한다. `AC-UI-001-11` 표지 파일은 4개(theme-toggle·button·checkbox·search, M5에서 16개 목표).
+- 선택 단서: M2 컴포넌트에는 배경 채움 선택 상태가 없다(해당 쌍은 M3~M5). 입력 테두리 `border-input`은 Input·Textarea·Checkbox·Search 테스트가 확인한다.
+
+#### TDD 증거
+
+- RED: 컴포넌트마다 구현 전 실패 출력 `m2-red-<컴포넌트>.txt` 12개(모두 `Failed to resolve import`). Field의 첫 실행은 테스트 이름의 따옴표 문법 오류로 실패해 무효로 보고 `m2-red-field-invalid-parse-error.txt`로 따로 두었고, 고친 뒤 다시 얻은 RED가 `m2-red-field.txt`다.
+- 통합 RED: 공개 이름·섹션·전시 목록을 테스트 목록에 먼저 더해 실패를 본 `m2-red-integration-{button,forms,feedback,card}.txt` 4개.
+- GREEN: `m2-green-*.txt`, 모두 `passed`.
+
+#### 계획과 다른 점
+
+- `src/test/design-rules.test.ts`·`src/preview/PreviewPage.test.tsx`도 고쳤다(plan.md §F M2의 수정 3개 밖). AC-UI-001-09("M1~M4에서는 그 마일스톤에서 만든 이름을 기대 목록에 먼저 더해 RED를 본다")와 AC-UI-001-14("M1~M5는 그때까지 만든 컴포넌트 기준")가 마일스톤마다 '지금까지 만든 것' 목록을 늘리게 하므로, 고치지 않으면 새 컴포넌트 파일만으로 기존 테스트가 실패한다. PreviewPage 테스트에는 피드백 섹션의 예약 상태 배지 시연(순서·상태 클래스가 tone 면을 덮음·안내 문구) 확인도 더했다.
+- `SearchProps`는 계획의 `Omit<…, "type" | "value" | "onChange">`에 네이티브 `size`(글자 폭 속성)도 뺐다. Input의 `size`(변형)와 이름이 겹쳐 그대로 넘길 수 없기 때문이다. 런타임 이름은 바뀌지 않는다.
+
+#### 커밋
+
+- `eb192a6` Button과 동작 섹션, `8938a8b` Field·Input·Textarea·Checkbox·Search와 폼 섹션, `c3326e8` Alert·Badge·Loading·Skeleton·EmptyState와 피드백 섹션.
+- 마지막 커밋(Card·데이터 섹션·이 기록)의 SHA는 커밋이 만들어진 뒤에 정해지므로 다음 기록 커밋에서 채운다.
 
 ## §E.3 Run-phase Audit-Ready Signal
 

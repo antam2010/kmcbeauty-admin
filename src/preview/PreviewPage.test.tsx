@@ -79,6 +79,7 @@ const DELIVERED_COMPONENTS = [
   "Skeleton",
   "EmptyState",
   "Alert",
+  "Card",
   "Field",
   "Input",
   "Textarea",
@@ -87,7 +88,7 @@ const DELIVERED_COMPONENTS = [
   "ThemeProvider",
   "ThemeToggle",
 ];
-const DELIVERED_SECTIONS = ["토큰", "동작", "피드백", "폼"];
+const DELIVERED_SECTIONS = ["토큰", "동작", "피드백", "폼", "데이터"];
 
 // system.md §9의 임시 표시 순서
 const STATUS_ORDER = ["reserved", "visited", "completed", "cancelled", "no-show"];
@@ -139,7 +140,7 @@ function nonHaeyoSentences(text: string): string[] {
     .filter((sentence) => /[가-힣][.?]$/.test(sentence) && !/요[.?]$/.test(sentence));
 }
 
-describe("미리보기 페이지(AC-UI-001-14, M1 범위)", () => {
+describe("미리보기 페이지(AC-UI-001-14, M2까지의 범위)", () => {
   it("전시 목록 표는 29개 컴포넌트이고 showcase.ts는 지금까지 만든 컴포넌트의 행과 같다", () => {
     expect(SHOWCASE_TABLE).toHaveLength(29);
     expect(SHOWCASE).toEqual(expectedShowcase());
