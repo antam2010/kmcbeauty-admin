@@ -113,7 +113,7 @@ const CONFINED_PACKAGES: Record<string, string[]> = {
   cmdk: ["combobox.tsx"],
 };
 
-// 지금까지 만든 것(M1 + M2 + M3 + M4) — 마일스톤마다 RED를 본 뒤 늘린다(M5에서 40개·29개 완성)
+// 지금까지 만든 것(M1 + M2 + M3 + M4 + M5 일부) — 마일스톤마다 RED를 본 뒤 늘린다(M5에서 40개·29개 완성)
 const DELIVERED_PUBLIC_NAMES = [
   "Alert",
   "Badge",
@@ -136,10 +136,12 @@ const DELIVERED_PUBLIC_NAMES = [
   "Input",
   "Loading",
   "Modal",
+  "Pagination",
   "Search",
   "Select",
   "Skeleton",
   "SkeletonGroup",
+  "Table",
   "Textarea",
   "ThemeProvider",
   "ThemeToggle",
@@ -172,6 +174,8 @@ const DELIVERED_COMPONENT_FILES = [
   "confirm-dialog.tsx",
   "toast.tsx",
   "tooltip.tsx",
+  "table.tsx",
+  "pagination.tsx",
   "theme-provider.tsx",
   "theme-toggle.tsx",
 ];

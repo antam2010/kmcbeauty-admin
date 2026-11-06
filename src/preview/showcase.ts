@@ -66,6 +66,8 @@ export const SHOWCASE: ShowcaseEntry[] = [
     states: ["success", "info", "warning", "destructive", "queue", "action"],
   },
   { component: "Tooltip", states: ["default"] },
+  { component: "Table", states: ["default", "sorted", "rail", "loading", "empty"] },
+  { component: "Pagination", states: ["first", "middle", "last"] },
   { component: "ThemeProvider", states: ["root"] },
   { component: "ThemeToggle", states: ["default"] },
 ];

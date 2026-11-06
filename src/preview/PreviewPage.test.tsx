@@ -71,7 +71,7 @@ const SECTION_TITLES = [
   "검증",
 ];
 
-// 지금까지 만든 것(M1 + M2 + M3 + M4) — 이후 마일스톤에서 늘린다(AC-UI-001-14: M1~M5는 그때까지 만든 컴포넌트 기준)
+// 지금까지 만든 것(M1 + M2 + M3 + M4 + M5 일부) — 이후 마일스톤에서 늘린다(AC-UI-001-14: M1~M5는 그때까지 만든 컴포넌트 기준)
 const DELIVERED_COMPONENTS = [
   "Button",
   "Badge",
@@ -94,6 +94,8 @@ const DELIVERED_COMPONENTS = [
   "ConfirmDialog",
   "Toast",
   "Tooltip",
+  "Table",
+  "Pagination",
   "ThemeProvider",
   "ThemeToggle",
 ];
