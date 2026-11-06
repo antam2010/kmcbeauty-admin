@@ -53,6 +53,8 @@ export type { SearchProps } from "./search";
 export { Search } from "./search";
 export type { SelectGroup, SelectOption, SelectProps } from "./select";
 export { Select } from "./select";
+export type { SidebarGroup, SidebarItem, SidebarProps } from "./sidebar";
+export { Sidebar } from "./sidebar";
 export type { SkeletonGroupProps, SkeletonProps } from "./skeleton";
 export { Skeleton, SkeletonGroup } from "./skeleton";
 export type { Column, SortState, TableProps } from "./table";

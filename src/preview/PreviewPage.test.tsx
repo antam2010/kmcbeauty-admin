@@ -71,37 +71,7 @@ const SECTION_TITLES = [
   "검증",
 ];
 
-// 지금까지 만든 것(M1 + M2 + M3 + M4 + M5 일부) — 이후 마일스톤에서 늘린다(AC-UI-001-14: M1~M5는 그때까지 만든 컴포넌트 기준)
-const DELIVERED_COMPONENTS = [
-  "Button",
-  "Badge",
-  "Loading",
-  "Skeleton",
-  "EmptyState",
-  "Alert",
-  "Card",
-  "Field",
-  "Input",
-  "Textarea",
-  "Checkbox",
-  "Search",
-  "Select",
-  "Filter",
-  "Combobox",
-  "Calendar",
-  "DateTimePicker",
-  "Modal",
-  "ConfirmDialog",
-  "Toast",
-  "Tooltip",
-  "Table",
-  "Tabs",
-  "Pagination",
-  "Breadcrumb",
-  "PageHeader",
-  "ThemeProvider",
-  "ThemeToggle",
-];
+// 컴포넌트는 M5에서 29개가 모두 전시 목록에 들어갔다. 섹션은 M6(검증)까지 늘어난다(AC-UI-001-14).
 const DELIVERED_SECTIONS = [
   "토큰",
   "동작",
@@ -142,9 +112,7 @@ function renderPreview() {
 }
 
 function expectedShowcase() {
-  return SHOWCASE_TABLE.filter(([component]) => DELIVERED_COMPONENTS.includes(component)).map(
-    ([component, states]) => ({ component, states }),
-  );
+  return SHOWCASE_TABLE.map(([component, states]) => ({ component, states }));
 }
 
 function missingShowcaseElements(container: HTMLElement): string[] {
@@ -164,7 +132,7 @@ function nonHaeyoSentences(text: string): string[] {
 }
 
 describe("미리보기 페이지(AC-UI-001-14, M5까지의 범위)", () => {
-  it("전시 목록 표는 29개 컴포넌트이고 showcase.ts는 지금까지 만든 컴포넌트의 행과 같다", () => {
+  it("전시 목록 표는 29개 컴포넌트이고 showcase.ts는 그 표와 정확히 같다", () => {
     expect(SHOWCASE_TABLE).toHaveLength(29);
     expect(SHOWCASE).toEqual(expectedShowcase());
   });
@@ -218,7 +186,7 @@ describe("미리보기 페이지(AC-UI-001-14, M5까지의 범위)", () => {
     expect(document.documentElement).toHaveClass("dark");
     expect(missingShowcaseElements(container)).toEqual([]);
     await expectNoAxeViolations(container);
-    // 페이지 전체 axe 검사 두 번은 커버리지 계측과 병렬 실행에서 기본 제한(5초)에 닿는다(M4 실측 4.6~5.0초).
+    // 페이지 전체 axe 검사 두 번은 커버리지 계측과 병렬 실행에서 기본 제한(5초)을 넘는다(M4 실측 4.6~5.0초, M5 실측 6.6초 — 단독 2.3초).
   }, 20_000);
 
   it("토큰 섹션은 라이트·다크 판에 색 36개와 예약 상태 15개를 나란히 보인다", () => {

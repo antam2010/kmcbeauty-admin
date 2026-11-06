@@ -113,79 +113,6 @@ const CONFINED_PACKAGES: Record<string, string[]> = {
   cmdk: ["combobox.tsx"],
 };
 
-// 지금까지 만든 것(M1 + M2 + M3 + M4 + M5 일부) — 마일스톤마다 RED를 본 뒤 늘린다(M5에서 40개·29개 완성)
-const DELIVERED_PUBLIC_NAMES = [
-  "Alert",
-  "Badge",
-  "Breadcrumb",
-  "Button",
-  "Calendar",
-  "Card",
-  "CardContent",
-  "CardDescription",
-  "CardFooter",
-  "CardHeader",
-  "CardTitle",
-  "Checkbox",
-  "Combobox",
-  "ConfirmDialog",
-  "ConfirmDialogHost",
-  "DateTimePicker",
-  "EmptyState",
-  "Field",
-  "Filter",
-  "Input",
-  "Loading",
-  "Modal",
-  "PageHeader",
-  "Pagination",
-  "Search",
-  "Select",
-  "Skeleton",
-  "SkeletonGroup",
-  "Table",
-  "Tabs",
-  "Textarea",
-  "ThemeProvider",
-  "ThemeToggle",
-  "Toaster",
-  "Tooltip",
-  "cn",
-  "showConfirm",
-  "toast",
-  "useTheme",
-];
-const DELIVERED_COMPONENT_FILES = [
-  "button.tsx",
-  "badge.tsx",
-  "loading.tsx",
-  "skeleton.tsx",
-  "empty-state.tsx",
-  "alert.tsx",
-  "card.tsx",
-  "field.tsx",
-  "input.tsx",
-  "textarea.tsx",
-  "checkbox.tsx",
-  "search.tsx",
-  "select.tsx",
-  "filter.tsx",
-  "combobox.tsx",
-  "calendar.tsx",
-  "date-time-picker.tsx",
-  "modal.tsx",
-  "confirm-dialog.tsx",
-  "toast.tsx",
-  "tooltip.tsx",
-  "table.tsx",
-  "tabs.tsx",
-  "pagination.tsx",
-  "breadcrumb.tsx",
-  "page-header.tsx",
-  "theme-provider.tsx",
-  "theme-toggle.tsx",
-];
-
 // ── 설치된 패키지에서 만드는 이름 집합 ─────────────────────────────────────────────────
 
 const THEME_CSS = readFileSync(path.join(ROOT, "node_modules/tailwindcss/theme.css"), "utf8");
@@ -446,31 +373,27 @@ describe("디자인 규칙 — 금지 패턴(AC-UI-001-10, AC-UI-001-12, AC-UI-0
 });
 
 describe("디자인 규칙 — 공개 API와 구성(AC-UI-001-09)", () => {
-  it("@/ui-core의 런타임 내보내기가 지금까지 만든 공개 이름과 정확히 같다", async () => {
+  // M5에서 공개 이름 40개와 컴포넌트 파일 29개가 완성됐다(M1~M4는 '지금까지 만든 것' 목록과 비교했다).
+  it("@/ui-core의 런타임 내보내기가 공개 이름 40개와 정확히 같다", async () => {
     const module = await import("@/ui-core");
-    expect(Object.keys(module).sort()).toEqual([...DELIVERED_PUBLIC_NAMES].sort());
-  });
-
-  it("지금까지 만든 공개 이름은 모두 정해진 40개 안에 있다", () => {
     expect(PUBLIC_NAMES).toHaveLength(40);
-    for (const name of DELIVERED_PUBLIC_NAMES) expect(PUBLIC_NAMES).toContain(name);
+    expect(Object.keys(module).sort()).toEqual([...PUBLIC_NAMES].sort());
   });
 
   it("index.ts에 export *가 없다", () => {
     expect(read("src/ui-core/index.ts")).not.toMatch(/export\s+\*/);
   });
 
-  it("컴포넌트 파일은 지금까지 만든 것과 같고 모두 정해진 29개 안에 있다", () => {
+  it("컴포넌트 파일(테스트·cn.ts·index.ts 제외)이 정해진 29개와 정확히 같다", () => {
     const files = UI_CORE_FILES.map((file) => path.basename(file)).filter(
       (file) => file.endsWith(".tsx") && !file.endsWith(".test.tsx"),
     );
     expect(COMPONENT_FILES).toHaveLength(29);
-    expect(files.sort()).toEqual([...DELIVERED_COMPONENT_FILES].sort());
-    for (const file of files) expect(COMPONENT_FILES).toContain(file);
+    expect(files.sort()).toEqual([...COMPONENT_FILES].sort());
   });
 
   it("각 컴포넌트 파일이 기반 라이브러리 표의 패키지를 가져온다", () => {
-    const missing = DELIVERED_COMPONENT_FILES.flatMap((file) => {
+    const missing = COMPONENT_FILES.flatMap((file) => {
       const text = read(`src/ui-core/${file}`);
       return (BASE_LIBRARIES[file] ?? [])
         .filter((pkg) => !new RegExp(`from\\s+["']${pkg}["']`).test(text))

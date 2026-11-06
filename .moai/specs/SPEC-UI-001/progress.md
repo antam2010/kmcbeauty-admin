@@ -324,7 +324,69 @@
 #### 커밋
 
 - `02b3be0` Combobox와 고급 입력 섹션, `ce06735` Calendar와 고급 입력 섹션의 달력 시연.
-- 마지막 커밋(DateTimePicker·예약 일시 시연·이 기록)의 SHA는 커밋이 만들어진 뒤에 정해지므로 다음 기록 커밋에서 채운다.
+- `62b52cf` DateTimePicker와 예약 일시 시연, M4 진행 기록.
+
+### M5 — 데이터 표시와 탐색 6개(2026-11-06 확인)
+
+- 구현·기록: manager-develop(워크트리 `agent-a0d75cf7ddd71faa9`, 브랜치 `worktree-agent-a0d75cf7ddd71faa9`, TDD).
+- 기준 트리: HEAD `0f2ffe1` + 커밋 전 M5 마지막 변경(Sidebar·탐색 섹션의 사이드바 시연·완성 목록 비교·이 기록, 이번 실행, 이 트리).
+- 증거 경로(워크트리, git 제외): `.moai/state/verify/spec-ui-001-m5/`. 앞의 두 커밋은 같은 게이트를 `c1-*`·`c2-*`로 남겼다.
+
+#### E.1 마일스톤 게이트
+
+| 확인 | 명령 | 관찰한 출력 |
+|---|---|---|
+| 타입 | `npm run typecheck` | exit 0, `tsc --noEmit` 출력 없음(`final-typecheck.txt`) |
+| 린트·서식 | `npm run lint` | exit 0, `Checked 93 files in 47ms. No fixes applied.`(`final-lint.txt`) |
+| 테스트 | `npm test` | exit 0, `Test Files 38 passed (38)`, `Tests 532 passed (532)`, 13.86s(`final-test.txt`) |
+| 커버리지(커밋 직전) | `npm run test:coverage` | exit 0, Statements 99.27% (548/552), Branches 97.14% (510/525), Functions 100% (196/196), Lines 100% (487/487)(`final-coverage.txt`). M5 여섯 파일 가운데 100%가 아닌 행은 sidebar.tsx(분기 94.28 — 82·95행)와 tabs.tsx(분기 88.88 — 44행, 모든 탭이 비활성일 때의 빈 값)뿐이다 |
+| 빌드 | `npm run build` | exit 0, `✓ built in 566ms`(`final-build.txt`). 빌드 CSS에 `w-\(--sidebar-width\){width:var(--sidebar-width)}`와 접힘 폭 규칙이 있다 |
+| 게이트 실측 | pre-commit `moai gate` | 커밋마다 훅이 실행했고 커밋이 만들어졌다. 실행 단계는 확인할 수 없다 — 공백(M1~M4와 같음) |
+| 배포 중지 가드 | `npx vitest run src/test/deploy-guard.test.ts` | exit 0, `Tests 5 passed (5)`(`final-deploy-guard.txt`) |
+| 경계·옛 의존성 | E.1 코드 블록 세 줄 | 경계 출력 없음, 자체 확인 `2`, 옛 의존성 출력 없음(`final-grep-*.txt`) |
+| 작업 트리 | 작업 트리 상태 확인 | M5 계획 경로와 아래 '계획과 다른 점'의 두 파일, 이 기록만 변경 |
+
+#### M5 완료 조건(plan.md §F M5)
+
+- 컴포넌트 6개(Table, Tabs, Pagination, Sidebar, Breadcrumb, PageHeader), 데이터 섹션의 목록 패널(툴바[Search·Filter] → 표[정렬·오른쪽 정렬 숫자] → 바닥["총 128명" · Pagination]), 레일 시연 표, 로딩·빈 상태·오류 상태, 첫 쪽·끝 쪽 쪽 이동, 새 탐색 섹션(사이드바 펼침·접힘, Breadcrumb, 하위 탐색으로 Tabs를 둔 시연용 PageHeader `titleAs="h3"`, Tabs), 전시 목록 6행을 더했다. 페이지 머리의 임시 h1은 PageHeader(기본 h1)로 바꿨다.
+- **공개 이름 40개 완성(AC-UI-001-09)**: `@/ui-core` 런타임 공개 이름이 40개(M4까지 34 + M5 6)이고 정해진 40개와 정확히 같다. 컴포넌트 파일은 29개(M4까지 23 + M5 6)다. `design-rules.test.ts`는 이제 '지금까지 만든 것' 목록이 아니라 40개·29개 전체와 비교한다. 전시 목록도 29개 전부다.
+- 제목 수준(AC-UI-001-14·25): 미리보기의 h1은 페이지 머리 하나(`PageHeader:page-title` 안), 시연용 PageHeader는 h3이고 안에 tablist가 있다(미리보기 테스트). `page-header.test.tsx`는 기본 h1 하나, `titleAs="h2"`면 h1 없이 h2, `"h3"`면 h3을 확인한다.
+- Table(AC-UI-001-24): 정렬 버튼 세 번 → `onSortChange` 오름 → 내림 → 해제, `aria-sort` ascending → descending → none. 정렬은 제어형이라 행 순서를 바꾸지 않는다. 레일은 색 값만 받아 첫 칸 `border-inline-start: 3px solid <값>` 인라인 스타일로 그린다(ui-core에 상태 매핑 없음 — 테스트는 `var(--primary)`). `align: "end"` 칸은 `text-end tabular-nums`. 로딩은 가짜 타이머로 299ms에 스켈레톤 없음, 300ms에 같은 열 수의 6행이 `aria-busy="true"` 영역(SkeletonGroup)에 보인다. 빈 행은 열 전체를 덮는 한 칸에 `empty`. 가로 스크롤 영역은 이름이 있는 `section`(region, `tabIndex=0`).
+- Pagination(AC-UI-001-24): `getPageItems`가 acceptance.md §3.1 표 12행과 같고(화면 번호 배열도 같은 12행으로 확인), 8쪽 이상이면 언제나 7칸이다. `nav` "페이지 이동", 현재 쪽 `aria-current="page"`.
+- Sidebar·Breadcrumb(AC-UI-001-25): 가짜 라우터 링크가 각 항목의 `to`를 받고, `currentPath` `/manager/customers`에서 "고객"에만 `aria-current="page"`(완전 일치 — 상위 `/manager`는 활성 아님). 접힘에서 이름은 `sr-only` 텍스트로 남고 묶음 이름은 구분선, Tab 포커스로 Tooltip이 이름을 보이고 Esc로 닫힌다. 다시 펴면 보이는 이름이 되고 포커스해도 Tooltip이 없다(EC-14). Breadcrumb은 `nav` "현재 위치" + `ol`, 마지막 항목 `aria-current`, 구분 기호 `aria-hidden`.
+- **포커스 표지 파일(AC-UI-001-11)**: acceptance.md의 16개 파일이 모두 `AC-UI-001-11` 표지를 가진다(M5에서 tabs·table·pagination·sidebar 4개를 더함). 다만 `grep -l 'AC-UI-001-11' src/ui-core/*.test.tsx | wc -l`은 `17`이다(`final-grep-ac11.txt`) — M4의 `calendar.test.tsx`도 표지를 달고 있어서다(목록 밖, 커밋 `ce06735`). 아래 '계획과 다른 점'에 적었다.
+- 포커스 클래스와 선택 단서(AC-UI-001-12): 표 스크롤 영역·정렬 버튼, 쪽 이동 버튼 7개, 탭과 탭 패널, 사이드바 항목, Breadcrumb 링크가 포커스 클래스 세 개를 가진다. 배경 채움 선택 쌍: Pagination 현재 쪽(`font-semibold` + `forced-colors:border-2`), Sidebar 활성 항목(같음), Tabs 활성 탭(`border-b-2 border-primary` — 비활성 탭에는 테두리를 두지 않는다. 투명 테두리는 강제 색 모드에서 보이기 때문이다). 각각 다른 쪽에는 단서 클래스가 없음을 테스트로 확인했다.
+- axe 위반 0: 여섯 컴포넌트 테스트가 정렬 전후·로딩(지연 뒤)·빈 상태, 첫·가운데·끝 쪽, 탭 전환 전후, 펼침·접힘·Tooltip 열림, 이동 경로, PageHeader 모든 자리를 검사하고, 미리보기 테스트가 라이트·다크 전체 페이지를 검사한다.
+- 미리보기 전체 axe 사례 시간: 커버리지 + 병렬 실행 6593ms, 단독 2276ms(`final-coverage-verbose.txt`, `final-preview-solo.txt`). 제한 20초 안이다.
+
+#### TDD 증거
+
+- RED: 컴포넌트마다 구현 전 실패 출력 `m5-red-{table,pagination,tabs,breadcrumb,page-header,sidebar}.txt` 6개(모두 `Failed to resolve import`).
+- GREEN 첫 실행: table 18 passed(`m5-green-table-1.txt`), pagination 34 passed(`m5-green-pagination-1.txt`), tabs 12 passed(`m5-green-tabs-1.txt`), breadcrumb·page-header 14 passed(`m5-green-breadcrumb-page-header-1.txt`), sidebar 1 failed(`m5-green-sidebar-1.txt`) → 15 passed(`m5-green-sidebar-2.txt`). sidebar의 실패는 열린 Tooltip을 `document.body` 전체로 검사해 axe `region` 규칙(포털 내용이 랜드마크 밖)에 걸린 것으로, `tooltip.test.tsx`처럼 컨테이너와 tooltip 요소를 따로 검사하게 테스트를 고쳤다(구현 변경 없음).
+- 통합 RED: 공개 이름·컴포넌트 파일·전시 목록·섹션·h1 교체를 테스트에 먼저 더해 실패를 본 `m5-red-integration-{table-pagination,tabs-breadcrumb-page-header,sidebar}.txt` 3개, GREEN `m5-green-integration-*.txt`.
+- 구현 뒤에 더한 테스트 1개: Breadcrumb "가운데 항목에 to가 없으면 링크 없이 글자로 보인다"는 커버리지에서 빠진 분기를 덮으려고 구현 뒤에 썼고 처음부터 통과했다(특성 확인 사례).
+- REFACTOR: Biome 지적으로 표 스크롤 영역을 `div role="region"`에서 이름이 있는 `section`으로 바꾸고 `noNoninteractiveTabindex`만 이유를 적어 건너뛰었다(스크롤 영역은 키보드 스크롤에 포커스가 필요하다). Breadcrumb 항목 키에서 배열 번호를 뺐고, 테스트의 가짜 링크 생성 함수를 파일 수준 컴포넌트로 옮겼다.
+
+#### 계획과 다른 점
+
+- `src/test/design-rules.test.ts`·`src/preview/PreviewPage.test.tsx`도 고쳤다(plan.md §F M5의 수정 4개 밖). M2~M4와 같은 이유로 AC-UI-001-09·AC-UI-001-14의 목록을 늘렸고, M5에서 40개·29개가 완성되어 '지금까지 만든 것' 목록(`DELIVERED_PUBLIC_NAMES`·`DELIVERED_COMPONENT_FILES`·`DELIVERED_COMPONENTS`)을 지우고 정해진 전체 목록과 정확히 같은지 비교하게 바꿨다(공개 이름 사례 두 개를 하나로 합쳐 테스트 수가 1 줄었다 — 확인 내용은 같거나 더 강하다). 섹션은 아직 '검증'(M6)이 없어 '지금까지 만든 섹션' 목록을 남기고 '탐색'을 더했다. h1 사례는 h1이 `PageHeader:page-title` 안에 있는지까지 보게 했고, 시연용 PageHeader가 h3이며 h1이 없다는 사례를 더했다. 페이지 전체 axe 사례의 20초 제한은 그대로 두고 주석의 실측값만 고쳤다.
+- `src/test/setup.ts`는 고치지 않았다.
+- AC-UI-001-11 표지 파일 수: 목록의 16개는 모두 표지를 갖지만 검증 명령의 결과는 `17`이다. 목록 밖인 M4의 `calendar.test.tsx`가 표지를 달고 있기 때문이며, 그 파일은 M5 수정 범위 밖이라 고치지 않았다. 수(16)를 맞추려면 calendar.test.tsx의 표지를 바꾸거나 acceptance.md의 기대값을 고쳐야 한다 — 오케스트레이터 판단으로 넘긴다.
+- Table의 스크롤 영역은 이름이 있는 `section`(암시적 region)이라 `TableProps`는 `ComponentProps<"section">`의 네이티브 속성을 받는다(A.5 머리말). 로딩 스켈레톤은 `tbody` 안 한 칸(열 전체)에 SkeletonGroup을 두고 그 안에 `role="presentation"` 표로 같은 열 6행을 그린다 — SkeletonGroup이 `div`를 렌더링해 `tbody` 바로 아래에 둘 수 없어서다. 첫 열 칸은 `font-medium`(design-direction.md §12.6 대표 식별자).
+- `LinkComponent`·`LinkComponentProps`와 기본 링크는 `breadcrumb.tsx`에 두고 Sidebar가 가져다 쓴다. `LinkComponentProps`도 공개 타입으로 내보낸다(미리보기의 페이지를 옮기지 않는 링크가 쓴다).
+- 접힌 Sidebar의 Tooltip 트리거는 링크를 감싼 `span`이다. 소비 측 링크 컴포넌트가 계약(`to`·`className`·`aria-current`·`children`) 밖의 Radix 트리거 속성과 ref를 넘기지 않아도 동작하게 하려는 것이며, React의 focus·blur 이벤트가 거품으로 올라와 링크 포커스로 열리고 닫힌다. 그래서 `aria-describedby`는 링크가 아니라 span에 붙는다(접근 이름은 숨긴 텍스트로 유지).
+- Breadcrumb·Pagination은 A.5 필드에 더해 감싸는 `nav`의 네이티브 속성을 받는다. 미리보기는 nav가 여럿이라(쪽 이동 3개, 사이드바 2개) axe `landmark-unique`를 피하려고 시연용 이름("페이지 이동(첫 쪽 시연)", "주 메뉴(펼침 시연)" 등)을 준다. Pagination의 "이전"·"다음" 문구는 `previousLabel`·`nextLabel`로 바꿀 수 있다(design.md §4.4).
+- 미리보기의 레일 시연 표는 상태 토큰 변수(`var(--status-*-rail)`)를 넘긴다(ui-core 밖이라 경계 검사 대상이 아니다). 문구 "레일 색은 상태 토큰을 넘긴 시연이에요. 상태와 색의 연결은 SPEC-UI-002에서 정해요."를 함께 둔다.
+
+#### 공백(미검증)
+
+- `moai gate`가 실행한 단계(M1~M4와 같음).
+- 실제 브라우저에서의 표 가로 스크롤, 사이드바 폭 전환과 Tooltip 위치, Windows 고대비 모드에서의 단서 표시, 스크린 리더 낭독은 확인하지 않았다.
+
+#### 커밋
+
+- `abc1bce` Table·Pagination과 데이터 섹션의 목록 패널, `0f2ffe1` Tabs·Breadcrumb·PageHeader와 탐색 섹션, 페이지 머리 h1 교체.
+- 마지막 커밋(Sidebar·사이드바 시연·완성 목록·이 기록)의 SHA는 커밋이 만들어진 뒤에 정해지므로 다음 기록 커밋에서 채운다.
 
 ## §E.3 Run-phase Audit-Ready Signal
 
