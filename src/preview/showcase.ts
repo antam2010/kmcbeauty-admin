@@ -25,6 +25,26 @@ export const SHOWCASE: ShowcaseEntry[] = [
       "as-child",
     ],
   },
+  { component: "Field", states: ["description", "error", "required"] },
+  {
+    component: "Input",
+    states: [
+      "sm",
+      "default",
+      "lg",
+      "start-adornment",
+      "end-adornment",
+      "invalid",
+      "read-only",
+      "disabled",
+    ],
+  },
+  { component: "Textarea", states: ["default", "invalid", "disabled"] },
+  {
+    component: "Checkbox",
+    states: ["unchecked", "checked", "indeterminate", "disabled", "invalid"],
+  },
+  { component: "Search", states: ["empty", "filled"] },
   { component: "ThemeProvider", states: ["root"] },
   { component: "ThemeToggle", states: ["default"] },
 ];

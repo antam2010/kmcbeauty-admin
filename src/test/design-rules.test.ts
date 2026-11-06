@@ -114,8 +114,28 @@ const CONFINED_PACKAGES: Record<string, string[]> = {
 };
 
 // 지금까지 만든 것(M1 + M2) — 마일스톤마다 RED를 본 뒤 늘린다(M5에서 40개·29개 완성)
-const DELIVERED_PUBLIC_NAMES = ["Button", "ThemeProvider", "ThemeToggle", "cn", "useTheme"];
-const DELIVERED_COMPONENT_FILES = ["button.tsx", "theme-provider.tsx", "theme-toggle.tsx"];
+const DELIVERED_PUBLIC_NAMES = [
+  "Button",
+  "Checkbox",
+  "Field",
+  "Input",
+  "Search",
+  "Textarea",
+  "ThemeProvider",
+  "ThemeToggle",
+  "cn",
+  "useTheme",
+];
+const DELIVERED_COMPONENT_FILES = [
+  "button.tsx",
+  "field.tsx",
+  "input.tsx",
+  "textarea.tsx",
+  "checkbox.tsx",
+  "search.tsx",
+  "theme-provider.tsx",
+  "theme-toggle.tsx",
+];
 
 // ── 설치된 패키지에서 만드는 이름 집합 ─────────────────────────────────────────────────
 

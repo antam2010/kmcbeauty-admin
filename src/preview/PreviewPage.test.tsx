@@ -72,8 +72,17 @@ const SECTION_TITLES = [
 ];
 
 // 지금까지 만든 것(M1 + M2) — 이후 마일스톤에서 늘린다(AC-UI-001-14: M1~M5는 그때까지 만든 컴포넌트 기준)
-const DELIVERED_COMPONENTS = ["Button", "ThemeProvider", "ThemeToggle"];
-const DELIVERED_SECTIONS = ["토큰", "동작"];
+const DELIVERED_COMPONENTS = [
+  "Button",
+  "Field",
+  "Input",
+  "Textarea",
+  "Checkbox",
+  "Search",
+  "ThemeProvider",
+  "ThemeToggle",
+];
+const DELIVERED_SECTIONS = ["토큰", "동작", "폼"];
 
 // system.md §9의 임시 표시 순서
 const STATUS_ORDER = ["reserved", "visited", "completed", "cancelled", "no-show"];
