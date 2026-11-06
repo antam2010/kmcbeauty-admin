@@ -4,6 +4,13 @@ export type { AlertProps } from "./alert";
 export { Alert } from "./alert";
 export type { BadgeProps, Tone } from "./badge";
 export { Badge } from "./badge";
+export type {
+  BreadcrumbItem,
+  BreadcrumbProps,
+  LinkComponent,
+  LinkComponentProps,
+} from "./breadcrumb";
+export { Breadcrumb } from "./breadcrumb";
 export type { ButtonProps } from "./button";
 export { Button } from "./button";
 export type { CalendarProps } from "./calendar";
@@ -38,6 +45,8 @@ export type { LoadingProps } from "./loading";
 export { Loading } from "./loading";
 export type { ModalProps } from "./modal";
 export { Modal } from "./modal";
+export type { PageHeaderProps } from "./page-header";
+export { PageHeader } from "./page-header";
 export type { PaginationProps } from "./pagination";
 export { Pagination } from "./pagination";
 export type { SearchProps } from "./search";
@@ -48,6 +57,8 @@ export type { SkeletonGroupProps, SkeletonProps } from "./skeleton";
 export { Skeleton, SkeletonGroup } from "./skeleton";
 export type { Column, SortState, TableProps } from "./table";
 export { Table } from "./table";
+export type { TabItem, TabsProps } from "./tabs";
+export { Tabs } from "./tabs";
 export type { TextareaProps } from "./textarea";
 export { Textarea } from "./textarea";
 export type { ThemePreference, ThemeProviderProps } from "./theme-provider";

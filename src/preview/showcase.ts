@@ -67,7 +67,10 @@ export const SHOWCASE: ShowcaseEntry[] = [
   },
   { component: "Tooltip", states: ["default"] },
   { component: "Table", states: ["default", "sorted", "rail", "loading", "empty"] },
+  { component: "Tabs", states: ["default", "disabled"] },
   { component: "Pagination", states: ["first", "middle", "last"] },
+  { component: "Breadcrumb", states: ["default"] },
+  { component: "PageHeader", states: ["page-title", "sub-nav"] },
   { component: "ThemeProvider", states: ["root"] },
   { component: "ThemeToggle", states: ["default"] },
 ];

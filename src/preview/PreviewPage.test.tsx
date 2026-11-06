@@ -95,11 +95,23 @@ const DELIVERED_COMPONENTS = [
   "Toast",
   "Tooltip",
   "Table",
+  "Tabs",
   "Pagination",
+  "Breadcrumb",
+  "PageHeader",
   "ThemeProvider",
   "ThemeToggle",
 ];
-const DELIVERED_SECTIONS = ["토큰", "동작", "피드백", "폼", "고급 입력", "오버레이", "데이터"];
+const DELIVERED_SECTIONS = [
+  "토큰",
+  "동작",
+  "피드백",
+  "폼",
+  "고급 입력",
+  "오버레이",
+  "데이터",
+  "탐색",
+];
 
 // system.md §9의 임시 표시 순서
 const STATUS_ORDER = ["reserved", "visited", "completed", "cancelled", "no-show"];
@@ -151,21 +163,35 @@ function nonHaeyoSentences(text: string): string[] {
     .filter((sentence) => /[가-힣][.?]$/.test(sentence) && !/요[.?]$/.test(sentence));
 }
 
-describe("미리보기 페이지(AC-UI-001-14, M4까지의 범위)", () => {
+describe("미리보기 페이지(AC-UI-001-14, M5까지의 범위)", () => {
   it("전시 목록 표는 29개 컴포넌트이고 showcase.ts는 지금까지 만든 컴포넌트의 행과 같다", () => {
     expect(SHOWCASE_TABLE).toHaveLength(29);
     expect(SHOWCASE).toEqual(expectedShowcase());
   });
 
-  it("h1은 페이지 제목 하나이고 '본문으로 건너뛰기' 링크가 main을 가리킨다", () => {
+  it("h1은 페이지 머리(PageHeader 기본 h1) 하나이고 '본문으로 건너뛰기' 링크가 main을 가리킨다", () => {
     mockSystemTheme(false);
-    renderPreview();
+    const { container } = renderPreview();
     const headings = screen.getAllByRole("heading", { level: 1 });
     expect(headings).toHaveLength(1);
     expect(headings[0]).toHaveTextContent("컴포넌트 미리보기");
+    const pageHead = container.querySelector('[data-showcase="PageHeader:page-title"]');
+    expect(pageHead).not.toBeNull();
+    expect(pageHead).toContainElement(headings[0]);
     const skipLink = screen.getByRole("link", { name: "본문으로 건너뛰기" });
     expect(skipLink).toHaveAttribute("href", "#main");
     expect(screen.getByRole("main")).toHaveAttribute("id", "main");
+  });
+
+  it("시연용 PageHeader는 titleAs='h3'로 렌더링해 h1을 늘리지 않는다(AC-UI-001-25)", () => {
+    mockSystemTheme(false);
+    const { container } = renderPreview();
+    const demo = container.querySelector<HTMLElement>('[data-showcase="PageHeader:sub-nav"]');
+    expect(demo).not.toBeNull();
+    const scope = within(demo as HTMLElement);
+    expect(scope.queryByRole("heading", { level: 1 })).toBeNull();
+    expect(scope.getByRole("heading", { level: 3 })).toBeInTheDocument();
+    expect(scope.getByRole("tablist")).toBeInTheDocument();
   });
 
   it("섹션 제목(h2)은 지금까지 만든 섹션과 같고 정해진 9개 안에 있다", () => {
