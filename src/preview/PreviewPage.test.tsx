@@ -71,7 +71,7 @@ const SECTION_TITLES = [
   "검증",
 ];
 
-// 지금까지 만든 것(M1 + M2 + M3) — 이후 마일스톤에서 늘린다(AC-UI-001-14: M1~M5는 그때까지 만든 컴포넌트 기준)
+// 지금까지 만든 것(M1 + M2 + M3 + M4) — 이후 마일스톤에서 늘린다(AC-UI-001-14: M1~M5는 그때까지 만든 컴포넌트 기준)
 const DELIVERED_COMPONENTS = [
   "Button",
   "Badge",
@@ -87,6 +87,7 @@ const DELIVERED_COMPONENTS = [
   "Search",
   "Select",
   "Filter",
+  "Combobox",
   "Modal",
   "ConfirmDialog",
   "Toast",
@@ -94,7 +95,7 @@ const DELIVERED_COMPONENTS = [
   "ThemeProvider",
   "ThemeToggle",
 ];
-const DELIVERED_SECTIONS = ["토큰", "동작", "피드백", "폼", "오버레이", "데이터"];
+const DELIVERED_SECTIONS = ["토큰", "동작", "피드백", "폼", "고급 입력", "오버레이", "데이터"];
 
 // system.md §9의 임시 표시 순서
 const STATUS_ORDER = ["reserved", "visited", "completed", "cancelled", "no-show"];
@@ -146,7 +147,7 @@ function nonHaeyoSentences(text: string): string[] {
     .filter((sentence) => /[가-힣][.?]$/.test(sentence) && !/요[.?]$/.test(sentence));
 }
 
-describe("미리보기 페이지(AC-UI-001-14, M3까지의 범위)", () => {
+describe("미리보기 페이지(AC-UI-001-14, M4까지의 범위)", () => {
   it("전시 목록 표는 29개 컴포넌트이고 showcase.ts는 지금까지 만든 컴포넌트의 행과 같다", () => {
     expect(SHOWCASE_TABLE).toHaveLength(29);
     expect(SHOWCASE).toEqual(expectedShowcase());

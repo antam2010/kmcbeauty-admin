@@ -18,6 +18,8 @@ export {
 export type { CheckboxProps } from "./checkbox";
 export { Checkbox } from "./checkbox";
 export { cn } from "./cn";
+export type { ComboboxCreateAction, ComboboxOption, ComboboxProps } from "./combobox";
+export { Combobox } from "./combobox";
 export type { ConfirmDialogProps, ConfirmOptions } from "./confirm-dialog";
 export { ConfirmDialog, ConfirmDialogHost, showConfirm } from "./confirm-dialog";
 export type { EmptyStateProps } from "./empty-state";
