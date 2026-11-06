@@ -115,11 +115,17 @@ const CONFINED_PACKAGES: Record<string, string[]> = {
 
 // 지금까지 만든 것(M1 + M2) — 마일스톤마다 RED를 본 뒤 늘린다(M5에서 40개·29개 완성)
 const DELIVERED_PUBLIC_NAMES = [
+  "Alert",
+  "Badge",
   "Button",
   "Checkbox",
+  "EmptyState",
   "Field",
   "Input",
+  "Loading",
   "Search",
+  "Skeleton",
+  "SkeletonGroup",
   "Textarea",
   "ThemeProvider",
   "ThemeToggle",
@@ -128,6 +134,11 @@ const DELIVERED_PUBLIC_NAMES = [
 ];
 const DELIVERED_COMPONENT_FILES = [
   "button.tsx",
+  "badge.tsx",
+  "loading.tsx",
+  "skeleton.tsx",
+  "empty-state.tsx",
+  "alert.tsx",
   "field.tsx",
   "input.tsx",
   "textarea.tsx",

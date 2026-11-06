@@ -1,5 +1,6 @@
 import { type ThemePreference, ThemeToggle, useTheme } from "@/ui-core";
 import { ActionsSection } from "./sections/ActionsSection";
+import { FeedbackSection } from "./sections/FeedbackSection";
 import { FormsSection } from "./sections/FormsSection";
 import { TokensSection } from "./sections/TokensSection";
 
@@ -38,6 +39,7 @@ export function PreviewPage() {
       <main id="main" className="mx-auto flex max-w-content flex-col gap-6 p-6 lg:p-8">
         <TokensSection />
         <ActionsSection />
+        <FeedbackSection />
         <FormsSection />
       </main>
     </div>

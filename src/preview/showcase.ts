@@ -25,6 +25,14 @@ export const SHOWCASE: ShowcaseEntry[] = [
       "as-child",
     ],
   },
+  {
+    component: "Badge",
+    states: ["neutral", "info", "success", "warning", "destructive", "icon", "dot"],
+  },
+  { component: "Loading", states: ["sm", "md"] },
+  { component: "Skeleton", states: ["block", "text", "group"] },
+  { component: "EmptyState", states: ["with-action"] },
+  { component: "Alert", states: ["info", "success", "warning", "destructive", "live"] },
   { component: "Field", states: ["description", "error", "required"] },
   {
     component: "Input",

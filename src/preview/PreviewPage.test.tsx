@@ -74,6 +74,11 @@ const SECTION_TITLES = [
 // 지금까지 만든 것(M1 + M2) — 이후 마일스톤에서 늘린다(AC-UI-001-14: M1~M5는 그때까지 만든 컴포넌트 기준)
 const DELIVERED_COMPONENTS = [
   "Button",
+  "Badge",
+  "Loading",
+  "Skeleton",
+  "EmptyState",
+  "Alert",
   "Field",
   "Input",
   "Textarea",
@@ -82,7 +87,7 @@ const DELIVERED_COMPONENTS = [
   "ThemeProvider",
   "ThemeToggle",
 ];
-const DELIVERED_SECTIONS = ["토큰", "동작", "폼"];
+const DELIVERED_SECTIONS = ["토큰", "동작", "피드백", "폼"];
 
 // system.md §9의 임시 표시 순서
 const STATUS_ORDER = ["reserved", "visited", "completed", "cancelled", "no-show"];
@@ -200,6 +205,24 @@ describe("미리보기 페이지(AC-UI-001-14, M1 범위)", () => {
     expect(rows.map((row) => row.querySelector("[data-status-label]")?.textContent)).toEqual(
       STATUS_LABELS,
     );
+  });
+
+  it("피드백 섹션의 예약 상태 배지 시연은 임시 순서이고 상태 클래스가 Badge tone 기본 면을 대신한다", () => {
+    mockSystemTheme(false);
+    const { container } = renderPreview();
+    const badges = [...container.querySelectorAll<HTMLElement>("[data-status-badge]")];
+    expect(badges.map((badge) => badge.dataset.statusBadge)).toEqual(STATUS_ORDER);
+    expect(badges.map((badge) => badge.textContent)).toEqual(STATUS_LABELS);
+    for (const badge of badges) {
+      const status = badge.dataset.statusBadge;
+      expect(badge).toHaveClass(`bg-status-${status}-bg`, `text-status-${status}-fg`);
+      expect(badge).not.toHaveClass("bg-muted");
+      expect(badge).not.toHaveClass("text-muted-foreground");
+      expect(badge.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+    }
+    expect(
+      screen.getByText("토큰 시연용 조합이에요. 예약 상태 배지는 SPEC-UI-002에서 만들어요."),
+    ).toBeInTheDocument();
   });
 
   it("렌더링된 문장 가운데 한글로 끝나는 문장은 모두 해요체(요. / 요?)로 끝난다", () => {
