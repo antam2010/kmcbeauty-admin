@@ -1,5 +1,16 @@
+import { CircleQuestionMark, RefreshCw } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
-import { Button, Field, Input, Modal, type ModalProps, showConfirm, Textarea } from "@/ui-core";
+import {
+  Button,
+  Field,
+  Input,
+  Modal,
+  type ModalProps,
+  showConfirm,
+  Textarea,
+  Tooltip,
+  toast,
+} from "@/ui-core";
 import { PreviewSection } from "../PreviewSection";
 
 function Panel({ title, children }: { title: string; children: ReactNode }) {
@@ -184,6 +195,82 @@ export function OverlaysSection() {
           >
             비동기 실패
           </Button>
+        </Panel>
+
+        <Panel title="Toast">
+          <Button
+            variant="outline"
+            data-showcase="Toast:success"
+            onClick={() => toast.success("예약을 저장했어요.")}
+          >
+            성공
+          </Button>
+          <Button
+            variant="outline"
+            data-showcase="Toast:info"
+            onClick={() =>
+              toast.info("새 예약이 들어왔어요.", { description: "김민지 · 젤 네일 60분 · 14:30" })
+            }
+          >
+            안내
+          </Button>
+          <Button
+            variant="outline"
+            data-showcase="Toast:warning"
+            onClick={() => toast.warning("영업시간이 30분 남았어요.")}
+          >
+            주의
+          </Button>
+          <Button
+            variant="outline"
+            data-showcase="Toast:destructive"
+            onClick={() => toast.error("예약을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.")}
+          >
+            오류(닫을 때까지 유지)
+          </Button>
+          <Button
+            variant="outline"
+            data-showcase="Toast:queue"
+            onClick={() => {
+              for (const time of ["10:00", "11:30", "13:00", "14:30", "16:00"]) {
+                toast.info(`${time} 예약이 확정됐어요.`);
+              }
+            }}
+          >
+            대기열(5개)
+          </Button>
+          <Button
+            variant="outline"
+            data-showcase="Toast:action"
+            onClick={() =>
+              toast.success("예약을 취소했어요.", {
+                action: {
+                  label: "되돌리기",
+                  onClick: () => toast.info("취소를 되돌렸어요."),
+                },
+              })
+            }
+          >
+            동작 하나
+          </Button>
+        </Panel>
+
+        <Panel title="Tooltip">
+          <Tooltip content="예약 목록을 새로 불러와요.">
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label="새로고침"
+              data-showcase="Tooltip:default"
+            >
+              <RefreshCw />
+            </Button>
+          </Tooltip>
+          <Tooltip content="F8을 누르면 알림 영역으로 바로 갈 수 있어요." side="right">
+            <Button variant="ghost" size="icon" aria-label="도움말">
+              <CircleQuestionMark />
+            </Button>
+          </Tooltip>
         </Panel>
       </div>
     </PreviewSection>

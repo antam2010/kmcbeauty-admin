@@ -89,6 +89,8 @@ const DELIVERED_COMPONENTS = [
   "Filter",
   "Modal",
   "ConfirmDialog",
+  "Toast",
+  "Tooltip",
   "ThemeProvider",
   "ThemeToggle",
 ];

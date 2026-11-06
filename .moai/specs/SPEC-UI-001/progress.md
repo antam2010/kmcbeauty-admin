@@ -207,7 +207,64 @@
 #### 커밋
 
 - `eb192a6` Button과 동작 섹션, `8938a8b` Field·Input·Textarea·Checkbox·Search와 폼 섹션, `c3326e8` Alert·Badge·Loading·Skeleton·EmptyState와 피드백 섹션.
-- 마지막 커밋(Card·데이터 섹션·이 기록)의 SHA는 커밋이 만들어진 뒤에 정해지므로 다음 기록 커밋에서 채운다.
+- `5c25d5a` Card와 데이터 섹션, M2 진행 기록.
+
+### M3 — 선택과 오버레이 6개(2026-11-06 확인)
+
+- 구현·기록: manager-develop(워크트리 `agent-ae6f736ac7d611ad1`, 브랜치 `worktree-agent-ae6f736ac7d611ad1`, TDD).
+- 기준 트리: HEAD `562406a` + 커밋 전 M3 마지막 변경(Tooltip·Toast·`main.tsx`·오버레이 섹션 나머지·이 기록, 이번 실행, 이 트리).
+- 증거 경로(워크트리, git 제외): `.moai/state/verify/spec-ui-001-m3/`. 앞의 두 커밋은 같은 게이트를 `c1-*`·`c2-*`로 남겼다.
+
+#### E.1 마일스톤 게이트
+
+| 확인 | 명령 | 관찰한 출력 |
+|---|---|---|
+| 타입 | `npm run typecheck` | exit 0, `tsc --noEmit` 출력 없음(`final-typecheck.txt`) |
+| 린트·서식 | `npm run lint` | exit 0, `Checked 73 files in 44ms. No fixes applied.`(`final-lint.txt`) |
+| 테스트 | `npm test` | exit 0, `Test Files 29 passed (29)`, `Tests 360 passed (360)`, 9.04s(`final-test.txt`) |
+| 커버리지(커밋 직전) | `npm run test:coverage` | exit 0, Statements 100% (283/283), Branches 100% (207/207), Functions 100% (112/112), Lines 100% (246/246)(`final-coverage.txt`) |
+| 빌드 | `npm run build` | exit 0, `✓ built in 473ms`(`final-build.txt`) |
+| 게이트 실측 | pre-commit `moai gate` | 커밋마다 훅이 실행했고 커밋이 만들어졌다(`c1-commit.txt`·`c2-commit.txt`). 실행 단계는 확인할 수 없다 — 공백(M1·M2와 같음) |
+| 배포 중지 가드 | `npx vitest run src/test/deploy-guard.test.ts` | exit 0, `Tests 5 passed (5)`(`final-deploy-guard.txt`) |
+| 경계·옛 의존성 | E.1 코드 블록 세 줄 | 경계 출력 없음, 자체 확인 `2`, 옛 의존성 출력 없음(`final-grep-*.txt`) |
+| 작업 트리 | `git status --short` | M3 계획 경로와 아래 '계획과 다른 점'의 두 파일, 이 기록만 변경 |
+
+#### M3 완료 조건(plan.md §F M3)
+
+- 컴포넌트 6개(Select, Filter, Tooltip, Modal, ConfirmDialog + `showConfirm`·`ConfirmDialogHost`, Toast + `toast`·`Toaster`)와 오버레이 섹션, 폼 섹션의 Select·Filter, 전시 목록 6행을 더했다. `@/ui-core` 런타임 공개 이름은 31개(M2까지 22 + M3 9)다. 컴포넌트 파일은 20개(M2까지 14 + M3 6)다.
+- `src/main.tsx`에 `Toaster`와 `ConfirmDialogHost`를 한 번씩 두었다.
+- REFACTOR: ThemeToggle의 방향키 선택 보강과 항목 모양을 `filter.tsx`의 내부 훅 `useArrowKeySelection`과 `segmentGroupClasses`·`segmentItemClasses`로 옮겨 Filter와 함께 쓴다(공개 API 아님). `theme-toggle.test.tsx`는 고치지 않았고 전후 모두 `Tests 13 passed (13)`(`m3-theme-toggle-before.txt`, `m3-theme-toggle-after-only.txt`).
+- 가짜 타이머: 토스트 테스트 16개는 모두 가짜 타이머(`Date` 포함)로 끝나고 1.56s 걸렸다(`m3-green-toast.txt`). 확인 대화상자는 지연 Promise로 결과를 직접 정하고, 재시도 사례 하나는 가짜 타이머로 기다린다. 전체 스위트 9.04s(게이트 제한 120s).
+- 저장소 누수(B-13): `resetToastStore`·`resetConfirmStore`를 모듈 파일에서 내보내고(`index.ts`에는 없음) 두 테스트 파일의 `afterEach`에서 부른다.
+- 콘솔 경고(B-17): 설명 없는 Modal에 `aria-describedby`가 없고 `console.warn`·`console.error` 호출 0건임을 modal·confirm-dialog 테스트가 확인한다.
+- axe 위반 0: 컴포넌트 테스트 6개마다 주요 상태(열린 목록·대화상자·알림 영역은 그 요소)를 검사하고, 미리보기 테스트가 라이트·다크 전체 페이지를 검사한다.
+- 포커스 클래스와 선택 단서: Select 트리거·옵션, Filter 항목, Modal 닫기 버튼, 알림 버튼이 포커스 클래스 세 개를 가진다. 배경 채움 선택 쌍은 Filter 선택 항목(`bg-primary-subtle` + `font-semibold` + `forced-colors:border-2`, 다른 항목에는 없음)이 처음이고, Select 선택 옵션은 체크 아이콘으로 구분한다. `AC-UI-001-11` 표지 파일은 10개(M5에서 16개 목표).
+
+#### TDD 증거
+
+- RED: 컴포넌트마다 구현 전 실패 출력 `m3-red-<컴포넌트>.txt` 6개(select, filter, confirm-dialog, modal, tooltip, toast — 모두 `Failed to resolve import`).
+- 통합 RED: 공개 이름·전시 목록·섹션을 테스트 목록에 먼저 더해 실패를 본 `m3-red-integration-{forms,overlays,toast-tooltip}.txt` 3개.
+- GREEN: `m3-green-*.txt`, 모두 `passed`. 첫 GREEN에서 실패한 사례와 처리: Select는 열린 동안 Radix가 트리거를 `aria-hidden`으로 가려 테스트가 트리거를 먼저 잡아 두게 했다. ConfirmDialog는 Radix Trigger가 없어 닫힌 뒤 포커스가 돌아오지 않아, 열릴 때 포커스가 있던 요소를 기억해 돌려주게 고쳤다(Modal도 같은 방식). 토스트의 Radix 기본 낭독 이름이 영어 "Notification"이라 Provider `label="알림"`을 주었다.
+- REFACTOR 전후: `m3-theme-toggle-before.txt`(13 passed), `m3-theme-toggle-after-only.txt`(13 passed).
+
+#### 계획과 다른 점
+
+- `src/test/design-rules.test.ts`·`src/preview/PreviewPage.test.tsx`도 고쳤다(plan.md §F M3의 수정 6개 밖). M2와 같은 이유로 AC-UI-001-09·AC-UI-001-14의 '지금까지 만든 것' 목록(공개 이름 9개, 컴포넌트 파일 6개, 전시 컴포넌트 6개, 섹션 '오버레이')을 늘려야 했다.
+- 저장소 초기화는 design.md §10.2의 `setup.ts` 대신 위임 지시에 따라 toast·confirm-dialog 테스트 파일의 `afterEach`에서 부른다. `setup.ts`는 고치지 않았다(Radix Select·Dialog·Toast에 더 필요한 대체 구현이 없었다).
+- Modal의 작성 중 닫기 확인은 선언형 `ConfirmDialog`를 다시 쓴다. `ConfirmOptions.description`이 필수라, 문구 "작성 중인 내용이 사라져요. 닫을까요?"(제목)에 설명 "닫으면 지금까지 입력한 내용은 저장되지 않아요."를 더했다. 버튼은 계획대로 [계속 작성] [닫기].
+- `SelectProps`·`FilterProps`는 A.5의 필드에 더해 감싸는 요소의 네이티브 속성(각각 트리거 버튼, 묶음 div)을 받는다(A.5 머리말 "네이티브 속성도 받는다"). 미리보기의 `data-showcase`가 이 경로로 붙는다. `ModalProps`에는 `className`을 더했다.
+- 가짜 타이머 아래에서는 user-event 대신 `fireEvent`를 쓴다. Testing Library의 비동기 감싸기가 실제 `setTimeout(0)`을 기다려 Vitest 가짜 타이머에서 멈추기 때문이다. 키보드 경로(F8 → Tab → Enter) 사례 하나와 axe 사례 하나는 실제 타이머로 돌린다(그 안에서 알림 시간이 지나지 않는다).
+- 스와이프 닫기는 Radix 기본값(오른쪽, 50px)을 두었고 jsdom에서 확인하지 않았다(AC-UI-001-23, 브라우저 수동 확인 — 아래 공백).
+
+#### 공백(미검증)
+
+- `moai gate`가 실행한 단계(M1·M2와 같음).
+- 스와이프 닫기, 실제 브라우저의 위치(768px 기준)·애니메이션, B-20의 "대화상자 위 알림에서 첫 Esc는 알림" 순서는 브라우저에서 확인하지 않았다.
+
+#### 커밋
+
+- `b8f387a` Select·Filter와 방향키 선택 훅 공유, `562406a` ConfirmDialog·Modal과 오버레이 섹션.
+- 마지막 커밋(Tooltip·Toast·`main.tsx`·이 기록)의 SHA는 커밋이 만들어진 뒤에 정해지므로 다음 기록 커밋에서 채운다.
 
 ## §E.3 Run-phase Audit-Ready Signal
 

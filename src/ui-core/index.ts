@@ -44,3 +44,7 @@ export type { ThemePreference, ThemeProviderProps } from "./theme-provider";
 export { ThemeProvider, useTheme } from "./theme-provider";
 export type { ThemeToggleProps } from "./theme-toggle";
 export { ThemeToggle } from "./theme-toggle";
+export type { ToastOptions } from "./toast";
+export { Toaster, toast } from "./toast";
+export type { TooltipProps } from "./tooltip";
+export { Tooltip } from "./tooltip";

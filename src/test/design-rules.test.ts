@@ -140,8 +140,11 @@ const DELIVERED_PUBLIC_NAMES = [
   "Textarea",
   "ThemeProvider",
   "ThemeToggle",
+  "Toaster",
+  "Tooltip",
   "cn",
   "showConfirm",
+  "toast",
   "useTheme",
 ];
 const DELIVERED_COMPONENT_FILES = [
@@ -161,6 +164,8 @@ const DELIVERED_COMPONENT_FILES = [
   "filter.tsx",
   "modal.tsx",
   "confirm-dialog.tsx",
+  "toast.tsx",
+  "tooltip.tsx",
   "theme-provider.tsx",
   "theme-toggle.tsx",
 ];

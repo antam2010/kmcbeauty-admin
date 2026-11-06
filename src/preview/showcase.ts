@@ -58,6 +58,11 @@ export const SHOWCASE: ShowcaseEntry[] = [
   { component: "Filter", states: ["default", "count"] },
   { component: "Modal", states: ["sm", "md", "lg", "dirty", "submitting"] },
   { component: "ConfirmDialog", states: ["default", "destructive", "async-failure"] },
+  {
+    component: "Toast",
+    states: ["success", "info", "warning", "destructive", "queue", "action"],
+  },
+  { component: "Tooltip", states: ["default"] },
   { component: "ThemeProvider", states: ["root"] },
   { component: "ThemeToggle", states: ["default"] },
 ];
