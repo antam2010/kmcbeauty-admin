@@ -1,0 +1,146 @@
+/*
+ * 디자인 토큰의 런타임 값이다. 정본은 .moai/design/system.md §2~§6이고, 값을 바꿀 때는 system.md를
+ * 먼저 고친다(system.md §13). 값이 다르면 tokens.sync.test.ts가, 대비가 기록과 다르면
+ * tokens.contrast.test.ts가 실패한다.
+ * .light 선택자는 미리보기에서 라이트와 다크를 나란히 보여 주려고 둔다.
+ */
+
+/* 테마와 무관한 값 */
+:root {
+  --radius: 0.75rem;
+  --sidebar-width: 15rem;
+  --sidebar-width-collapsed: 4rem;
+}
+
+/* 라이트 */
+:root,
+.light {
+  color-scheme: light;
+
+  /* 면·중립 */
+  --background: #f7f8fa;
+  --foreground: #19212e;
+  --card: #ffffff;
+  --card-foreground: #19212e;
+  --popover: #ffffff;
+  --popover-foreground: #19212e;
+  --muted: #eef1f5;
+  --muted-foreground: #5b6779;
+  --accent: #eef1f5;
+  --accent-foreground: #19212e;
+  --border: #e3e7ee;
+  --input: #808b9d;
+  --ring: #2563eb;
+  --overlay: rgb(25 33 46 / 0.5);
+
+  /* 톤 */
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+  --primary-hover: #1d4ed8;
+  --primary-subtle: #e9effd;
+  --primary-subtle-foreground: #1d4ed8;
+  --info: var(--primary);
+  --info-foreground: var(--primary-foreground);
+  --info-subtle: var(--primary-subtle);
+  --info-subtle-foreground: var(--primary-subtle-foreground);
+  --success: #047857;
+  --success-foreground: #ffffff;
+  --success-subtle: #e6f2ee;
+  --success-subtle-foreground: #065f46;
+  --warning: #b45309;
+  --warning-foreground: #ffffff;
+  --warning-subtle: #fef3c7;
+  --warning-subtle-foreground: #92400e;
+  --destructive: #bf2846;
+  --destructive-foreground: #ffffff;
+  --destructive-hover: #9f1d3a;
+  --destructive-subtle: #f9eaec;
+  --destructive-subtle-foreground: #9f1d3a;
+
+  /* 예약 상태 */
+  --status-reserved-bg: #e0e7ff;
+  --status-reserved-fg: #4338ca;
+  --status-reserved-rail: #4f46e5;
+  --status-visited-bg: #fae8ff;
+  --status-visited-fg: #86198f;
+  --status-visited-rail: #a21caf;
+  --status-completed-bg: #e0f2fe;
+  --status-completed-fg: #075985;
+  --status-completed-rail: #0369a1;
+  --status-cancelled-bg: #fee2e2;
+  --status-cancelled-fg: #b91c1c;
+  --status-cancelled-rail: #dc2626;
+  --status-no-show-bg: #fef3c7;
+  --status-no-show-fg: #92400e;
+  --status-no-show-rail: #b45309;
+
+  /* 그림자 */
+  --elevation-raised: 0 4px 12px -2px rgb(25 33 46 / 0.1), 0 2px 4px -2px rgb(25 33 46 / 0.06);
+  --elevation-overlay: 0 20px 40px -12px rgb(25 33 46 / 0.2), 0 8px 16px -8px rgb(25 33 46 / 0.1);
+}
+
+/* 다크 */
+.dark {
+  color-scheme: dark;
+
+  /* 면·중립 */
+  --background: #11141e;
+  --foreground: #e9edf7;
+  --card: #1a1f2c;
+  --card-foreground: #e9edf7;
+  --popover: #222838;
+  --popover-foreground: #e9edf7;
+  --muted: #262d3c;
+  --muted-foreground: #a3aec0;
+  --accent: #2e3648;
+  --accent-foreground: #e9edf7;
+  --border: #303748;
+  --input: #6b768e;
+  --ring: #60a5fa;
+  --overlay: rgb(0 0 0 / 0.6);
+
+  /* 톤 */
+  --primary: #60a5fa;
+  --primary-foreground: #11141e;
+  --primary-hover: #93c5fd;
+  --primary-subtle: #243249;
+  --primary-subtle-foreground: #93c5fd;
+  --info: var(--primary);
+  --info-foreground: var(--primary-foreground);
+  --info-subtle: var(--primary-subtle);
+  --info-subtle-foreground: var(--primary-subtle-foreground);
+  --success: #34d399;
+  --success-foreground: #11141e;
+  --success-subtle: #1e383b;
+  --success-subtle-foreground: #6ee7b7;
+  --warning: #fbbf24;
+  --warning-foreground: #11141e;
+  --warning-subtle: #3a352b;
+  --warning-subtle-foreground: #fcd34d;
+  --destructive: #ff9aaa;
+  --destructive-foreground: #11141e;
+  --destructive-hover: #ffc2cb;
+  --destructive-subtle: #3a303e;
+  --destructive-subtle-foreground: #ffc2cb;
+
+  /* 예약 상태 */
+  --status-reserved-bg: #282e49;
+  --status-reserved-fg: #a5b4fc;
+  --status-reserved-rail: #818cf8;
+  --status-visited-bg: #372c49;
+  --status-visited-fg: #f0abfc;
+  --status-visited-rail: #e879f9;
+  --status-completed-bg: #1e3549;
+  --status-completed-fg: #7dd3fc;
+  --status-completed-rail: #38bdf8;
+  --status-cancelled-bg: #392a36;
+  --status-cancelled-fg: #fca5a5;
+  --status-cancelled-rail: #f87171;
+  --status-no-show-bg: #3a352b;
+  --status-no-show-fg: #fcd34d;
+  --status-no-show-rail: #fbbf24;
+
+  /* 그림자 */
+  --elevation-raised: 0 4px 12px -2px rgb(0 0 0 / 0.45), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+  --elevation-overlay: 0 20px 40px -12px rgb(0 0 0 / 0.6), 0 8px 16px -8px rgb(0 0 0 / 0.4);
+}

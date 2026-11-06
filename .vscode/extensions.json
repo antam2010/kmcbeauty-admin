@@ -1,8 +1,8 @@
 {
     "recommendations": [
       "dsznajder.es7-react-js-snippets",        // React/Redux 스니펫
-      "esbenp.prettier-vscode",                 // 코드 포매터
-      "dbaeumer.vscode-eslint",                 // ESLint (리눅스 & macOS 환경)
+      "biomejs.biome",                          // 린트·서식 (Biome)
+      "bradlc.vscode-tailwindcss",              // Tailwind CSS 클래스 자동 완성
       "formulahendry.auto-close-tag",           // 태그 자동 닫기
       "formulahendry.auto-rename-tag",          // 태그 자동 이름 변경
       "xabikos.javascriptsnippets",             // JS/React 스니펫

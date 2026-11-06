@@ -3,7 +3,7 @@
 | 항목 | 값 |
 |---|---|
 | SPEC | SPEC-UI-001 — 프로젝트 기반과 디자인 시스템 |
-| 상태 | draft(계획 단계) |
+| 상태 | in-progress(run 단계) |
 | 등급 | Tier L(spec·plan·acceptance·design·research 5종 + spec-compact.md, plan-auditor 통과 기준 0.85) |
 | 하네스 수준 | standard |
 | 개발 방식 | TDD(RED → GREEN → REFACTOR), 커버리지 목표 85% |
@@ -109,6 +109,13 @@
 - 마일스톤마다의 통합 절차: 오케스트레이터가 기록을 `main`에 커밋·푸시 → manager-develop이 격리 폴더에서 커밋(푸시하지 않음) → 오케스트레이터가 그 폴더에서 검증 → 주 체크아웃에서 `git merge --ff-only <임시 브랜치>` → `git push origin main` → 검증 증거를 주 체크아웃의 `.moai/state/verify/`로 옮긴 뒤 워크트리 정리.
 - C3와의 관계: 최종 `main` 이력은 직접 커밋한 것과 같고 원격 브랜치는 생기지 않는다. 임시 브랜치는 로컬에만 있고 푸시 뒤 지운다. spec.md의 C3 문구는 고치지 않았다(고치면 계획 산출물 해시가 바뀐다). 다음 개정 때 C3를 "임시 워크트리 허용"으로 맞춘다.
 
+### A.11 M1 위임 중단과 복구(2026-11-06)
+
+- 중단: 2026-11-01에 보낸 M1 위임(manager-develop, 워크트리 `.claude/worktrees/agent-a472505fe21b3ca72`, 브랜치 `worktree-agent-a472505fe21b3ca72`)이 완료 보고 없이 끝났다. 마지막 기록은 2026-11-02 11:40:08(KST)의 Bash 호출(M1 작업 5번, `moai gate` 기록 단계)이고, 프로세스(pid 1945066)는 남아 있지 않았다. 중단 원인은 기록에 없다. 커밋 0, 푸시 없음.
+- 남은 상태: 계획한 M1 변경(삭제 59 · 수정 9 · 새 파일 25, spec.md·progress.md 상태 전환 포함)이 커밋되지 않은 채 이 워크트리에만 있었다. 오케스트레이터가 백업(`.moai/state/verify/78e83a22-ffc5-4a8e-a540-037a45f4a42f/m1-backup/`)을 만든 뒤 E.1 게이트를 다시 실행했다.
+- 복구 방식: 구현은 끝나 있었으므로 새 구현 에이전트를 부르지 않았다. 새 manager-develop은 `origin/main`에서 새 워크트리를 만들어 이 변경을 볼 수 없다(A.10). 오케스트레이터가 같은 워크트리에서 남은 기록(게이트 실측, §E.2)을 채우고 훅을 거쳐 커밋한다. 코드는 바꾸지 않았다.
+- 구현 에이전트의 증거 파일은 주 체크아웃의 `.moai/state/verify/c18b881e-a179-4fd6-82a0-7b1bacde1e23/`로 복사했다.
+
 ## §E.1 Plan-phase Audit-Ready Signal
 
 - plan_complete_at: 2026-10-31T22:06:33+09:00
@@ -116,7 +123,48 @@
 
 ## §E.2 Run-phase Evidence
 
-_<pending run-phase — manager-develop가 기록한다>_
+### M1 — 기반(2026-11-06 확인)
+
+- 구현: manager-develop(2026-11-01~02, 워크트리 `agent-a472505fe21b3ca72`). 기록과 커밋: 오케스트레이터(§A.11).
+- 기준 트리: 워크트리 `agent-a472505fe21b3ca72`, HEAD `287134a` + 커밋 전 M1 변경(이번 실행, 이 트리).
+- 증거 경로(주 체크아웃, git 제외): 오케스트레이터 실측 `.moai/state/verify/78e83a22-ffc5-4a8e-a540-037a45f4a42f/`, 구현 에이전트 기록 `.moai/state/verify/c18b881e-a179-4fd6-82a0-7b1bacde1e23/`.
+
+#### E.1 마일스톤 게이트
+
+| 확인 | 명령 | 관찰한 출력 |
+|---|---|---|
+| 타입 | `npm run typecheck` | exit 0, `tsc --noEmit` 출력 없음(`status-m1-typecheck.txt`) |
+| 린트·서식 | `npm run lint` | exit 0, `Checked 32 files in 29ms. No fixes applied.`(`status-m1-lint.txt`) |
+| 테스트 | `npm test` | exit 0, `Test Files 11 passed (11)`, `Tests 150 passed (150)`(`status-m1-test.txt`) |
+| 커버리지(커밋 직전) | `npm run test:coverage` | exit 0, Statements 100% (59/59), Branches 100% (20/20), Functions 100% (20/20), Lines 100% (51/51)(`m1-close-coverage.txt`) |
+| 빌드 | `npm run build` | exit 0, `✓ built in 1.12s`(`m1-close-build.txt`) |
+| 게이트 실측 | `moai gate; echo "gate exit=$?"` | `gate exit=0`, 출력 0줄(`m1-close-gate.txt`) — 아래 AC-UI-001-03 기록 참조 |
+| 배포 중지 가드 | `npx vitest run src/test/deploy-guard.test.ts` | exit 0, `Tests 5 passed (5)`(`m1-close-deploy-guard.txt`) |
+| 경계·옛 의존성 | E.1 코드 블록 세 줄 | 경계 출력 없음, 자체 확인 `2`, 옛 의존성 출력 없음 |
+| 작업 트리 | `git status --short` | 삭제 59(`src/` 51 + 루트 8, §I.1과 같음), 수정 11(§I.2의 9 + spec.md·progress.md), 새 파일 25(모두 plan.md에 이름이 있음) |
+
+#### M1 완료 조건(plan.md §F M1)
+
+- 토큰 동기화: `src/styles/tokens.sync.test.ts` 통과(위 150개에 포함).
+- 대비: `src/styles/tokens.contrast.test.ts` 통과. 쌍 표 52행(텍스트 36 + UI 16, 605~607행)을 라이트·다크로 재고, 예약 상태 값 90개(5종 × 2테마 × 9측정, 654~656행)를 잰다.
+- 기본 테마 정리(E.4 1~4): `src/styles/theme-reset.test.ts` 통과.
+- 배포 중지 가드: 위 표.
+
+#### TDD 증거
+
+- RED: 테스트 파일 11개의 첫 실패 출력 `m1-red1-*.txt` 11개(2026-11-02 10:24)와 두 번째 RED `m1-red2-*.txt` 3개(design-rules, theme-init, theme-toggle 방향키). 14개 모두 실패 표시가 있다.
+- GREEN: `m1-green-*.txt` 10개, 모두 `passed`.
+
+#### AC-UI-001-03 게이트 실행 단계 기록(M1)
+
+- 실행 단계: `moai gate`는 종료 코드 0이었지만 출력이 없어 실행된 단계(타입·린트·테스트 명령)를 확인할 수 없다 — 공백. `moai gate --help`: "Exit code 0: gate passed (or no recognized language toolchain detected)". 구현 에이전트의 2026-11-02 실행(`m1-gate-precommit.txt`)도 0바이트였다.
+- TypeScript: PATH `tsc`는 `/mnt/c/Program Files/nodejs/tsc`(Version 6.0.3, 프로젝트 밖), 프로젝트 `npx tsc --version`은 Version 5.9.3. 게이트가 어느 쪽을 썼는지는 출력이 없어 알 수 없다 — 공백.
+- 판정 근거: AC-UI-001-03에 따라 같은 트리에서 따로 실행한 타입·린트·테스트·빌드 명령과 커버리지 명령(위 표)으로 판정한다.
+- ast-grep 단계: PATH의 `sg`는 ast-grep이 아니라 `/usr/bin/sg`(그룹 전환 명령)이고, `sg scan`은 `sg: group 'scan' does not exist`를 냈다(`m1-gate-sg-probe.txt`). `gate.yaml`의 ast-grep 게이트는 경고 전용(`warn_only_mode: true`)이라 커밋을 막지 않는다.
+
+#### 커밋
+
+- 커밋 SHA는 커밋이 만들어진 뒤에 정해지므로 다음 기록 커밋에서 채운다.
 
 ## §E.3 Run-phase Audit-Ready Signal
 

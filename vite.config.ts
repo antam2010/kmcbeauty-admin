@@ -1,20 +1,29 @@
-import { defineConfig } from "vite";
+import { fileURLToPath } from "node:url";
+import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
-import path from "path";
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "src"),
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
-  server: {
-    proxy: {
-      "/api": {
-        target: "http://localhost:8000", // 백엔드 FastAPI 주소
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ""), // /api 제거
+  test: {
+    environment: "jsdom",
+    setupFiles: ["./src/test/setup.ts"],
+    include: ["src/**/*.test.{ts,tsx}"],
+    restoreMocks: true,
+    coverage: {
+      provider: "v8",
+      include: ["src/ui-core/**/*.{ts,tsx}"],
+      exclude: ["src/ui-core/index.ts", "src/ui-core/**/*.test.{ts,tsx}"],
+      thresholds: {
+        lines: 85,
+        statements: 85,
+        functions: 85,
+        branches: 80,
       },
     },
   },

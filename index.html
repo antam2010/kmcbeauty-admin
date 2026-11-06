@@ -1,10 +1,33 @@
 <!doctype html>
-<html lang="en">
+<html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React + TS</title>
+    <title>kmcbeauty 관리자</title>
+    <script data-theme-init>
+      // 첫 렌더링 전에 <html>의 .dark를 맞춰 깜빡임을 막는다.
+      // 저장 키와 판정 규칙은 src/ui-core/theme-provider.tsx와 같아야 한다.
+      (() => {
+        let preference = "system";
+        try {
+          const stored = window.localStorage.getItem("kmc-admin-theme");
+          if (stored === "light" || stored === "dark" || stored === "system") {
+            preference = stored;
+          }
+        } catch {
+          // 저장소에 접근할 수 없으면(사생활 보호 모드 등) 시스템 설정을 따른다.
+        }
+        let dark = preference === "dark";
+        if (preference === "system") {
+          try {
+            dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+          } catch {
+            dark = false;
+          }
+        }
+        document.documentElement.classList.toggle("dark", dark);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

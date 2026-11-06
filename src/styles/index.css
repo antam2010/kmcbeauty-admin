@@ -1,0 +1,222 @@
+/*
+ * Tailwind 4 연결 파일이다. 전역 CSS는 토큰과 기본 계층(body 글꼴·색·배경, 줄바꿈, 기본 테두리 색,
+ * 감속 모드 안전망)만 두고, 스타일은 컴포넌트 안에서 토큰 유틸리티로 지정한다(system.md §1, §3).
+ * source("..")로 src/만 훑어 .claude·.moai 문서의 클래스 이름이 CSS로 생성되지 않게 한다.
+ */
+@import "tailwindcss" source("..");
+@import "@fontsource-variable/noto-sans-kr";
+@import "./tokens.css";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* 기본 테마 정리: 팔레트·반경·그림자·글자 크기 기본값을 지우고 이 시스템의 이름만 다시 정의한다(D8). */
+@theme {
+  --color-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+  --text-*: initial;
+
+  --font-sans:
+    "Noto Sans KR Variable", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui,
+    sans-serif;
+  --font-mono: ui-monospace, Consolas, "Noto Sans KR Variable", monospace;
+
+  --text-caption: 0.75rem;
+  --text-caption--line-height: 1.125rem;
+  --text-caption--letter-spacing: 0;
+  --text-body-sm: 0.8125rem;
+  --text-body-sm--line-height: 1.25rem;
+  --text-body-sm--letter-spacing: 0;
+  --text-body: 0.875rem;
+  --text-body--line-height: 1.375rem;
+  --text-body--letter-spacing: 0;
+  --text-subtitle: 1rem;
+  --text-subtitle--line-height: 1.5rem;
+  --text-subtitle--letter-spacing: 0;
+  --text-title: 1.125rem;
+  --text-title--line-height: 1.625rem;
+  --text-title--letter-spacing: -0.01em;
+  --text-heading: 1.5rem;
+  --text-heading--line-height: 2rem;
+  --text-heading--letter-spacing: -0.02em;
+  --text-display: 1.75rem;
+  --text-display--line-height: 2.25rem;
+  --text-display--letter-spacing: -0.02em;
+
+  --container-content: 80rem;
+  --container-reading: 45rem;
+  --container-dialog-sm: 25rem;
+  --container-dialog-md: 35rem;
+  --container-dialog-lg: 45rem;
+
+  /* 모션(system.md §7): 등장 200ms ease-out, 퇴장 150ms ease-in. 컴포넌트는 motion-safe: 아래에서만 쓴다. */
+  --animate-fade-in: fade-in 200ms ease-out;
+  --animate-fade-out: fade-out 150ms ease-in;
+  --animate-slide-in-from-top: slide-in-from-top 200ms ease-out;
+  --animate-slide-in-from-bottom: slide-in-from-bottom 200ms ease-out;
+  --animate-slide-in-from-left: slide-in-from-left 200ms ease-out;
+  --animate-slide-in-from-right: slide-in-from-right 200ms ease-out;
+  --animate-dialog-in: dialog-in 200ms ease-out;
+  --animate-dialog-out: dialog-out 150ms ease-in;
+  --animate-toast-in: toast-in 200ms ease-out;
+}
+
+/* 이름 연결: 유틸리티는 런타임 변수를 직접 가리키므로 테마 전환은 변수 값만 바꾼다. */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-overlay: var(--overlay);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-subtle: var(--primary-subtle);
+  --color-primary-subtle-foreground: var(--primary-subtle-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-info-subtle: var(--info-subtle);
+  --color-info-subtle-foreground: var(--info-subtle-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-subtle: var(--success-subtle);
+  --color-success-subtle-foreground: var(--success-subtle-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-subtle: var(--warning-subtle);
+  --color-warning-subtle-foreground: var(--warning-subtle-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-hover: var(--destructive-hover);
+  --color-destructive-subtle: var(--destructive-subtle);
+  --color-destructive-subtle-foreground: var(--destructive-subtle-foreground);
+
+  --color-status-reserved-bg: var(--status-reserved-bg);
+  --color-status-reserved-fg: var(--status-reserved-fg);
+  --color-status-reserved-rail: var(--status-reserved-rail);
+  --color-status-visited-bg: var(--status-visited-bg);
+  --color-status-visited-fg: var(--status-visited-fg);
+  --color-status-visited-rail: var(--status-visited-rail);
+  --color-status-completed-bg: var(--status-completed-bg);
+  --color-status-completed-fg: var(--status-completed-fg);
+  --color-status-completed-rail: var(--status-completed-rail);
+  --color-status-cancelled-bg: var(--status-cancelled-bg);
+  --color-status-cancelled-fg: var(--status-cancelled-fg);
+  --color-status-cancelled-rail: var(--status-cancelled-rail);
+  --color-status-no-show-bg: var(--status-no-show-bg);
+  --color-status-no-show-fg: var(--status-no-show-fg);
+  --color-status-no-show-rail: var(--status-no-show-rail);
+
+  --radius-panel: var(--radius);
+  --radius-control: calc(var(--radius) * 2 / 3);
+  --radius-badge: calc(var(--radius) / 2);
+  --radius-chip: calc(var(--radius) / 3);
+
+  --shadow-raised: var(--elevation-raised);
+  --shadow-overlay: var(--elevation-overlay);
+}
+
+@layer base {
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--background);
+    color: var(--foreground);
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--border);
+  }
+
+  /* 감속 모드 안전망: 애니메이션·전환 시간을 사실상 0으로, 반복을 1회로 제한한다(system.md §7). */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      /* biome-ignore-start lint/complexity/noImportantStyles: 안전망은 컴포넌트가 지정한 애니메이션·전환 시간보다 우선해야 한다. */
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+      /* biome-ignore-end lint/complexity/noImportantStyles: 안전망 끝 */
+    }
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+/* 트리거 쪽에서 4px 이동: 아래에 뜨는 내용은 위에서, 위에 뜨는 내용은 아래에서 들어온다. */
+@keyframes slide-in-from-top {
+  from {
+    opacity: 0;
+    translate: 0 -4px;
+  }
+}
+
+@keyframes slide-in-from-bottom {
+  from {
+    opacity: 0;
+    translate: 0 4px;
+  }
+}
+
+@keyframes slide-in-from-left {
+  from {
+    opacity: 0;
+    translate: -4px 0;
+  }
+}
+
+@keyframes slide-in-from-right {
+  from {
+    opacity: 0;
+    translate: 4px 0;
+  }
+}
+
+/* 대화상자: 페이드 + 크기 98% → 100%(scale 속성이라 위치 지정용 translate와 겹치지 않는다) */
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    scale: 0.98;
+  }
+}
+
+@keyframes dialog-out {
+  to {
+    opacity: 0;
+    scale: 0.98;
+  }
+}
+
+/* 토스트: 오른쪽에서 8px 이동 + 페이드 */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    translate: 8px 0;
+  }
+}
