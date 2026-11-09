@@ -7,6 +7,7 @@ import { FormsSection } from "./sections/FormsSection";
 import { NavigationSection } from "./sections/NavigationSection";
 import { OverlaysSection } from "./sections/OverlaysSection";
 import { TokensSection } from "./sections/TokensSection";
+import { VerificationSection } from "./sections/VerificationSection";
 
 const THEME_LABELS: Record<ThemePreference, string> = {
   light: "라이트",
@@ -53,6 +54,7 @@ export function PreviewPage() {
         <OverlaysSection />
         <DataSection />
         <NavigationSection />
+        <VerificationSection />
       </main>
     </div>
   );

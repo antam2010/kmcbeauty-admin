@@ -1,7 +1,7 @@
 // @vitest-environment node
 // 디자인 규칙 점검(AC-UI-001-09, AC-UI-001-10, AC-UI-001-12, AC-UI-001-13).
 // 위반은 하나마다 `경로:줄`로 보고한다. 허용 구역(design-rules:allow-start ~ allow-end) 안에서는
-// 기본 테마 이름 규칙 하나만 건너뛴다(design.md §9).
+// 기본 테마 이름 규칙 하나만 건너뛰고, 그 구역은 VerificationSection.tsx에만 둘 수 있다(design.md §9).
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -107,6 +107,14 @@ const BASE_LIBRARIES: Record<string, string[]> = {
   "tabs.tsx": ["@radix-ui/react-tabs"],
 };
 
+// 시연 허용 구역을 둘 수 있는 유일한 파일(design.md §9). 다른 파일의 표시는 위반이다.
+const ALLOW_ZONE_FILE = "src/preview/sections/VerificationSection.tsx";
+const ALLOW_START = "design-rules:allow-start";
+const ALLOW_END = "design-rules:allow-end";
+
+// AC-UI-001-06 금지 클래스 5개: 허용 구역의 시연 상수가 이 클래스를 글자 그대로 담는다
+const THEME_RESET_DEMO = ["bg-rose-700", "text-white", "rounded-lg", "shadow-xl", "text-sm"];
+
 // 표에 적힌 파일 밖에서 가져오면 안 되는 패키지
 const CONFINED_PACKAGES: Record<string, string[]> = {
   "react-day-picker": ["calendar.tsx"],
@@ -202,17 +210,23 @@ function isThemeName(variants: string[], utility: string): boolean {
 /** 소스 한 파일의 클래스 규칙 위반(AC-UI-001-10, AC-UI-001-12, AC-UI-001-13)을 찾는다. */
 function checkClassRules(file: string, text: string): Violation[] {
   const violations: Violation[] = [];
-  let inAllowZone = false;
+  let zoneStart: string | null = null; // 열린 허용 구역의 시작 표시 위치
   text.split("\n").forEach((line, index) => {
     const location = `${file}:${index + 1}`;
-    if (line.includes("design-rules:allow-start")) {
-      inAllowZone = true;
-      return;
+    if (line.includes(ALLOW_START) || line.includes(ALLOW_END)) {
+      // 허용 구역은 VerificationSection.tsx 하나뿐이다. 다른 파일의 표시는 구역을 열지 않고 위반으로 보고한다.
+      if (file !== ALLOW_ZONE_FILE) {
+        violations.push({
+          location,
+          rule: "허용 구역 표시",
+          detail: `${ALLOW_ZONE_FILE}에서만 쓴다`,
+        });
+      } else {
+        zoneStart = line.includes(ALLOW_START) ? location : null;
+        return;
+      }
     }
-    if (line.includes("design-rules:allow-end")) {
-      inAllowZone = false;
-      return;
-    }
+    const inAllowZone = zoneStart !== null;
     for (const token of classTokens(line)) {
       const { variants, utility } = splitVariants(token);
       if (utility === "") continue;
@@ -234,6 +248,9 @@ function checkClassRules(file: string, text: string): Violation[] {
       }
     }
   });
+  if (zoneStart !== null) {
+    violations.push({ location: zoneStart, rule: "허용 구역 표시", detail: "끝 표시가 없다" });
+  }
   return violations;
 }
 
@@ -356,6 +373,24 @@ describe("디자인 규칙 — 금지 패턴(AC-UI-001-10, AC-UI-001-12, AC-UI-0
     expect(violations.map(format)).toEqual([]);
   });
 
+  it("허용 구역은 VerificationSection.tsx에 하나이고, AC-UI-001-06 금지 클래스 5개를 글자 그대로 담은 문자열 하나다", () => {
+    const lines = read(ALLOW_ZONE_FILE).split("\n");
+    expect(lines.filter((line) => line.includes(ALLOW_START))).toHaveLength(1);
+    expect(lines.filter((line) => line.includes(ALLOW_END))).toHaveLength(1);
+    const start = lines.findIndex((line) => line.includes(ALLOW_START));
+    const end = lines.findIndex((line) => line.includes(ALLOW_END));
+    expect(start).toBeLessThan(end);
+    // 이어 붙인 문자열은 Tailwind가 후보로 보지 못해 빌드 CSS 검사의 증거가 되지 않는다(AC-UI-001-06).
+    const literals = [
+      ...lines
+        .slice(start + 1, end)
+        .join("\n")
+        .matchAll(/"([^"]*)"/g),
+    ];
+    expect(literals).toHaveLength(1);
+    expect(literals[0][1].split(/\s+/).sort()).toEqual([...THEME_RESET_DEMO].sort());
+  });
+
   it("lucide-react에서 가져온 이름이 모두 lucide-react.d.ts의 정식 이름이다", () => {
     const violations = SCANNED_FILES.flatMap((file) => checkLucideImports(file, read(file)));
     expect(violations.map(format)).toEqual([]);
@@ -444,10 +479,6 @@ describe("디자인 규칙 자기 검사(EC-18)", () => {
     'const ring = "focus-visible:ring-2 ring-offset-2";', // 7
     'const spin = "animate-spin motion-safe:animate-spin";', // 8
     'const fine = "font-black max-w-dialog-md rounded-full shadow-none";', // 9 위반 없음
-    "// design-rules:allow-start", // 10
-    'const demo = "bg-rose-700 text-white rounded-lg shadow-xl text-sm";', // 11 허용 구역
-    "// design-rules:allow-end", // 12
-    'const leak = "bg-rose-700";', // 13 허용 구역 바로 밖
   ].join("\n");
 
   it("규칙마다 위반 표본을 잡고 실패 메시지에 경로:줄이 들어 있다", () => {
@@ -466,7 +497,6 @@ describe("디자인 규칙 자기 검사(EC-18)", () => {
       "src/ui-core/sample.tsx:7 box-shadow 포커스 링: focus-visible:ring-2",
       "src/ui-core/sample.tsx:7 box-shadow 포커스 링: ring-offset-2",
       "src/ui-core/sample.tsx:8 조건 없는 animate-*: animate-spin",
-      "src/ui-core/sample.tsx:13 기본 테마 이름: bg-rose-700",
     ]);
   });
 
@@ -474,17 +504,42 @@ describe("디자인 규칙 자기 검사(EC-18)", () => {
     const messages = checkClassRules("src/ui-core/sample.tsx", sample).map(format).join("\n");
     expect(messages).not.toContain("font-black");
     expect(messages).not.toContain("max-w-dialog-md");
-    expect(messages).not.toContain(":11 ");
   });
 
-  it("허용 구역 안의 기본 테마 이름은 건너뛰되 dark: 변형은 계속 잡는다", () => {
+  it("VerificationSection.tsx의 허용 구역 안에서는 기본 테마 이름만 건너뛰고, 구역 바로 앞뒤의 표본은 잡는다", () => {
+    const zone = [
+      'const before = "bg-rose-700";', // 1 허용 구역 바로 앞
+      "// design-rules:allow-start", // 2
+      'const demo = "bg-rose-700 text-white rounded-lg shadow-xl text-sm dark:bg-card";', // 3
+      "// design-rules:allow-end", // 4
+      'const leak = "bg-rose-700";', // 5 허용 구역 바로 뒤
+    ].join("\n");
+    expect(checkClassRules(ALLOW_ZONE_FILE, zone).map(format)).toEqual([
+      `${ALLOW_ZONE_FILE}:1 기본 테마 이름: bg-rose-700`,
+      `${ALLOW_ZONE_FILE}:3 dark: 변형: dark:bg-card`,
+      `${ALLOW_ZONE_FILE}:5 기본 테마 이름: bg-rose-700`,
+    ]);
+  });
+
+  it("다른 파일의 허용 구역 표시는 위반으로 보고하고 구역을 열지 않는다", () => {
     const zone = [
       "// design-rules:allow-start",
-      'const x = "bg-rose-700 dark:bg-card";',
+      'const demo = "bg-rose-700";',
       "// design-rules:allow-end",
     ].join("\n");
-    expect(checkClassRules("src/preview/sections/Sample.tsx", zone).map(format)).toEqual([
-      "src/preview/sections/Sample.tsx:2 dark: 변형: dark:bg-card",
+    for (const file of ["src/ui-core/button.tsx", "src/preview/sections/ActionsSection.tsx"]) {
+      expect(checkClassRules(file, zone).map(format)).toEqual([
+        `${file}:1 허용 구역 표시: ${ALLOW_ZONE_FILE}에서만 쓴다`,
+        `${file}:2 기본 테마 이름: bg-rose-700`,
+        `${file}:3 허용 구역 표시: ${ALLOW_ZONE_FILE}에서만 쓴다`,
+      ]);
+    }
+  });
+
+  it("끝 표시가 없는 허용 구역은 위반으로 보고한다(파일 끝까지 건너뛰는 거짓 통과 방지)", () => {
+    const zone = ["// design-rules:allow-start", 'const demo = "bg-rose-700";'].join("\n");
+    expect(checkClassRules(ALLOW_ZONE_FILE, zone).map(format)).toEqual([
+      `${ALLOW_ZONE_FILE}:1 허용 구역 표시: 끝 표시가 없다`,
     ]);
   });
 

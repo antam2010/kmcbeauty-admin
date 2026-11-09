@@ -1,9 +1,15 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { ThemeProvider } from "@/ui-core";
 import { expectNoAxeViolations } from "../test/axe";
 import { PreviewPage } from "./PreviewPage";
+import {
+  classifyTnum,
+  THEME_RESET_DEMO_CLASSES,
+  type TnumWidths,
+  VerificationSection,
+} from "./sections/VerificationSection";
 import { SHOWCASE } from "./showcase";
 
 // acceptance.md AC-UI-001-14 전시 목록 표(29개 컴포넌트)를 그대로 옮겼다.
@@ -58,7 +64,7 @@ const SHOWCASE_TABLE: [component: string, states: string[]][] = [
   ["ThemeToggle", ["default"]],
 ];
 
-// 섹션 제목 9개(AC-UI-001-14). 마일스톤마다 만든 섹션이 늘어난다.
+// 섹션 제목 9개와 순서(AC-UI-001-14, design.md §9). M6에서 '검증'까지 모두 갖췄다.
 const SECTION_TITLES = [
   "토큰",
   "동작",
@@ -71,16 +77,24 @@ const SECTION_TITLES = [
   "검증",
 ];
 
-// 컴포넌트는 M5에서 29개가 모두 전시 목록에 들어갔다. 섹션은 M6(검증)까지 늘어난다(AC-UI-001-14).
-const DELIVERED_SECTIONS = [
-  "토큰",
-  "동작",
-  "피드백",
-  "폼",
-  "고급 입력",
-  "오버레이",
-  "데이터",
-  "탐색",
+// acceptance.md §3.2(EC-28) tnum 판정 표. 너비는 px이고 비교는 0.5px 허용 오차, 0 검사가 먼저다.
+const W = (plain1111: number, plain0000: number, tabular1111: number, tabular0000: number) => ({
+  plain1111,
+  plain0000,
+  tabular1111,
+  tabular0000,
+});
+const TNUM_TABLE: [label: string, widths: TnumWidths, verdict: string][] = [
+  ["네 너비가 모두 0", W(0, 0, 0, 0), "측정 불가"],
+  ["기본 숫자 하나만 0", W(0, 64, 64, 64), "측정 불가"],
+  ["tabular-nums 하나만 0(다른 칸은 미지원 모양)", W(40, 64, 64, 0), "측정 불가"],
+  ["기본 ≠, tabular =", W(40, 64, 64, 64), "지원"],
+  ["기본 =, tabular =", W(64, 64, 64, 64), "기본 고정폭"],
+  ["기본 ≠, tabular ≠", W(40, 64, 40, 64), "미지원"],
+  ["기본 =, tabular ≠", W(64, 64, 40, 64), "미지원"],
+  ["허용 오차 경계: 0.5px 차이는 같다고 본다", W(40, 64, 64, 64.5), "지원"],
+  ["허용 오차 경계: 0.5px 안의 기본 숫자 차이는 기본 고정폭", W(64, 64.5, 64, 64), "기본 고정폭"],
+  ["허용 오차 밖: 0.6px 차이는 다르다", W(40, 64, 64, 64.6), "미지원"],
 ];
 
 // system.md §9의 임시 표시 순서
@@ -131,7 +145,7 @@ function nonHaeyoSentences(text: string): string[] {
     .filter((sentence) => /[가-힣][.?]$/.test(sentence) && !/요[.?]$/.test(sentence));
 }
 
-describe("미리보기 페이지(AC-UI-001-14, M5까지의 범위)", () => {
+describe("미리보기 페이지(AC-UI-001-14)", () => {
   it("전시 목록 표는 29개 컴포넌트이고 showcase.ts는 그 표와 정확히 같다", () => {
     expect(SHOWCASE_TABLE).toHaveLength(29);
     expect(SHOWCASE).toEqual(expectedShowcase());
@@ -162,16 +176,20 @@ describe("미리보기 페이지(AC-UI-001-14, M5까지의 범위)", () => {
     expect(scope.getByRole("tablist")).toBeInTheDocument();
   });
 
-  it("섹션 제목(h2)은 지금까지 만든 섹션과 같고 정해진 9개 안에 있다", () => {
+  it("섹션 제목(h2)은 정해진 9개이고 순서도 같다", () => {
     mockSystemTheme(false);
     renderPreview();
     const titles = screen
       .getAllByRole("heading", { level: 2 })
       .map((heading) => heading.textContent);
-    expect(titles).toEqual(DELIVERED_SECTIONS);
-    for (const title of titles) {
-      expect(SECTION_TITLES).toContain(title);
-    }
+    expect(titles).toEqual(SECTION_TITLES);
+  });
+
+  it("검증 섹션은 jsdom에서 너비가 0이라 '고정폭 숫자: 측정 불가'로 판정한다", () => {
+    mockSystemTheme(false);
+    renderPreview();
+    const section = screen.getByRole("region", { name: "검증" });
+    expect(within(section).getByText("고정폭 숫자: 측정 불가")).toBeInTheDocument();
   });
 
   it("전시 목록의 모든 항목이 라이트와 다크에서 렌더링되고 axe 위반이 0건이다", async () => {
@@ -244,5 +262,97 @@ describe("미리보기 페이지(AC-UI-001-14, M5까지의 범위)", () => {
     expect(
       nonHaeyoSentences("저장했어요. 저장했습니다. 저장한다. 닫을까요? 2026. 10. 29."),
     ).toEqual(["저장했습니다.", "저장한다."]);
+  });
+});
+
+const FOCUS_CLASSES = [
+  "focus-visible:outline-2",
+  "focus-visible:outline-offset-2",
+  "focus-visible:outline-ring",
+];
+
+describe("검증 섹션(AC-UI-001-06·14, EC-28, plan.md §E.4)", () => {
+  afterEach(() => {
+    Reflect.deleteProperty(document, "fonts");
+  });
+
+  it("기본 테마 정리 시연 상자는 금지 클래스 5개를 그대로 달고, 그 목록을 화면에 보인다", () => {
+    const { container } = render(<VerificationSection />);
+    const box = container.querySelector<HTMLElement>("[data-theme-reset-demo]");
+    expect(box?.className).toBe(THEME_RESET_DEMO_CLASSES);
+    expect(box?.classList).toHaveLength(5);
+    expect(screen.getByText(THEME_RESET_DEMO_CLASSES)).toBeInTheDocument();
+    // 비교용 상자는 토큰 클래스로 칠해 규칙이 생기는 모습을 함께 보인다.
+    expect(container.querySelector("[data-token-demo]")).toHaveClass(
+      "bg-primary",
+      "text-primary-foreground",
+      "rounded-panel",
+      "shadow-raised",
+    );
+  });
+
+  it("자간 확인은 자간이 있는 글자 크기 3개와 text-body를 기대값과 함께 보인다", () => {
+    const { container } = render(<VerificationSection />);
+    const samples = [...container.querySelectorAll<HTMLElement>("[data-tracking-sample]")];
+    expect(samples.map((sample) => sample.dataset.trackingSample)).toEqual([
+      "text-display",
+      "text-heading",
+      "text-title",
+      "text-body",
+    ]);
+    for (const sample of samples) {
+      expect(sample).toHaveClass(sample.dataset.trackingSample as string);
+    }
+    expect(screen.getAllByText(/^기대 자간 /).map((label) => label.textContent)).toEqual([
+      "기대 자간 -0.02em",
+      "기대 자간 -0.02em",
+      "기대 자간 -0.01em",
+      "기대 자간 0",
+    ]);
+  });
+
+  it("포커스 윤곽선 확인용 버튼과 입력은 Tab으로 차례로 포커스를 받고 윤곽선 클래스를 가진다", async () => {
+    const user = userEvent.setup();
+    render(<VerificationSection />);
+    const button = screen.getByRole("button", { name: "포커스 확인 버튼" });
+    const input = screen.getByRole("textbox", { name: "포커스 확인 입력" });
+    await user.tab();
+    expect(button).toHaveFocus();
+    await user.tab();
+    expect(input).toHaveFocus();
+    expect(button).toHaveClass(...FOCUS_CLASSES);
+    expect(input).toHaveClass(...FOCUS_CLASSES, "focus-visible:border-ring");
+  });
+
+  it("웹 글꼴을 다 불러온 뒤 다시 재서 판정 문구와 측정값을 바꾼다(브라우저 경로)", async () => {
+    let fontsLoaded = false;
+    const widths = W(40, 64, 64, 64);
+    vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (
+      this: Element,
+    ) {
+      const key = (this as HTMLElement).dataset?.tnumSample as keyof TnumWidths | undefined;
+      const width = fontsLoaded && key ? widths[key] : 0;
+      return { width, height: 0, x: 0, y: 0, top: 0, left: 0, right: width, bottom: 0 } as DOMRect;
+    });
+    let resolveFonts: () => void = () => undefined;
+    const ready = new Promise<void>((resolve) => {
+      resolveFonts = () => resolve();
+    });
+    Object.defineProperty(document, "fonts", { configurable: true, value: { ready } });
+
+    render(<VerificationSection />);
+    expect(screen.getByText("고정폭 숫자: 측정 불가")).toBeInTheDocument();
+
+    await act(async () => {
+      fontsLoaded = true;
+      resolveFonts();
+      await ready;
+    });
+    expect(screen.getByText("고정폭 숫자: 지원")).toBeInTheDocument();
+    expect(screen.getByText("40.00px")).toBeInTheDocument();
+  });
+
+  it.each(TNUM_TABLE)("classifyTnum은 EC-28 표대로 판정한다: %s", (_label, widths, verdict) => {
+    expect(classifyTnum(widths)).toBe(verdict);
   });
 });
