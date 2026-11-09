@@ -383,10 +383,17 @@
 - `moai gate`가 실행한 단계(M1~M4와 같음).
 - 실제 브라우저에서의 표 가로 스크롤, 사이드바 폭 전환과 Tooltip 위치, Windows 고대비 모드에서의 단서 표시, 스크린 리더 낭독은 확인하지 않았다.
 
+#### 오케스트레이터 재검증(2026-11-09)
+
+- 프로젝트 폴더가 `~/kmcbeauty/kmcbeauty-admin`에서 `~/workSpace/_myproject/kmcbeauty/kmcbeauty-admin`로 옮겨져 끊긴 워크트리 연결을 `git worktree repair`로 고친 뒤, 이 트리(HEAD `c1332ae`)에서 E.1을 다시 실행했다. 증거(주 체크아웃, git 제외): `.moai/state/verify/eb35be5d-1afd-4c76-b4e0-9f740ed057ca/`.
+- 처음 두 번의 `npm test`가 exit 1로 끝났다(`Tests 1 failed | 531 passed (532)`). 실패한 사례는 `design-rules.test.ts`의 "@/ui-core의 런타임 내보내기가 공개 이름 40개와 정확히 같다" 하나이고, 값 비교가 아니라 `Test timed out in 5000ms`였다(5142ms — 다른 검사와 동시 실행, `m5-test.txt` / 5005ms — 테스트만 실행, `m5-test-rerun.txt`). 같은 사례가 파일 하나만 돌리면 2040ms(`m5-design-rules-solo.txt`), 11-06 커버리지 실측은 1983ms(`final-coverage-verbose.txt`)라 코드가 느려진 것이 아니다. `@/ui-core` 전체를 처음 불러오는 비용이 전체 스위트의 병렬 실행에서 기본 제한에 닿았다.
+- 조치: 그 사례에 테스트별 제한 20초를 주었다(PreviewPage 전체 axe 사례와 같은 방식, 실측값을 주석으로 남김). 판정 내용과 다른 코드는 바꾸지 않았다.
+- 조치 뒤 E.1(순서대로 실행, `m5-fix-*.txt`): 타입 exit 0, 린트 exit 0(`Checked 93 files in 61ms. No fixes applied.`), 테스트 exit 0(`Test Files 38 passed (38)`, `Tests 532 passed (532)`, 23.62s), 커버리지 exit 0(Statements 99.27% (548/552), Branches 97.14% (510/525), Functions 100% (196/196), Lines 100% (487/487)), 배포 중지 가드 `Tests 5 passed (5)`, 빌드 exit 0(`✓ built in 585ms`). 경계·옛 의존성은 출력 없음, 자체 확인 `2`(`m5-grep.txt`, 조치가 `src/ui-core`·`package.json`을 건드리지 않아 그대로 유효).
+
 #### 커밋
 
-- `abc1bce` Table·Pagination과 데이터 섹션의 목록 패널, `0f2ffe1` Tabs·Breadcrumb·PageHeader와 탐색 섹션, 페이지 머리 h1 교체.
-- 마지막 커밋(Sidebar·사이드바 시연·완성 목록·이 기록)의 SHA는 커밋이 만들어진 뒤에 정해지므로 다음 기록 커밋에서 채운다.
+- `abc1bce` Table·Pagination과 데이터 섹션의 목록 패널, `0f2ffe1` Tabs·Breadcrumb·PageHeader와 탐색 섹션, 페이지 머리 h1 교체, `c1332ae` Sidebar와 사이드바 시연, 공개 이름 40개 완성, M5 진행 기록.
+- 오케스트레이터 재검증 커밋(시간 제한 조치·이 기록)의 SHA는 커밋이 만들어진 뒤에 정해지므로 다음 기록 커밋에서 채운다.
 
 ## §E.3 Run-phase Audit-Ready Signal
 

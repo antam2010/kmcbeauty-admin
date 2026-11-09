@@ -378,7 +378,8 @@ describe("디자인 규칙 — 공개 API와 구성(AC-UI-001-09)", () => {
     const module = await import("@/ui-core");
     expect(PUBLIC_NAMES).toHaveLength(40);
     expect(Object.keys(module).sort()).toEqual([...PUBLIC_NAMES].sort());
-  });
+    // @/ui-core 전체를 처음 불러오는 사례라 전체 스위트의 병렬 실행에서 기본 제한(5초)에 닿는다(2026-11-09 실측 5.0~5.1초 — 단독 2.0초).
+  }, 20_000);
 
   it("index.ts에 export *가 없다", () => {
     expect(read("src/ui-core/index.ts")).not.toMatch(/export\s+\*/);
