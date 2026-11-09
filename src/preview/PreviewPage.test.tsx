@@ -185,6 +185,29 @@ describe("미리보기 페이지(AC-UI-001-14)", () => {
     expect(titles).toEqual(SECTION_TITLES);
   });
 
+  it("목차는 페이지 머리와 main 사이에 있고, 각 앵커가 같은 이름의 섹션 제목을 가리킨다", () => {
+    mockSystemTheme(false);
+    const { container } = renderPreview();
+    const toc = screen.getByRole("navigation", { name: "목차" });
+    const main = screen.getByRole("main");
+    expect(main).not.toContainElement(toc);
+    expect(screen.getByRole("banner").compareDocumentPosition(toc)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(toc.compareDocumentPosition(main)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    const links = within(toc).getAllByRole("link");
+    expect(links.map((link) => link.textContent)).toEqual(SECTION_TITLES);
+    for (const link of links) {
+      expect(link.getAttribute("href")).toMatch(/^#[a-z-]+$/);
+      const target = container.querySelector<HTMLElement>(link.getAttribute("href") as string);
+      expect(target?.tagName).toBe("SECTION");
+      expect(within(target as HTMLElement).getByRole("heading", { level: 2 })).toHaveTextContent(
+        link.textContent as string,
+      );
+      expect(link).toHaveClass(...FOCUS_CLASSES);
+    }
+  });
+
   it("검증 섹션은 jsdom에서 너비가 0이라 '고정폭 숫자: 측정 불가'로 판정한다", () => {
     mockSystemTheme(false);
     renderPreview();
