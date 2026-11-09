@@ -3,7 +3,7 @@
 | 항목 | 값 |
 |---|---|
 | SPEC | SPEC-UI-001 — 프로젝트 기반과 디자인 시스템 |
-| 상태 | in-progress(run 단계) |
+| 상태 | completed(sync 단계 완료, 2026-11-09) |
 | 등급 | Tier L(spec·plan·acceptance·design·research 5종 + spec-compact.md, plan-auditor 통과 기준 0.85) |
 | 하네스 수준 | standard |
 | 개발 방식 | TDD(RED → GREEN → REFACTOR), 커버리지 목표 85% |
@@ -548,7 +548,81 @@ m1_to_mN_commit_strategy: "per-unit commits in temporary worktrees, ff-only inte
 
 ## §E.4 Sync-phase Audit-Ready Signal
 
-_<pending sync-phase — manager-docs가 기록한다>_
+```yaml
+sync_complete_at: "2026-11-09T18:46:23+09:00"
+sync_commit_sha: "pending-backfill-sync-commit"
+sync_status: completed
+sync_audit:
+  verdict: PASS
+  harmonic_mean: 0.894
+  threshold: 0.85
+  scores: {functionality: 0.92, security: 0.92, craft: 0.87, consistency: 0.87}
+  findings_minor: 18
+  findings_critical: 0
+  binding: true
+  run_id: wf_742265cf-f5c
+  evidence: .moai/state/verify/6ce9cdcb-b314-4365-aa1b-eb8ed71a876d/sync-audit-4dim-result.json
+pre_sync_gate:   # HEAD c9f638a, evidence .moai/state/verify/6ce9cdcb-b314-4365-aa1b-eb8ed71a876d/
+  - {cmd: "npm run typecheck", exit: 0}
+  - {cmd: "npm run lint", exit: 0, out: "Checked 94 files in 82ms. No fixes applied."}
+  - {cmd: "npm run build", exit: 0, out: "built in 536ms", qg07: "forbidden 5 classes 0, controls 3 classes 1"}
+  - {cmd: "npm run test:coverage", exit: 0, out: "38 files / 551 tests passed; Stmts 99.27, Branch 97.14, Funcs 100, Lines 100"}
+  - {cmd: "moai spec lint .moai/specs/SPEC-UI-001/spec.md", exit: 0}
+  - {cmd: "npm audit / npm audit --omit=dev", out: "found 0 vulnerabilities"}
+  - {check: "MX tags (plan.md §E.5)", out: "15/15 present — ANCHOR 4, WARN 4, NOTE 7"}
+frontmatter_status_transitions:
+  spec.md: "in-progress -> completed (updated 2026-11-01 -> 2026-11-09)"
+  plan.md: "n/a — no status frontmatter"
+  acceptance.md: "n/a — no status frontmatter"
+  design.md: "n/a — no status frontmatter"
+  progress.md: "n/a — no status frontmatter (header table 상태 row updated)"
+b12_self_test_a: "n/a — CHANGELOG not created (user decision 2026-11-09)"
+b12_self_test_b: "n/a — CHANGELOG not created (user decision 2026-11-09)"
+b12_self_test_c: "n/a — CHANGELOG not created (user decision 2026-11-09)"
+changelog_entry_position: "n/a"
+docs_updated: [README.md]
+docs_skipped:
+  - {doc: CHANGELOG.md, reason: "user decision 2026-11-09 (gate-sync-2)"}
+  - {doc: ".moai/project/ product·structure·tech", reason: "kickoff assumption (§F) and user decision 2026-11-09"}
+  - {doc: codemaps, reason: "kickoff assumption (§F) and user decision 2026-11-09"}
+canary_compliance_check: "n/a"
+```
+
+### 후속 과제(감사의 경미 지적 18건)
+
+(a) SPEC-UI-002가 기대기 전에 고칠 결함
+- Modal: 바깥에서 닫으면 버리기 확인 상태가 남아 다시 열 때 확인창이 바로 뜬다(`src/ui-core/modal.tsx`).
+- DateTimePicker: 시간 간격에 맞지 않는 값(예: 14:15)이면 시간 칸이 빈다(`src/ui-core/date-time-picker.tsx`).
+
+(b) SPEC-UI-002·배포 전 보강
+- `deploy.sh`가 `.env.stage`를 셸로 실행한다(기존부터 있던 문제).
+- DefaultLink에 URL 스킴 허용 목록이 없다(`src/ui-core/breadcrumb.tsx`).
+- CSP가 없고, 인라인 테마 초기화 스크립트에는 나중에 해시나 nonce가 필요하다(`index.html`).
+
+(c) 정리·일관성
+- Combobox의 새 값 만들기 조건이 두 곳에 중복된다(`src/ui-core/combobox.tsx`).
+- 포커스 링 클래스 문자열이 13개 파일과 14개 테스트에 복사돼 있다(`src/ui-core/tabs.tsx` 등).
+- 선택 상태 클래스가 filter·pagination·sidebar에 그대로 복사돼 있다(`src/ui-core/pagination.tsx`).
+- toast·confirm 외부 저장소와 modal·confirm 포커스 처리가 중복된다(`src/ui-core/confirm-dialog.tsx`).
+- Search가 렌더마다 새 병합 ref를 만든다(`src/ui-core/search.tsx`).
+- getPageItems가 이름 붙은 상수와 숫자 3을 섞어 쓴다(`src/ui-core/pagination.tsx`).
+- 테스트 출력에 jsdom canvas `Not implemented` 메시지 5건이 걸러지지 않는다(`src/test/setup.ts`).
+- Loading·Skeleton이 CVA 대신 삼항식을 쓴다(`src/ui-core/loading.tsx`).
+- 명령형 저장소 초기화가 setup.ts가 아니라 각 테스트의 afterEach에 있다(`src/test/setup.ts`).
+- README가 Vite 템플릿 그대로였다(`README.md`) — 이번 동기화에서 닫았다.
+- ToastTone이 공용 Tone에서 파생되지 않는다(`src/ui-core/toast.tsx`).
+- 중간 크기 이름이 `default`와 `md`로 갈린다(`src/ui-core/modal.tsx` 등, plan.md대로 구현).
+- describe 제목 하나가 AC 표지를 `AC-UI-001-06·14`로 줄여 쓴다(`src/preview/PreviewPage.test.tsx`).
+
+### 사용자 검토 항목(미검증)
+
+- 실제 브라우저에서 Noto Sans KR `tnum`과 자간 측정
+- Windows 고대비(forced-colors) 수동 확인(선택)
+- Toast 밀어서 닫기
+- `moai gate`가 통과할 때 실제로 어떤 단계를 실행하는지
+- 팝업 위치·IME 입력·스크린 리더 출력
+
+`tnum` 판정과 대체 글꼴 결정은 SPEC-UI-002로 넘긴다.
 
 ## §F Phase 4 Mode Selection
 
@@ -596,4 +670,8 @@ _<run 단계에서 필요할 때 기록한다>_
 
 ## §I Token Accounting
 
-_<동기화 단계를 닫을 때 기록한다>_
+```yaml
+tokens_spent: unmeasured   # 이 프로젝트에는 토큰 집계 기록기가 없다
+sync_audit_workflow_subagent_tokens: 702660   # sync-audit-4dim 워크플로 usage 블록
+attribution_confidence: "partial — main session, run-phase agents and this manager-docs run not measured"
+```

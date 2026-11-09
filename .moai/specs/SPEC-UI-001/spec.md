@@ -2,9 +2,9 @@
 id: SPEC-UI-001
 title: "프로젝트 기반과 디자인 시스템 — 디자인 토큰 · ui-core 컴포넌트 라이브러리 · 컴포넌트 미리보기"
 version: "0.3.1"
-status: in-progress
+status: completed
 created: 2026-10-29
-updated: 2026-11-01
+updated: 2026-11-09
 author: antam2010
 priority: P1
 phase: "v0.1.0 target"
