@@ -102,8 +102,8 @@ describe("Calendar — 한국어 머리와 격자(AC-UI-001-21)", () => {
   });
 });
 
-describe("Calendar — 키 이동(AC-UI-001-21, AC-UI-001-11)", () => {
-  it("AC-UI-001-11 키마다 react-day-picker 10 키 표대로 도착한다", async () => {
+describe("Calendar — 키 이동(AC-UI-001-21)", () => {
+  it("AC-UI-001-21 키마다 react-day-picker 10 키 표대로 도착한다", async () => {
     const user = userEvent.setup();
     render(<Harness initial={new Date(2026, 9, 29)} />);
     dayButton("2026-10-29").focus();
