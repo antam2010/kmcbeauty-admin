@@ -514,18 +514,26 @@
 - `moai gate`가 통과할 때 실행한 단계와 쓴 `tsc`(테스트 단계만 실패 출력으로 보였다).
 - M3~M5와 같은 브라우저 전용 항목(Toast 스와이프 닫기, 팝업 위치·애니메이션, 스크린 리더 낭독)은 이번에도 확인하지 않았다.
 
+#### 오케스트레이터 재검증(2026-11-09)
+
+- 에이전트는 16:43에 이 기록을 커밋하다가 pre-commit 게이트의 `npm test`가 2분 제한을 넘겨 막혔다(`m6-gate-precommit-record-timeout-1.txt`, 그때 부하 평균 151.70). 이어 16:54쯤 WSL이 다시 시작돼 에이전트가 끝났다. 오케스트레이터가 스테이징된 기록을 바꾸지 않고 확인한 뒤 같은 워크트리에서 커밋했다(`68204bc`, 훅 통과).
+- `68204bc`에서 E.1을 순서대로 다시 실행했다(증거: 주 체크아웃 `.moai/state/verify/eb35be5d-1afd-4c76-b4e0-9f740ed057ca/m6-*.txt`). 타입 exit 0, 린트 exit 0(`Checked 94 files in 68ms. No fixes applied.`), 테스트 exit 0(`Test Files 38 passed (38)`, `Tests 551 passed (551)`, 17.41s), 커버리지 exit 0(Statements 99.27% (548/552), Branches 97.14% (510/525), Functions 100% (196/196), Lines 100% (487/487)), 배포 중지 가드 `Tests 5 passed (5)`, 빌드 exit 0(`✓ built in 521ms`, `index-C5N3iSiu.css` — 에이전트 빌드와 같은 해시).
+- QG-07은 GNU `/usr/bin/grep`으로 다시 쟀다(이 기기의 기본 `grep`은 무시 목록을 따라 `dist/`를 건너뛸 수 있다). 원본의 `bg-rose-700`은 1, 빌드 CSS의 금지 선택자 5개(`.bg-rose-700` `.text-white` `.rounded-lg` `.shadow-xl` `.text-sm{`)는 모두 0, 대조 선택자 `.bg-background`·`.shadow-raised`·`.normal-nums`는 각 1이다.
+- QG-11 출력 없음·자체 확인 `2`, QG-12 출력 없음, AC-UI-001-11 표지 파일 16개(목록 일치), `moai spec lint` → `✓ No findings`, `git diff --stat 65c4dfd..68204bc` → 7개 파일(계획 산출물 변경 없음), `total_run_phase_files` 157 재확인.
+- 통합: 주 체크아웃의 `.git/index.lock`(0바이트, 16:06:14 — 16:54:18 부팅 전에 끝난 git 작업의 찌꺼기)이 첫 `git merge --ff-only`를 막았다. 지금 부팅에서 만든 파일이 아님을 확인하고 지운 뒤 `git fsck --connectivity-only` exit 0을 보고 다시 합쳤다. `65c4dfd..68204bc` 푸시.
+
 #### 커밋
 
 - `ff15f1a` calendar 키 이동 사례의 표지를 AC-UI-001-21로 바로잡음.
 - `3317915` 검증 섹션과 classifyTnum, 허용 구역 규칙.
 - `747acce` 미리보기 목차와 전시 목록 완성 주석.
-- 이 기록 커밋의 SHA는 커밋이 만들어진 뒤에 정해지므로 오케스트레이터가 빨리 감기 통합 뒤에 채운다(§E.3 `run_commit_sha`).
+- `68204bc` M6 진행 기록과 §E.3(위 재검증 항목의 사정으로 오케스트레이터가 스테이징된 내용 그대로 커밋).
 
 ## §E.3 Run-phase Audit-Ready Signal
 
 ```yaml
 run_complete_at: "2026-11-09T16:34:44+09:00"
-run_commit_sha: "pending-backfill — last M6 commit; the orchestrator fills it after the ff-merge"
+run_commit_sha: "68204bc"
 run_status: audit-ready
 ac_pass_count: 25          # AC-03·12·14·23은 이름 붙인 공백이 있는 통과(M6 기록 '공백')
 ac_fail_count: 0
