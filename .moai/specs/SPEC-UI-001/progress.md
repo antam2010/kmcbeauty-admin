@@ -389,11 +389,13 @@
 - 처음 두 번의 `npm test`가 exit 1로 끝났다(`Tests 1 failed | 531 passed (532)`). 실패한 사례는 `design-rules.test.ts`의 "@/ui-core의 런타임 내보내기가 공개 이름 40개와 정확히 같다" 하나이고, 값 비교가 아니라 `Test timed out in 5000ms`였다(5142ms — 다른 검사와 동시 실행, `m5-test.txt` / 5005ms — 테스트만 실행, `m5-test-rerun.txt`). 같은 사례가 파일 하나만 돌리면 2040ms(`m5-design-rules-solo.txt`), 11-06 커버리지 실측은 1983ms(`final-coverage-verbose.txt`)라 코드가 느려진 것이 아니다. `@/ui-core` 전체를 처음 불러오는 비용이 전체 스위트의 병렬 실행에서 기본 제한에 닿았다.
 - 조치: 그 사례에 테스트별 제한 20초를 주었다(PreviewPage 전체 axe 사례와 같은 방식, 실측값을 주석으로 남김). 판정 내용과 다른 코드는 바꾸지 않았다.
 - 조치 뒤 E.1(순서대로 실행, `m5-fix-*.txt`): 타입 exit 0, 린트 exit 0(`Checked 93 files in 61ms. No fixes applied.`), 테스트 exit 0(`Test Files 38 passed (38)`, `Tests 532 passed (532)`, 23.62s), 커버리지 exit 0(Statements 99.27% (548/552), Branches 97.14% (510/525), Functions 100% (196/196), Lines 100% (487/487)), 배포 중지 가드 `Tests 5 passed (5)`, 빌드 exit 0(`✓ built in 585ms`). 경계·옛 의존성은 출력 없음, 자체 확인 `2`(`m5-grep.txt`, 조치가 `src/ui-core`·`package.json`을 건드리지 않아 그대로 유효).
+- 환경과 원인 보정: 위 실패와 측정 때 이 컴퓨터에서는 다른 저장소의 세션들이 테스트·언어 서버를 함께 돌리고 있었고, 부하 평균 19.48(CPU 6개), 메모리 7.8Gi 중 6.8Gi 사용이었다(15:57 `uptime`·`free -h`). 그래서 "테스트만 실행"도 부하가 없는 상태는 아니었다. 원인은 `@/ui-core` 전체를 처음 불러오는 비용(파일 단독 2.0초)에 전체 스위트의 병렬 실행과 기기 전체 부하가 겹친 것이다. 조치 커밋 뒤 verbose 전체 실행(`m5-final-verbose.txt`, `Test Files 38 passed (38)`, `Tests 532 passed (532)`)에서 같은 사례는 12780ms, PreviewPage 전체 axe 사례는 7630ms였다. 둘 다 20초 제한 안이지만 여유가 크지 않으므로 M6에서 미리보기가 커진 뒤 다시 잰다.
 
 #### 커밋
 
 - `abc1bce` Table·Pagination과 데이터 섹션의 목록 패널, `0f2ffe1` Tabs·Breadcrumb·PageHeader와 탐색 섹션, 페이지 머리 h1 교체, `c1332ae` Sidebar와 사이드바 시연, 공개 이름 40개 완성, M5 진행 기록.
-- 오케스트레이터 재검증 커밋(시간 제한 조치·이 기록)의 SHA는 커밋이 만들어진 뒤에 정해지므로 다음 기록 커밋에서 채운다.
+- `3ac67f5` 오케스트레이터 재검증: 공개 이름 비교 사례의 시간 제한 20초와 재검증 기록.
+- 환경 기록을 더한 커밋의 SHA는 커밋이 만들어진 뒤에 정해지므로 다음 기록 커밋에서 채운다.
 
 ## §E.3 Run-phase Audit-Ready Signal
 
