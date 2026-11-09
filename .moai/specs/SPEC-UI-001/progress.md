@@ -550,7 +550,7 @@ m1_to_mN_commit_strategy: "per-unit commits in temporary worktrees, ff-only inte
 
 ```yaml
 sync_complete_at: "2026-11-09T18:46:23+09:00"
-sync_commit_sha: "pending-backfill-sync-commit"
+sync_commit_sha: "5e9b54a"
 sync_status: completed
 sync_audit:
   verdict: PASS
