@@ -395,11 +395,148 @@
 
 - `abc1bce` Table·Pagination과 데이터 섹션의 목록 패널, `0f2ffe1` Tabs·Breadcrumb·PageHeader와 탐색 섹션, 페이지 머리 h1 교체, `c1332ae` Sidebar와 사이드바 시연, 공개 이름 40개 완성, M5 진행 기록.
 - `3ac67f5` 오케스트레이터 재검증: 공개 이름 비교 사례의 시간 제한 20초와 재검증 기록.
-- 환경 기록을 더한 커밋의 SHA는 커밋이 만들어진 뒤에 정해지므로 다음 기록 커밋에서 채운다.
+- `65c4dfd` 환경 기록(기기 부하)과 `3ac67f5` SHA 보강(M6 첫 기록 편집에서 채움).
+
+### M6 — 미리보기 완성과 디자인 검증(2026-11-09 확인)
+
+- 구현·기록: manager-develop(워크트리 `agent-a35445d946c4f61af`, 브랜치 `worktree-agent-a35445d946c4f61af`, TDD). 기준 커밋 `65c4dfd`.
+- 기준 트리: 코드 단위 마지막 커밋 HEAD `747acce`(이번 실행, 이 트리). 아래 표의 출력은 모두 이 HEAD에서 순서대로 하나씩 실행한 것이다.
+- 증거 경로(워크트리, git 제외): `.moai/state/verify/spec-ui-001-m6/`(사전 점검 `baseline-*`, RED `m6-red-*`, GREEN `m6-green-*`, 마지막 확인 `final-*`).
+- 중단과 재개: 16:19쯤 WSL이 다시 시작돼 진행 중이던 프로세스가 모두 끝났다. 그때까지는 사전 점검만 했고 코드 변경·커밋은 없었다. 재개 뒤 RED부터 다시 진행했다.
+
+#### E.1 마일스톤 게이트
+
+| 확인 | 명령 | 관찰한 출력 |
+|---|---|---|
+| 타입 | `npm run typecheck` | exit 0, `tsc --noEmit` 출력 없음(`final-typecheck.txt`) |
+| 린트·서식 | `npm run lint` | exit 0, `Checked 94 files in 64ms. No fixes applied.`(`final-lint.txt`). 새 Biome 무시 주석 0개 |
+| 테스트 | `npm test` | exit 0, `Test Files 38 passed (38)`, `Tests 551 passed (551)`, 23.04s(`final-test.txt`) |
+| 커버리지(커밋 직전) | `npm run test:coverage` | exit 0, Statements 99.27% (548/552), Branches 97.14% (510/525), Functions 100% (196/196), Lines 100% (487/487)(`final-coverage.txt`). M6은 `src/ui-core` 코드를 바꾸지 않아 M5와 같다 |
+| 빌드 | `npm run build` | exit 0, `✓ built in 672ms`, `dist/assets/index-C5N3iSiu.css 114.93 kB`(`final-build.txt`) |
+| 게이트 실측 | pre-commit `moai gate` · 직접 실행 | 아래 AC-UI-001-03 기록 참조. 직접 실행 `gate exit=0`, 출력 0줄(`final-moai-gate.txt`) |
+| 배포 중지 가드 | `npx vitest run src/test/deploy-guard.test.ts` | 5개 통과(`final-qg-files.txt`의 5파일 74개 실행 안), `grep -c 'bun ' deploy.sh` → `0` |
+| 경계·옛 의존성 | E.1 코드 블록 세 줄 | 경계 출력 없음(exit 1), 자체 확인 `2`, 옛 의존성 출력 없음(exit 1) |
+| 작업 트리 | `git diff --stat 65c4dfd..747acce` | 6개 파일: `PreviewPage.test.tsx`, `PreviewPage.tsx`, `sections/VerificationSection.tsx`(새), `showcase.ts`, `design-rules.test.ts`, `calendar.test.tsx`. 계획 밖 변경 없음 |
+
+#### M6 완료 조건(plan.md §F M6)
+
+- 검증 섹션(`src/preview/sections/VerificationSection.tsx`, 9번째 h2 "검증", id `verification`)
+  - 기본 테마 정리 시연: 금지 클래스 5개(`bg-rose-700` `text-white` `rounded-lg` `shadow-xl` `text-sm`)를 상수 `THEME_RESET_DEMO_CLASSES` 하나에 글자 그대로 두고 허용 구역 표시 두 줄 사이에 넣었다. 그 클래스를 붙인 상자와 토큰 클래스로 칠한 비교 상자, 클래스 목록을 나란히 보인다.
+  - 자간 확인: `text-display`·`text-heading`(-0.02em), `text-title`(-0.01em), `text-body`(0)의 예문과 기대값, 브라우저가 계산한 `letter-spacing`(jsdom은 `normal`).
+  - 포커스 윤곽선: ui-core Button·Input 하나씩. Tab 순서와 포커스 클래스를 테스트로 확인했다.
+  - `tnum` 판정 장치: "1111"·"0000"을 `normal-nums`·`tabular-nums`로 `text-display` 크기에서 재고 측정값(px)과 판정 문구를 보인다. 처음 렌더링 뒤 재고, `document.fonts.ready` 뒤에 다시 잰다(웹 글꼴이 늦게 내려오면 처음 값은 대체 글꼴 값이다). 순수 함수 `classifyTnum`은 같은 파일에 있다.
+- 목차: 페이지 머리와 `<main>` 사이의 `nav` "목차", 섹션 9개로 가는 같은 페이지 앵커. '본문으로 건너뛰기'가 머리와 목차를 함께 건너뛴다.
+- 미리보기 전체 axe(라이트·다크): 위반 0. 전시 목록은 M5에서 29개가 완성됐고 그대로다(`showcase.ts`는 머리 주석만 고침).
+- 빌드 결과 CSS 검사(QG-07): 아래 E.4 표 1번.
+- 커버리지 85%: 위 표.
+- MX: `VerificationSection.tsx` 5행에 plan.md §E.5의 NOTE(`[AUTO]`, 한국어). 다른 MX 태그는 바꾸지 않았다.
+
+#### 인수 기준 25개 최종 판정(acceptance.md §5, HEAD `747acce`)
+
+테스트 수는 `npx vitest run --reporter=verbose`(`final-verbose.txt`, 551개 통과, 실패 0)의 파일별 통과 수다(`final-per-file-counts.txt`).
+
+| AC | 명령 | 관찰한 출력 | 판정 |
+|---|---|---|---|
+| 01 | 네 명령 · `dependency-pins.test.ts` · `tsc --listFilesOnly` · `npx tsc --version` | 네 명령 exit 0, dependency-pins 8개 통과, 대상 수 `2`, `Version 5.9.3`, tsconfig의 `references`·`"files"` 0건 | 통과 |
+| 02 | §2 AC-02 명령 세 줄 | 제거 경로 `git ls-files` 0줄, 옛 의존성 `0`, `src/vite-env.d.ts` 한 줄 | 통과 |
+| 03 | `npm run test:coverage` · pre-commit `moai gate` · `command -v tsc` | coverage exit 0(99.27/97.14/100/100), 훅이 커밋 3개를 통과시킴(막힌 1회는 위 기록), PATH `tsc` 6.0.3·`npx tsc` 5.9.3 | 통과(공백: 통과 때 게이트 단계·`tsc` 불명) |
+| 04 | `deploy-guard.test.ts` · `grep -c 'bun ' deploy.sh` | 5개 통과, `0` | 통과 |
+| 05 | `tokens.sync`·`tokens.contrast` 테스트 · `git ls-files .moai/design/system.md` | 6개·33개 통과, 한 줄 | 통과 |
+| 06 | `theme-reset.test.ts` · QG-07 두 줄 | 22개 통과, `1` / 출력 없음(대조 확인은 E.4 1번) | 통과 |
+| 07 | `theme-toggle`·`theme-provider` 테스트 | 13개·12개 통과 | 통과 |
+| 08 | `theme-provider`·`theme-init` 테스트 | 12개·12개 통과 | 통과 |
+| 09 | `cn.test.ts` · `design-rules.test.ts` | 10개·23개 통과(공개 이름 40개, 29개 파일, 기반 라이브러리) | 통과 |
+| 10 | `design-rules.test.ts` · QG-11 블록 | 23개 통과(허용 구역 규칙 포함), 경계 출력 없음, 자체 확인 `2` | 통과 |
+| 11 | 16개 파일 테스트 · `grep -l 'AC-UI-001-11' … \| wc -l` | 16개 파일 모두 통과, `16`(목록 일치) | 통과 |
+| 12 | `design-rules`·`theme-reset` · 컴포넌트 선택 단서 사례 | 23개·22개 통과, 단서 사례 포함 전체 통과 | 통과(공백: Windows 고대비 수동 확인은 선택이며 안 함) |
+| 13 | `design-rules`·`theme-reset` · 해당 컴포넌트 감속 모드 사례 | 통과(조건 없는 `animate-*` 0건, 안전망 사례 통과) | 통과 |
+| 14 | `PreviewPage.test.tsx` | 26개 통과: h1 하나, h2 9개, 건너뛰기 링크, 목차, 라이트·다크 axe 0, 전시 목록 29개, 상태 시연 순서, "고정폭 숫자: 측정 불가", EC-28, 해요체 | 통과(공백: 실제 브라우저 `tnum` 판정) |
+| 15 | `button.test.tsx` | 14개 통과 | 통과 |
+| 16 | `field.test.tsx` · 각 컨트롤 테스트 | 13개 통과, 컨트롤 테스트 전체 통과 | 통과 |
+| 17 | select·filter·search·checkbox·input·textarea | 20·12·12·13·15·7개 통과 | 통과 |
+| 18 | `combobox.test.tsx` | 37개 통과 | 통과 |
+| 19 | `combobox.test.tsx` · `grep -n "Combobox 구조" progress.md` | 37개 통과, M4 기록에 한 줄 이상 | 통과 |
+| 20 | `combobox.test.tsx` | 37개 통과 | 통과 |
+| 21 | `calendar`·`date-time-picker` 테스트 | 18개·23개 통과 | 통과 |
+| 22 | `confirm-dialog`·`modal` 테스트 | 16개·20개 통과 | 통과 |
+| 23 | `toast.test.tsx` | 16개 통과 | 통과(공백: 스와이프 닫기는 브라우저 수동 확인 대상) |
+| 24 | table·pagination·skeleton·alert·loading·badge·empty-state·tabs·card | 18·34·10·9·7·8·5·12·5개 통과 | 통과 |
+| 25 | sidebar·breadcrumb·page-header·tooltip | 15·8·7·7개 통과 | 통과 |
+
+품질 게이트: QG-01~05는 위 E.1 표, QG-06은 AC-05, QG-07은 E.4 1번, QG-08은 design-rules 23개, QG-09는 아래 게이트 기록, QG-10 `moai spec lint .moai/specs/SPEC-UI-001/spec.md` → exit 0, `✓ No findings — all SPEC documents are valid`, QG-11·12는 E.1 표, QG-13·14는 AC-04·01, QG-15는 AC-14. 모두 통과다.
+
+#### E.4 디자인 검증 항목 결과(plan.md §E.4)
+
+| # | 항목 | 결과 | 근거(이 HEAD에서 실행) |
+|---|---|---|---|
+| 1 | `@theme inline`과 `--color-*: initial` | 확인 | `theme-reset.test.ts` 22개 통과. 빌드 CSS: `grep -c 'bg-rose-700' src/preview/sections/VerificationSection.tsx` → `1`, `grep -l '\.bg-rose-700' dist/assets/*.css` → 출력 없음(exit 1), GNU `command grep`으로도 출력 없음. 나머지 4개(`text-white`·`rounded-lg`·`shadow-xl`·`text-sm`) 선택자도 0건. 대조: 같은 명령 형태로 `.bg-background`·`.shadow-raised`는 파일을 찾고(이 기기의 `grep`은 무시 목록을 따르는 ugrep이라 `dist/`를 실제로 읽는지 확인), 검증 섹션에만 쓰는 `normal-nums`가 `.normal-nums{font-variant-numeric:normal}`로 빌드 CSS에 있어 Tailwind가 이 파일을 훑었음을 확인 |
+| 2 | 정리 뒤 정적 유틸리티 유지 | 확인 | `theme-reset.test.ts`(M1 장치, 이번 실행 통과) |
+| 3 | `--text-*--letter-spacing` 적용 | 확인(자동) · 브라우저 계산값은 공백 | `theme-reset.test.ts`의 `text-heading` 자간 사례 통과. 검증 섹션의 계산값 표시는 jsdom에서 `normal`이고, 실제 브라우저 값은 읽지 못했다 |
+| 4 | `outline-hidden`과 forced-colors | 일부 확인 | `theme-reset.test.ts`의 forced-colors 블록 사례 통과. Windows 고대비 모드 수동 확인(선택)은 하지 않았다 — 공백 |
+| 5 | Noto Sans KR Variable `tnum` | 판정 장치 완성 · 브라우저 판정은 공백 | jsdom 판정 "고정폭 숫자: 측정 불가"(너비 0). `classifyTnum` EC-28 10개 사례 통과, 글꼴 로드 뒤 다시 재는 경로를 대역 너비로 확인("측정 불가" → "지원", "40.00px"). 실제 브라우저 판정은 읽지 못했다(아래 공백). 대체 글꼴 결정은 SPEC-UI-002 |
+| 6 | react-day-picker 10 API | 확인 | `calendar.test.tsx` 18개·`date-time-picker.test.tsx` 23개 통과 |
+| 7 | cmdk + Popover의 ARIA | 확인 | `combobox.test.tsx` 37개 통과 |
+
+#### AC-UI-001-03 게이트 실행 단계 기록(M6)
+
+- 실행 단계: 처음 커밋을 시도했을 때(16:22:59, calendar 표지 변경만 스테이징) pre-commit 훅이 `quality gate failed: npm test`로 막았다. 출력에 `> vitest run --passWithNoTests`, `Test Files 1 failed | 37 passed (38)`가 있었고, 실패 사례는 스테이징하지 않은 작업 트리의 design-rules 새 사례(아직 없던 `VerificationSection.tsx`를 읽음)였다(`m6-gate-precommit-1-blocked.txt`). 그래서 게이트는 이 트리에서 테스트 단계를 실제로 돌리고, 스테이징한 내용이 아니라 **작업 트리 전체**를 검사한다. M1~M5의 "실행 단계를 알 수 없음"과 달리 테스트 단계는 이번에 보였다. 커밋은 만들어지지 않았고, 테스트를 통과시킨 뒤 같은 내용을 다시 커밋했다. 훅 우회는 없다.
+- 통과할 때는 출력이 없다: 직접 실행 `moai gate; echo "gate exit=$?"` → `gate exit=0`, 0줄(`final-moai-gate.txt`, `CLAUDE_PROJECT_DIR` 미설정이라 현재 폴더인 이 워크트리를 검사). 그래서 타입·린트 단계를 돌렸는지, 돌렸다면 어느 `tsc`를 썼는지는 알 수 없다 — 공백.
+- TypeScript: `command -v tsc` → `/mnt/c/Program Files/nodejs/tsc`, 그 `tsc --version` → `Version 6.0.3`(프로젝트 밖). `npx tsc --version` → `Version 5.9.3`. 게이트는 프로젝트 밖 도구 때문에 실패하지 않았다.
+- 판정 근거: AC-UI-001-03에 따라 같은 트리에서 따로 실행한 위 E.1 표의 명령들.
+
+#### TDD 증거
+
+- 허용 구역 규칙: RED `m6-red-allow-zone.txt`(`Tests 3 failed | 20 passed (23)` — 다른 파일의 표시 거부, 끝 표시 없는 구역, 실제 VerificationSection의 구역 형태(ENOENT)). 규칙 구현 뒤 `m6-green-allow-zone-1.txt`(`1 failed | 22 passed` — 남은 하나는 섹션 파일이 없어서).
+- 검증 섹션·`classifyTnum`·h2 9개: 첫 RED `m6-red-verification-section.txt`(`Failed to resolve import "./sections/VerificationSection"`). 동작 없는 뼈대 모듈로 사례별 RED `m6-red-verification-section-rows.txt`(`Tests 16 failed | 9 passed (25)` — h2 9개, jsdom 판정 문구, 시연 상자, 자간, 포커스, 글꼴 로드 뒤 재측정, EC-28 10개). 구현 뒤 GREEN `m6-green-verification-1.txt`(`Tests 48 passed (48)`, preview + design-rules).
+- 목차: RED `m6-red-toc.txt`(`Unable to find an accessible element with the role "navigation" and name "목차"`), GREEN `m6-green-toc.txt`(`Tests 49 passed (49)`).
+- calendar 표지(K11): 테스트 내용은 바꾸지 않아 RED가 없다. 바꾼 뒤 `m6-calendar-retag.txt` `Tests 18 passed (18)`(M4 기록과 같은 수).
+- REFACTOR: Biome 서식만 적용했다(`noConfusingVoidType` 경고 1건은 테스트의 Promise 해결 함수 타입을 `() => void`로 바꿔 없앴다).
+
+#### 실행 시간(K9·K10)
+
+- `npx vitest run --reporter=verbose`(`final-verbose.txt`): `Tests 551 passed (551)`, 23.88s. 시작 16:30:30 부하 평균 15.93, 끝 16:30:55 18.77(CPU 6개, 재시작 뒤 다른 저장소 세션의 부하).
+- 무거운 사례: 공개 이름 40개 비교 7536ms(제한 20초), PreviewPage 전체 axe 라이트·다크 5565ms(제한 20초 — 9번째 섹션과 목차를 더한 뒤), date-time-picker "AC-UI-001-11 열자마자 오늘에 포커스…" 1617ms(기본 5초). 모두 15초 아래라 제한을 바꾸지 않았다.
+- 전체 스위트 `npm test` 23.04s(게이트 제한 120s).
+
+#### 계획과 다른 점
+
+- `src/ui-core/calendar.test.tsx`: AC-UI-001-11 표지 두 개(describe 이름과 키 이동 사례 이름)를 AC-UI-001-21로 바꿨다(2026-11-09 사용자 결정, 계획 산출물은 그대로). 이제 `grep -l 'AC-UI-001-11' src/ui-core/*.test.tsx | wc -l` → `16`이고, 파일 목록이 acceptance.md AC-UI-001-11의 16개와 같다(`m6-ac11-files.txt`, `diff` exit 0). 사전 점검 기준선은 17(`baseline-ac11-files.txt`).
+- `design-rules.test.ts`: 허용 구역 규칙을 "VerificationSection.tsx에서만"으로 좁히면서 기존 자기 검사 표본을 고쳤다. 공통 표본(`src/ui-core/sample.tsx`)에서 허용 구역 줄을 빼고, 구역 표본은 VerificationSection 경로로 옮겼다(구역 바로 앞·뒤의 `bg-rose-700`을 잡고 구역 안에서는 `dark:`만 잡음). 새 사례 3개: 다른 파일의 표시 거부, 끝 표시 없는 구역 거부, 실제 파일의 구역이 금지 클래스 5개를 담은 문자열 하나인지. 표시 줄 자체는 예전처럼 검사에서 빠진다.
+- `showcase.ts`: 계획의 "전시 목록 29개 완성"은 M5에서 이미 끝나 목록은 바꾸지 않았고, "마일스톤마다 더한다"는 머리 주석만 완성 상태로 고쳤다.
+- 테스트별 제한 시간은 바꾸지 않았다(위 실행 시간).
+- `classifyTnum`의 0 검사는 `!(너비 > 0)`로 썼다. EC-28 표의 0과 같고, 측정에서 나올 수 없는 음수·NaN도 "측정 불가"로 둔다(표 밖 기대값은 테스트하지 않았다).
+- `moai spec lint`가 `No findings`를 냈다. §A.9 D23의 `StatusGitConsistency` 경고는 이번 실행에서 나오지 않았다.
+
+#### 공백(미검증)
+
+- 실제 브라우저의 `tnum` 판정과 측정값, 자간 계산값(E.4 3·5): 읽지 못했다. Windows의 Chrome을 헤드리스로 쓰려 했으나, 확인용 `chrome.exe --version` 호출이 새 프로세스를 띄우지 않고 실행 중인 사용자 Chrome 세션으로 넘어갔다(CP949 출력 "기존 브라우저 세션에서 열고 있습니다"). 사용자 브라우저에 창이 열렸을 수 있다. 그 뒤로 브라우저 시도는 하지 않았다. `npm run dev`로 띄운 브라우저에서 검증 섹션의 "고정폭 숫자: …" 문구와 px 값, 자간 계산값을 읽어 이 기록에 남겨야 한다(사용자 검토).
+- Windows 고대비 모드 수동 확인(선택, E.4 4).
+- `moai gate`가 통과할 때 실행한 단계와 쓴 `tsc`(테스트 단계만 실패 출력으로 보였다).
+- M3~M5와 같은 브라우저 전용 항목(Toast 스와이프 닫기, 팝업 위치·애니메이션, 스크린 리더 낭독)은 이번에도 확인하지 않았다.
+
+#### 커밋
+
+- `ff15f1a` calendar 키 이동 사례의 표지를 AC-UI-001-21로 바로잡음.
+- `3317915` 검증 섹션과 classifyTnum, 허용 구역 규칙.
+- `747acce` 미리보기 목차와 전시 목록 완성 주석.
+- 이 기록 커밋의 SHA는 커밋이 만들어진 뒤에 정해지므로 오케스트레이터가 빨리 감기 통합 뒤에 채운다(§E.3 `run_commit_sha`).
 
 ## §E.3 Run-phase Audit-Ready Signal
 
-_<pending run-phase — manager-develop가 기록한다>_
+```yaml
+run_complete_at: "2026-11-09T16:34:44+09:00"
+run_commit_sha: "pending-backfill — last M6 commit; the orchestrator fills it after the ff-merge"
+run_status: audit-ready
+ac_pass_count: 25          # AC-03·12·14·23은 이름 붙인 공백이 있는 통과(M6 기록 '공백')
+ac_fail_count: 0
+preserve_list_post_run_count: "n/a — plan.md §A.9의 보존 목록은 경로 목록이 아니라 기준선 기록이다. M6은 ui-core 컴포넌트·공개 이름 40개·기존 미리보기 섹션 8개·setup.ts·vite.config.ts 커버리지 임계값·deploy.sh를 바꾸지 않았다(git diff --stat 65c4dfd..747acce: 6개 파일)"
+l44_pre_commit_fetch: "n/a — the orchestrator pushes after verification (progress.md §A.10)"
+l44_post_push_fetch: "n/a — the orchestrator pushes after verification (progress.md §A.10)"
+new_warnings_or_lints_introduced: 0   # npm run lint: Checked 94 files, No fixes applied; Biome 무시 주석 추가 0
+cross_platform_build: "n/a — TypeScript web app; npm run build exit code instead (exit 0, ✓ built in 672ms)"
+total_run_phase_files: 157   # git diff --stat 287134a..747acce → 157 files changed, 17673 insertions(+), 7662 deletions(-)
+m1_to_mN_commit_strategy: "per-unit commits in temporary worktrees, ff-only integration into main by the orchestrator (progress.md §A.10)"
+```
 
 ## §E.4 Sync-phase Audit-Ready Signal
 
