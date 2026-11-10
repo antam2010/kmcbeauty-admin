@@ -359,7 +359,9 @@ describe("AC-UI-002-05 (다) 응답을 기다리지 않는 로그아웃", () => 
       // 타이머를 전혀 흘리지 않은 채 판정한다
       expect(getAccessToken()).toBeNull();
       expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
-      // 요청은 그래도 서버에 닿는다(시험이 끝나기 전에 처리기까지 간 것을 확인한다)
+      // 판정은 위에서 끝났다. 요청은 그래도 서버에 닿는다 — 처리기까지 간 것을 확인한다.
+      // 남은 응답 처리는 진짜 타이머로 마치게 한다(가짜 타이머로 두면 500 응답 뒤 정리가 약 4초 멈춘다 — 실측).
+      vi.useRealTimers();
       await reached;
       const sent = log.requests.filter((r) => r.path === "/auth/logout");
       expect(sent).toHaveLength(1);
