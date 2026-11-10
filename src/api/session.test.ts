@@ -578,3 +578,63 @@ describe("감사 결함 N1 — 부팅 갱신이 도는 동안 로그인", () => 
     expect(listener).toHaveBeenCalledTimes(1);
   });
 });
+
+// ── 감사 결함 N2: 다른 세대의 진행 중 갱신에 합류 ──────────────────────────────────────────
+// 앞 세션에서 시작된 갱신이 아직 돌 때 새 세션의 요청이 401을 받으면, 그 낡은 갱신에 합류하지 않고 자기 갱신을 한다(M2 감사 탐침 P9).
+
+describe("감사 결함 N2 — 새 세션의 401이 이전 세대 갱신에 합류", () => {
+  it("P9: 로그인 뒤 새 토큰 요청의 401은 앞 세대의 진행 중 갱신을 기다리지 않고 자기 갱신으로 한 번 다시 보낸다", async () => {
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let markReached: () => void = () => undefined;
+    const reached = new Promise<void>((resolve) => {
+      markReached = resolve;
+    });
+    let refreshCalls = 0;
+    server.use(
+      refreshHandler(BASE, async () => {
+        refreshCalls += 1;
+        if (refreshCalls === 1) {
+          // 첫 갱신(앞 세대, 부팅 갱신)은 풀어 줄 때까지 응답하지 않는다
+          markReached();
+          await gate;
+          return HttpResponse.json(loginBody("access-old", "refresh-old"));
+        }
+        return HttpResponse.json(loginBody("access-10", "refresh-10"));
+      }),
+      loginHandler(BASE, () => HttpResponse.json(loginBody("access-9", "refresh-9"))),
+      meAcceptsOnly("access-10"),
+    );
+    const expired = vi.fn<() => void>();
+    const client = createApiClient({
+      baseUrl: BASE,
+      fetch: log.fetch,
+      onSessionExpired: expired,
+      onShopNotSelected: () => undefined,
+    });
+
+    const boot = ensureSession();
+    await reached;
+    await login(client, { email: "owner@kmc.test", password: "pw" });
+    const pendingMe = client.GET("/users/me");
+    try {
+      // 고치기 전에는 앞 세대 갱신(풀리지 않음)에 합류해 두 번째 갱신이 생기지 않는다
+      await vi.waitFor(() => expect(refreshCalls).toBe(2), { timeout: 1000 });
+    } finally {
+      release();
+    }
+    const me = await pendingMe;
+    await boot;
+
+    expect(me.response.status).toBe(200);
+    expect(log.count("POST", "/auth/refresh")).toBe(2);
+    expect(log.requests.filter((r) => r.path === "/users/me").map((r) => r.authorization)).toEqual([
+      "Bearer access-9",
+      "Bearer access-10",
+    ]);
+    expect(getAccessToken()).toBe("access-10");
+    expect(expired).not.toHaveBeenCalled();
+  });
+});

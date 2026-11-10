@@ -10,6 +10,8 @@ const REFRESH_LOCK = "kmc-admin-refresh";
 
 let accessToken: string | null = null;
 let inflight: Promise<boolean> | null = null;
+// inflight를 시작한 세션 세대. 다른 세대의 호출은 합류하지 않는다(탭 사이 순서는 navigator.locks가 그대로 줄 세운다).
+let inflightGeneration = -1;
 // 세션 세대: clearSession(로그아웃·갱신 401)과 startSession(로그인)마다 오른다. 갱신 성공은 올리지 않는다.
 // 갱신과 요청은 시작할 때의 세대를 기억하고, 끝났을 때 세대가 바뀌었으면 그 결과를 세션에 반영하지 않는다(감사 결함 F1·F2).
 let generation = 0;
@@ -109,15 +111,18 @@ async function refreshAcrossTabs(started: number): Promise<boolean> {
 }
 
 // @MX:WARN: [AUTO] single-flight 갱신 — 진행 중인 Promise 하나를 동시에 난 401이 함께 기다린다. 시작할 때의 세션 세대를 잡아 두고, 끝났을 때 세대가 바뀌었으면(로그아웃, 또는 로그인이 새 세대를 시작함) 결과를 버리고 false다.
-// @MX:REASON: inflight를 지우는 시점(갱신이 끝난 finally)을 앞당기면 겹친 갱신이 생기고, 백엔드가 리프레시 토큰을 바꾸므로(남은 수명 절반 이하) 한쪽 토큰이 무효가 된다. 탭 사이는 navigator.locks로 줄 세운다(없으면 탭 안 single-flight만, EC-03). 세대 확인을 빼면 로그아웃 뒤 늦게 온 갱신 응답이 토큰을 되살리거나 새 로그인 토큰을 덮어쓴다(감사 결함 F1). 로그인도 startSession으로 세대를 올리므로, 로그인 전에 시작된 부팅 갱신의 늦은 401·200이 새 세션의 토큰을 지우거나 이전 사용자 토큰으로 바꾸지 않는다(감사 결함 N1).
+// @MX:REASON: inflight를 지우는 시점(갱신이 끝난 finally)을 앞당기면 겹친 갱신이 생기고, 백엔드가 리프레시 토큰을 바꾸므로(남은 수명 절반 이하) 한쪽 토큰이 무효가 된다. 탭 사이는 navigator.locks로 줄 세운다(없으면 탭 안 single-flight만, EC-03). 세대 확인을 빼면 로그아웃 뒤 늦게 온 갱신 응답이 토큰을 되살리거나 새 로그인 토큰을 덮어쓴다(감사 결함 F1). 로그인도 startSession으로 세대를 올리므로, 로그인 전에 시작된 부팅 갱신의 늦은 401·200이 새 세션의 토큰을 지우거나 이전 사용자 토큰으로 바꾸지 않는다(감사 결함 N1). 합류도 같은 세대의 갱신에만 한다 — 앞 세대 갱신에 합류하면 새 세션의 401이 그 false를 받아 갱신 없이 끝난다(감사 결함 N2).
 /** 쿠키로 액세스 토큰을 갱신한다. 200 → true, 401 → 세션 삭제 후 false, 도중에 로그아웃 → 아무것도 저장하지 않고 false, 그 밖의 실패 → ApiError를 던짐(세션 유지). */
 export function refreshSession(): Promise<boolean> {
-  if (inflight) return inflight;
-  const run = refreshAcrossTabs(generation);
+  // 같은 세대에서 시작된 갱신에만 합류한다. 앞 세대의 갱신은 끝나도 false라(세대 확인) 새 세션의 401을 살리지 못한다(감사 결함 N2).
+  if (inflight && inflightGeneration === generation) return inflight;
+  const started = generation;
+  const run = refreshAcrossTabs(started);
   const current = run.finally(() => {
     if (inflight === current) inflight = null;
   });
   inflight = current;
+  inflightGeneration = started;
   return current;
 }
 
