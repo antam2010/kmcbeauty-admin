@@ -1,5 +1,11 @@
+import { cva } from "class-variance-authority";
 import { type ComponentProps, type ReactNode, useEffect, useState } from "react";
 import { cn } from "./cn";
+
+const skeletonVariants = cva("bg-muted motion-safe:animate-pulse", {
+  variants: { variant: { block: "rounded-control", text: "h-4 rounded-chip" } },
+  defaultVariants: { variant: "block" },
+});
 
 export interface SkeletonProps extends ComponentProps<"div"> {
   variant?: "block" | "text";
@@ -8,15 +14,7 @@ export interface SkeletonProps extends ComponentProps<"div"> {
 /** 내용 모양 자리표시. 장식이라 보조 기술에서 숨기고, 깜빡임은 감속 모드에서 멈춘다(REQ-UI-001-013). */
 export function Skeleton({ variant = "block", className, ...props }: SkeletonProps) {
   return (
-    <div
-      {...props}
-      aria-hidden="true"
-      className={cn(
-        "bg-muted motion-safe:animate-pulse",
-        variant === "text" ? "h-4 rounded-chip" : "rounded-control",
-        className,
-      )}
-    />
+    <div {...props} aria-hidden="true" className={cn(skeletonVariants({ variant }), className)} />
   );
 }
 

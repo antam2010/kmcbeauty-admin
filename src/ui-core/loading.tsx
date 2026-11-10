@@ -1,6 +1,17 @@
+import { cva } from "class-variance-authority";
 import { LoaderCircle } from "lucide-react";
 import type { ComponentProps } from "react";
 import { cn } from "./cn";
+
+const loadingVariants = cva("inline-flex items-center gap-2 text-muted-foreground", {
+  variants: { size: { sm: "text-body-sm", md: "text-body" } },
+  defaultVariants: { size: "md" },
+});
+
+const spinnerVariants = cva("shrink-0 motion-safe:animate-spin", {
+  variants: { size: { sm: "size-4", md: "size-5" } },
+  defaultVariants: { size: "md" },
+});
 
 export interface LoadingProps extends Omit<ComponentProps<"div">, "children"> {
   size?: "sm" | "md";
@@ -19,18 +30,8 @@ export function Loading({
   ...props
 }: LoadingProps) {
   return (
-    <div
-      {...props}
-      role="status"
-      className={cn(
-        "inline-flex items-center gap-2 text-muted-foreground",
-        size === "sm" ? "text-body-sm" : "text-body",
-        className,
-      )}
-    >
-      <LoaderCircle
-        className={cn("shrink-0 motion-safe:animate-spin", size === "sm" ? "size-4" : "size-5")}
-      />
+    <div {...props} role="status" className={cn(loadingVariants({ size }), className)}>
+      <LoaderCircle className={spinnerVariants({ size })} />
       <span>{label}</span>
     </div>
   );
