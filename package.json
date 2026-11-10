@@ -21,7 +21,8 @@
     "api:export": "node scripts/export-openapi.mjs",
     "api:types": "openapi-typescript openapi/openapi.json -o src/api/schema.d.ts",
     "api:sync": "npm run api:export && npm run api:types",
-    "api:check": "node scripts/export-openapi.mjs --check"
+    "api:check": "node scripts/export-openapi.mjs --check",
+    "check:dist": "node scripts/check-dist.mjs"
   },
   "dependencies": {
     "@fontsource-variable/noto-sans-kr": "5.3.1",
