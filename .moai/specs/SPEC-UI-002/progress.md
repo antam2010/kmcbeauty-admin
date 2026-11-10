@@ -549,6 +549,188 @@ harness: thorough
 
 - 다음 마일스톤은 M3다. 착수 결정대로 독립 평가는 M4·M8 직후에 한다.
 
+### M3 — ui-core 후속 과제 15건과 새 공개 컴포넌트 4개 (2026-11-10, manager-develop, cycle_type=tdd)
+
+- M3 시작 SHA: 7677aa7(작업 트리 브랜치 `worktree-agent-adbe3c628019ad700`, 밀어 올리지 않음). 코드 트리는 aacd03f와 같다
+- 증거 디렉터리: `.moai/state/verify/f64b7914-6a56-4436-86f6-7a9eef484222/m3/`(작업 트리에서 기록)
+- 시작 기준선(7677aa7): typecheck exit=0, lint exit=0(125개 파일), `npm test` 53 files / 710 tests passed(Duration 16.82s, 직후 load average 12.56) — `preflight-*.txt`. AC-23 기준선 `m3-baseline.json`: 시험 파일 53개·시험 710개 전부 통과(첫 M3 커밋 전에 기록)
+- M3 범위: plan.md §F M3. 후속 과제 1·2·4·6~17, 새 컴포넌트 4개와 Calendar 범위 모드, 미리보기 전시, 잠금 44·33. 패키지 추가 없음(기존 `@radix-ui/react-dialog`·`@radix-ui/react-popover`·`react-day-picker` 재사용), 라우터·화면·폼 훅·CSP·deploy.sh 손대지 않음
+
+#### 사전 점검
+
+| 점검 | 결과 |
+|---|---|
+| 브랜치·HEAD·상태 | `worktree-agent-adbe3c628019ad700`, 7677aa7, 깨끗함. 작업 트리에 `node_modules`가 없어 `npm ci`(281개, exit 0) |
+| grep 판본 | `/usr/bin/grep --version` → `grep (GNU grep) 3.11`. 이 셸의 맨 이름 `grep`은 셸 함수(ugrep 7.8.4)라 증거용 grep은 모두 `/usr/bin/grep`으로 불렀다 |
+| react-day-picker 10 범위 API | `mode="range"`, `onSelect(selected, triggerDate, modifiers, e)`. 시작만 고른 상태(`to` 없음)에서는 라이브러리 `range_start` 수정자가 붙지 않아(첫 GREEN 실행에서 실측) 시작·끝·사이 수정자를 직접 계산했다 |
+| Radix Popover 1.3.1 트리거 | `aria-controls`는 열렸을 때만 붙는다(닫힌 상태에서 없는 id를 가리키지 않음, 실측) |
+
+#### M3 시작 기록(acceptance.md §3.10 항목 7·8·11, `m3-start-record.txt`)
+
+7677aa7 트리를 `git grep`으로 세고, 같은 값을 작업 트리에서 `/usr/bin/grep`으로 다시 확인했다(세 문자열이 든 줄은 결함 수정 1·2·4가 바꾸지 않았다).
+
+| 항목 | 문자열·줄 | 시작 개수 |
+|---|---|---|
+| 7 포커스 링 | `focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring` | 시험 밖 12개 파일 13곳(breadcrumb·button·calendar·checkbox·date-time-picker·filter·input·select(2)·sidebar·table·tabs·toast). 이어 붙인 문자열을 담은 시험 파일 0개. 세 클래스를 나눠 단언하는 시험 파일 18개 |
+| 8 선택 상태 | `bg-primary-subtle font-semibold text-primary-subtle-foreground hover:bg-primary-subtle hover:text-primary-subtle-foreground forced-colors:border-2` | 시험 밖 3개 파일 각 1곳(filter·pagination·sidebar), 시험 파일 0개 |
+| 11 Pagination 맨 숫자 | `src/ui-core/pagination.tsx:25:  if (page >= pageCount - 3) {` | 1줄 |
+| 16 `size="md"` 호출부 | `src/preview/sections/OverlaysSection.tsx:146:          <SizeDemo size="md" label="기본 대화상자" />` | 1곳(+ `modal.tsx` 기본값·타입, `showcase.ts`·`PreviewPage.test.tsx` 전시 표의 `"md"`) |
+
+#### 커밋
+
+| SHA | 제목 |
+|---|---|
+| fcad41c | fix(SPEC-UI-002): M3 Modal을 밖에서 닫으면 버리기 확인 초기화 |
+| c67830d | fix(SPEC-UI-002): M3 DateTimePicker가 간격 밖 시각을 바꾸지 않고 보이게 |
+| ae80cc3 | fix(SPEC-UI-002): M3 DefaultLink 링크 스킴 허용 목록 |
+| a0be727 | refactor(SPEC-UI-002): M3 Combobox 새 값 만들기 조건을 canCreate로 합침 |
+| 4e63143 | refactor(SPEC-UI-002): M3 포커스 링·선택 상태 클래스를 internal/class-names.ts로 |
+| 75a4495 | refactor(SPEC-UI-002): M3 외부 저장소와 포커스 복귀를 ui-core internal로 |
+| da7e0fc | test(SPEC-UI-002): M3 setup.ts의 canvas 빈 구현과 저장소 초기화 |
+| 9010c0c | refactor(SPEC-UI-002): M3 Search 병합 ref를 useCallback으로 메모 |
+| 00dc75e | refactor(SPEC-UI-002): M3 Pagination 끝 묶음 판정의 맨 숫자 3을 이름 붙은 상수로 |
+| 78544a8 | refactor(SPEC-UI-002): M3 Loading·Skeleton 크기·변형을 cva로 |
+| 2016918 | refactor(SPEC-UI-002): M3 ToastTone을 공용 Tone에서 파생 |
+| e6c40ac | refactor(SPEC-UI-002): M3 Modal 중간 크기 이름 md를 default로 |
+| 5289453 | test(SPEC-UI-002): M3 PreviewPage describe 제목의 AC 표지를 풀어 씀 |
+| b480808 | feat(SPEC-UI-002): M3 Calendar 범위 모드와 DateRange 타입 |
+| 120fd72 | feat(SPEC-UI-002): M3 NumberInput 공개 컴포넌트 |
+| b051866 | feat(SPEC-UI-002): M3 Popover 공개 컴포넌트 |
+| abcfcb1 | feat(SPEC-UI-002): M3 Drawer 공개 컴포넌트 |
+| 153f9ad | feat(SPEC-UI-002): M3 DateRangePicker 공개 컴포넌트와 잠금 44·33 |
+| 04712ec | feat(SPEC-UI-002): M3 미리보기 전시에 새 컴포넌트 4개와 Calendar 범위 모드 |
+| c4dec3f | docs(SPEC-UI-002): M3 ui-core internal 공용 상수·훅에 @MX:ANCHOR |
+| 4c51403 | docs(SPEC-UI-002): M3 DateRangePicker 주석에서 날짜 라이브러리 이름을 뺌 |
+
+마지막 코드 커밋(판정 HEAD)은 4c51403이다. 모든 커밋이 pre-commit `moai gate`를 우회 없이 통과했다.
+
+#### 인수 기준(판정 HEAD 4c51403)
+
+**AC-UI-002-23 (가) — §3.10 후속 과제 항목별 증거**
+
+| # | 판정 | 명령 | 관찰 |
+|---|---|---|---|
+| 1 | PASS | `npx vitest run src/ui-core/modal.test.tsx` | 재현 시험 "버리기 확인을 띄운 채 부모가 open=false → open=true로 바꾸면 다시 열린 Modal에 버리기 확인이 없다" 고치기 전 실패(`red-01-modal.txt`: `expected <div role="alertdialog" …> to be null`), 고친 뒤 통과 |
+| 2 | PASS | `npx vitest run src/ui-core/date-time-picker.test.tsx` | 값 14:10·30분 간격: 트리거 "2026. 10. 29. (목) 14:10", 시간 칸 "14:10" `aria-selected="true"`, 14:00·14:10·14:30 순서, `onValueChange` 0회. 고치기 전 실패(`red-02-datetime.txt`: 시간 칸 글자 없음) |
+| 4 | PASS | `npx vitest run src/ui-core/breadcrumb.test.tsx` | 표본 6개(`javascript:alert(1)`, `JavaScript:alert(1)`, ` javascript:alert(1)`, `java`TAB`script:alert(1)`, `data:text/html,x`, `mailto:a@b.c`) `href="#"`·경고 각 1번, 4개(`/customers`, `customers`, `https://example.com`, `http://example.com`) 그대로·경고 0. 고치기 전 6 failed(`red-04-link.txt`). 추가: URL로 읽히지 않는 `http://[`도 `#` |
+| 6 | PASS | `/usr/bin/grep -c 'canCreate' src/ui-core/combobox.tsx` | `3`, Combobox 시험 37 passed |
+| 7 | PASS | `/usr/bin/grep -rl --exclude='*.test.*' '<포커스 링 문자열>' src/ui-core` | `src/ui-core/internal/class-names.ts` 한 줄(exit 0). 시험은 원래부터 렌더링된 세 클래스를 단언하고 있어 기대값·시험을 바꾸지 않았다 |
+| 8 | PASS | 같은 grep, 선택 상태 문자열 | `src/ui-core/internal/class-names.ts` 한 줄(exit 0) |
+| 9 | PASS | `ls src/ui-core/internal`, `/usr/bin/grep -l 'internal/external-store' src/ui-core/toast.tsx src/ui-core/confirm-dialog.tsx`, `/usr/bin/grep -rn '@MX:WARN' src/ui-core/toast.tsx src/ui-core/confirm-dialog.tsx src/ui-core/internal/external-store.ts` | `class-names.ts external-store.ts use-restore-focus.ts`; 두 파일 모두 출력; WARN은 `internal/external-store.ts:13` 한 곳(+REASON :14), 옛 두 자리에는 없음 |
+| 10 | PASS | `/usr/bin/grep -nE 'useCallback\|useMemo' src/ui-core/search.tsx` | 2줄(:2 가져오기, :39 `const mergedRef = useCallback(`). 새 시험 "다시 그려도 병합 ref 콜백이 새 함수로 바뀌지 않는다" — 고치기 전 `expected "vi.fn()" to be called 1 times, but got 5 times`(`red-10-search-ref.txt`) |
+| 11 | PASS | `/usr/bin/grep -n 'TAIL_RUN_START' src/ui-core/pagination.tsx` | 전 `25:  if (page >= pageCount - 3) {` → 후 `13:const TAIL_RUN_START = EDGE_RUN - 2;`, `28:  if (page >= pageCount - TAIL_RUN_START) {`. Pagination 시험 통과 |
+| 12 | PASS | `/usr/bin/grep -c "Not implemented: HTMLCanvasElement" final-qg03-test.txt` | `0`(기준선 `preflight-test.txt`는 5) |
+| 13 | PASS | `/usr/bin/grep -c 'cva(' src/ui-core/loading.tsx src/ui-core/skeleton.tsx` | `loading.tsx:2`, `skeleton.tsx:1`, 기존 시험 통과 |
+| 14 | PASS | `/usr/bin/grep -c 'act(' src/test/setup.ts`, `/usr/bin/grep -c "not wrapped in act" final-qg03-test.txt` | `1`, `0` |
+| 15 | PASS | `npm run typecheck` + `toast.test.tsx` | `expectTypeOf<ToastTone>().toEqualTypeOf<Exclude<Tone, "neutral">>()` typecheck exit 0·시험 통과. 고치기 전 typecheck 실패(`red-15-toast-tone-typecheck.txt`: TS2459 내보내지 않음) |
+| 16 | PASS | `/usr/bin/grep -rn 'size="md"' src --include='*.tsx'; echo "exit=$?"` | 출력 없음 `exit=1`. Modal 시험이 `"default"`를 단언하고 `@ts-expect-error`로 `"md"`가 타입 오류임을 확인. 옛 modal.tsx로 돌린 typecheck가 실패(`red-16-modal-size-typecheck.txt`: TS2322·TS2344·TS2578) |
+| 17 | PASS | `/usr/bin/grep -rn 'AC-UI-001-06·AC-UI-001-14' src/preview/PreviewPage.test.tsx` | `302:describe("검증 섹션(AC-UI-001-06·AC-UI-001-14, EC-28, plan.md §E.4)", () => {` |
+
+**AC-UI-002-23 (나)(다)·기준선 비교**
+
+| AC | 판정 | 명령 | 관찰 |
+|---|---|---|---|
+| (나) 공개 이름 44 | PASS | `npx vitest run src/test/design-rules.test.ts` | "@/ui-core의 런타임 내보내기가 공개 이름 44개와 정확히 같다" 통과. `PUBLIC_NAMES`가 §3.6의 44개와 글자·순서까지 같은지 node로 따로 비교 → `44 44 true` |
+| (나) 컴포넌트 파일 33 | PASS | 같은 시험 | "정해진 33개와 정확히 같다" 통과, `BASE_LIBRARIES`에 `popover.tsx`·`date-range-picker.tsx`→`@radix-ui/react-popover`, `drawer.tsx`→`@radix-ui/react-dialog` |
+| (나) Modal 크기 값 | PASS | `/usr/bin/grep -n 'size?: \|default: "max-w' src/ui-core/modal.tsx` | `32:  size?: "sm" \| "default" \| "lg";`, `18:        default: "max-w-dialog-md",` |
+| (다) 키보드 계약·axe 0 | PASS | `npx vitest run src/ui-core/date-range-picker.test.tsx src/ui-core/drawer.test.tsx src/ui-core/popover.test.tsx src/ui-core/calendar.test.tsx` | 4 files / 57 tests passed. DateRangePicker 10(Enter·Space 열기, 화살표 이동, Enter 시작·Enter 끝 → 1회 `{ from, to }`·닫힘·트리거 포커스, Esc 값 유지·트리거 포커스, 시작·끝·사이 단서, 프리셋, axe), Drawer 9(포커스 안으로, Tab·Shift+Tab 가두기, Esc·스크림·닫기 버튼, 트리거로 복귀, role=dialog+제목, motion-safe, axe), Popover 10(Enter·Space, Esc+복귀, 바깥 클릭, aria-expanded·aria-controls, motion-safe, axe), Calendar 범위 10 |
+| (다) 전시 33 | PASS | `npx vitest run src/preview/PreviewPage.test.tsx` | 26 passed. "전시 목록 표는 33개 컴포넌트" + 라이트·다크 전시 요소 빠짐 0·axe 0 |
+| 기준선 비교(§4.1 AC-23) | PASS | §4.1 블록, 증거 경로를 작업 트리 상대 경로로 바꿔 작업 트리 루트에서 실행 | `baseline ok: 710 tests kept or listed`, `exit=0`(`ac23-compare.txt`). `m3-after.json`(4c51403): 시험 파일 57개·시험 783개 전부 통과 |
+| 묶음 | PASS | `npx vitest run src/ui-core src/test/design-rules.test.ts src/preview/PreviewPage.test.tsx` | 36 files / 542 tests passed |
+| AC-UI-002-22 (마)(바)(사)+EC-23+EC-24 | PASS | `npx vitest run src/ui-core/number-input.test.tsx` | 18 passed. "1234567" → 표시 "1,234,567"·값 1234567, "₩12,000" 붙여넣기 → 12000, 비우기 → null, `1,234|,567`+Backspace → "123,567"·커서 3, `max=1000`에 1500 → 값 1500·`aria-invalid="true"`·설명 "1,000원 이하로 입력해 주세요.", 위·아래 화살표 값 변화 없음, `inputmode="numeric"`, axe 0 |
+
+#### 품질 게이트(판정 HEAD 4c51403, grep은 `/usr/bin/grep` GNU grep 3.11)
+
+| QG | 판정 | 관찰 |
+|---|---|---|
+| QG-01 | PASS | typecheck exit=0 |
+| QG-02 | PASS | lint exit=0, 136개 파일, 새 지적 0건(기준선 125개 파일 0건) |
+| QG-03 | PASS | 57 files / 783 tests passed, Duration 13.67s, 직후 uptime load average 17.88, 13.39, 10.26(c4dec3f에서는 11.89s, load 10.97) |
+| QG-04 | PASS | `VITE_API_BASE_URL=https://api-beauty.dongri.kr npm run build` exit=0, `dist/index.html` 2026-11-10 14:57:44. 빌드 CSS에 상수로 옮긴 클래스(`focus-visible:outline-offset-2`, `bg-primary-subtle`)와 새 클래스(`rounded-s-control`, `forced-colors:outline-1`, `slide-in-from-left`)가 있음 |
+| QG-05 | PASS | 기준 80/80/80/80, 줄 99.64 · 문장 98.55 · 함수 99.35 · 분기 95.94. 새 파일은 아래 표 |
+| QG-06 | PASS | 39 passed(sync 6 + contrast 33) |
+| QG-07 | PASS | 22 passed |
+| QG-08 | PASS | 27 passed(공개 이름 44·파일 33) |
+| QG-09 | PASS | `moai gate` → `gate exit=0`, pwd=작업 트리, `CLAUDE_PROJECT_DIR=<unset>`, HEAD 4c51403(`final-qg09-gate.txt`) |
+| QG-10 | PASS | `moai spec lint .moai/specs/SPEC-UI-002/spec.md` exit=0, "No findings" |
+| QG-11 | PASS | 경계 검사 exit=1·stderr 0바이트, 자체 확인 `2`(양성·라벨 검사는 M6) |
+| QG-12 | PASS | 지정자 검사 exit=1·stderr 0바이트, 자체 확인 `2`, `package.json` 키 검사 exit=0 |
+| QG-13 | PASS | `deploy-guard.test.ts` 5 passed |
+| QG-14 | PASS | 9 passed |
+| QG-15 | PASS | 26 passed(전시 33개) |
+| QG-16 | PASS | `schema-sync.test.ts` 2 passed |
+
+새 파일·크게 바뀐 파일 커버리지(`coverage/coverage-summary.json`, `final-qg05-new-files.txt`, 줄·문장·함수·분기)
+
+| 파일 | 줄 | 문장 | 함수 | 분기 |
+|---|---|---|---|---|
+| `date-range-picker.tsx` | 100 | 100 | 100 | 100 |
+| `number-input.tsx` | 97.29 | 97.82 | 100 | 97.82(35행 `caretAfterDigits`의 끝까지 못 찾은 경우) |
+| `drawer.tsx` | 100 | 100 | 100 | 100 |
+| `popover.tsx` | 100 | 100 | 100 | 100 |
+| `calendar.tsx` | 100 | 100 | 100 | 98.63(97행 로캘 이름 함수가 없을 때의 대체) |
+| `internal/class-names.ts` · `external-store.ts` · `use-restore-focus.ts` | 100 | 100 | 100 | 100 |
+
+**경계 grep(E4)**
+
+- `/usr/bin/grep -rln "react-day-picker" src --include='*.ts' --include='*.tsx'` → 시험 밖 앱 코드는 `src/ui-core/calendar.tsx`와 `src/ui-core/date-time-picker.tsx`. 뒤의 것은 7677aa7부터 있던 주석 한 줄(`// react-day-picker 날짜 버튼의 포커스 효과보다 늦게 실행된다.`, 가져오기 아님)이라 범위 밖으로 두었다. 가져오기 기준으로는 design-rules의 "react-day-picker와 cmdk는 표에 적힌 파일 밖에서 가져오지 않는다" 시험이 통과한다. 나머지는 시험 파일(`design-rules`·`dependency-pins`·`calendar.test`)
+- `/usr/bin/grep -rn "ui-core/internal" src --include='*.ts' --include='*.tsx'` → `src/test/design-rules.test.ts:656`·`:668`뿐이다. 둘 다 "앱 코드가 `@/ui-core/internal/…`을 가져오면 잡는다"는 자기 검사 표본 문자열이다. ui-core 안은 상대 경로(`./internal/…`)로 가져온다
+- `/usr/bin/grep -rnE "@/(lib|api|features|app)" src/ui-core` → 출력 없음, exit=1, stderr 0바이트
+
+#### RED 증거(구현 전 실패 출력)
+
+| 묶음 | 파일 |
+|---|---|
+| 후속 과제 1 Modal 다시 열기 | `red-01-modal.txt`(1 failed: 다시 연 뒤 alertdialog가 남음) |
+| 후속 과제 2 간격 밖 시각 | `red-02-datetime.txt`(1 failed: 시간 칸 글자 없음) |
+| 후속 과제 4 링크 스킴 | `red-04-link.txt`(6 failed) |
+| 후속 과제 10 병합 ref | `red-10-search-ref.txt`(1 failed: 함수 ref 5회) |
+| 후속 과제 15 ToastTone | `red-15-toast-tone-typecheck.txt`(TS2459) |
+| 후속 과제 16 Modal 크기 | `red-16-modal-size-typecheck.txt`(옛 modal.tsx로 typecheck, TS2322·TS2344·TS2578) |
+| Calendar 범위 모드 | `red-20-calendar-range.txt`(10 failed) |
+| NumberInput | `red-21-number-input.txt`(모듈 없음) |
+| Popover | `red-22-popover.txt`(모듈 없음) |
+| Drawer | `red-23-drawer.txt`(모듈 없음) |
+| DateRangePicker | `red-24-date-range-picker.txt`(모듈 없음) |
+| 미리보기 전시 33 | `red-25-preview-showcase.txt`(1 failed: 표 33개 ≠ showcase.ts) |
+
+정리 과제 6·7·8·9·11·12·13·14·17은 동작이 바뀌지 않는 정리라 기존 시험이 기준이다(12·14는 바꾸기 전 `npm test` 출력에 canvas 메시지 5건이 있었음).
+
+#### 의도적으로 바꾼 시험(`m3-intentional-changes.txt`, 18줄)
+
+| 시험(`m3-baseline.json`의 fullName) | 이유 |
+|---|---|
+| `src/ui-core/modal.test.tsx > Modal — 구조(AC-UI-001-22) 크기 sm·md·lg는 dialog 폭 토큰 400·560·720px이고 기본은 md다` | 후속 과제 16. 크기 이름 `md` → `default`. 새 이름 "크기 sm·default·lg는 … 기본은 default다"로 같은 폭 토큰(`max-w-dialog-md`)을 단언 |
+| `src/test/design-rules.test.ts > … 공개 이름 40개와 정확히 같다` | 잠금 40 → 44(acceptance.md §3.6). 새 이름 "공개 이름 44개와 정확히 같다" |
+| `src/test/design-rules.test.ts > … 정해진 29개와 정확히 같다` | 잠금 29 → 33. 새 이름 "정해진 33개와 정확히 같다" |
+| `src/preview/PreviewPage.test.tsx > 미리보기 페이지(AC-UI-001-14) 전시 목록 표는 29개 컴포넌트이고 …` | QG-15 29 → 33(새 컴포넌트 4개, Calendar `range`, Modal `default`). 새 이름 "33개 컴포넌트" |
+| `src/preview/PreviewPage.test.tsx > 검증 섹션(AC-UI-001-06·14, EC-28, plan.md §E.4) …` 14건 | 후속 과제 17. describe 제목만 `AC-UI-001-06·AC-UI-001-14`로 풀어 써 fullName이 바뀌었다. 시험 내용은 그대로이고 새 이름으로 모두 통과 |
+
+#### 계획과 달라진 점
+
+- **M3 시작 기록의 시점**: 기준선 JSON은 첫 M3 커밋 전에 기록했지만, 포커스 링·선택 상태·Pagination 줄의 시작 기록 파일은 결함 수정 세 커밋(fcad41c·c67830d·ae80cc3) 뒤에 썼다. 값은 7677aa7 트리를 `git grep`으로 직접 센 것이라 시작 시점과 같고, 세 커밋은 그 문자열이 든 줄을 바꾸지 않았다.
+- **후속 과제 7**: 시험은 이미 렌더링된 세 클래스를 단언하고 있었고 상수 문자열을 가져오는 시험이 없어, 시험은 바꾸지 않았다.
+- **후속 과제 12**: "조건부"는 jsdom에 `canvas` 패키지가 없을 때(`import.meta.resolve("canvas")` 실패)로 정했다. 바꾼 `getContext`는 jsdom이 메시지 뒤에 돌려주던 것과 같은 `null`을 돌려준다.
+- **후속 과제 14**: 저장소 초기화를 setup.ts의 `afterEach`에서 `cleanup()` 앞, `act` 안으로 옮겼다(화면이 붙어 있는 동안 비워야 Host가 다시 그려지며 경고가 없다). setup.ts가 모든 시험 파일에서 toast·confirm-dialog를 가져오게 되어 vitest의 setup 비율이 7% → 15% 안팎으로 늘었다(전체 Duration은 11.9~13.7s로 기준선 16.8s보다 짧았다).
+- **후속 과제 9 보강**: `useRestoreFocus`는 Modal·ConfirmDialog에 더해 새 Drawer도 쓴다. DateTimePicker·DateRangePicker의 트리거 모양 문자열은 `PICKER_TRIGGER`로 `internal/class-names.ts`에 모았다(같은 글자의 복사를 막으려는 것, 렌더링 결과 같음).
+- **Calendar 범위 모드**: 라이브러리의 범위 계산(`onSelect`의 첫 인자)을 쓰지 않고 누른 날만 받아 시작 → 끝을 정한다. 두 번째 선택에서 한 번만 알리고, 끝이 앞이면 순서를 바로잡고, 같은 날 두 번이면 하루짜리, 범위가 있을 때 새로 누르면 새 시작이다. 사이 날짜 접근 이름은 "선택한 기간", 고대비 단서는 시작·끝 `forced-colors:outline-2`, 사이 `forced-colors:outline-1`로 정했다(정본에 낱말이 없어 고름). 띠는 칸(`td`)에 `bg-primary-subtle` + 시작 `rounded-s-control`·끝 `rounded-e-control`.
+- **NumberInput**: 0 이상의 정수만 다룬다(가격·소요 시간). 15자리에서 자른다. 범위 오류 문장은 "{min}{단위} 이상 {max}{단위} 이하로 입력해 주세요."(min만·max만이면 앞·뒤 하나)로 정했고, 오류 문장은 NumberInput이 입력 아래에 직접 그리고 `aria-describedby`로 잇는다.
+- **Popover**: 정본 API(`trigger`·`children`·`align?`)에 `aria-label?`(내용 대화상자 이름)과 `className?`을 더했다. axe의 대화상자 이름 규칙과 사용자 메뉴의 이름 때문이다. 기본 정렬은 `end`. 트리거의 `aria-controls`는 열렸을 때만 있다(Radix 동작, 위 사전 점검).
+- **Drawer**: 정본 API에 `closeLabel?`(기본 "닫기")과 `className?`을 더하고 머리에 닫기 버튼을 두었다. 스크림과 서랍 모두 z 30(system.md §7의 모바일 서랍 층)이고 스크림이 먼저 그려져 아래에 깔린다.
+- **DateRangePicker**: 프리셋 타입 `DateRangePreset { label, range }`를 내보낸다. 트리거 표기는 "2026. 10. 12. ~ 2026. 10. 15.".
+- **잠금 갱신 순서**: 컴포넌트마다 그 커밋에서 잠금을 한 칸씩 늘렸다(41·30 → 42·31 → 43·32 → 44·33). 중간 커밋도 모두 초록으로 남기기 위해서다. index.ts는 `DateRange`·`CalendarRangeProps`·`CalendarSingleProps`·`NumberInputProps`·`PopoverProps`·`DrawerProps`·`DateRangePickerProps`·`DateRangePreset` 타입을 내보내고, `internal/`은 내보내지 않는다.
+- **추가 커밋 두 개**: `@MX:ANCHOR`(FOCUS_RING·SELECTED_ITEM·useRestoreFocus, 호출처 3곳 이상)와 DateRangePicker 주석 정리(E4 grep이 주석 글자에 걸리지 않게).
+
+#### 관찰(조치하지 않음)
+
+- **중단과 재개**: ae80cc3 커밋 뒤, 정리 과제 6·7·8을 작업 트리에 둔 채(6은 스테이징까지) 기기 재시작으로 실행이 끊겼다. 같은 작업 트리에서 이어 갔다. 재개 직후 `git status`와 diff로 남은 변경이 6·7·8뿐이고 잘린 편집이 없음을 확인하고, typecheck·lint·ui-core와 design-rules 시험(31 files / 456 tests)을 다시 돌린 뒤 커밋했다(a0be727, 4e63143).
+- **외부 저장소 중복**: `src/ui-core/internal/external-store.ts`(값을 갖는 저장소, `get`·`set`)와 `src/lib/external-store.ts`(M2, 앱 계층, `read()`를 비추는 저장소)는 비슷한 일을 한다. ui-core는 앱 코드를 가져올 수 없고 앱 코드는 `@/ui-core`만 가져올 수 있어 합치지 않았다(경계 규칙상 의도된 중복). 모양도 조금 다르다.
+- **grep 셸 함수**: 이 환경의 `grep`은 ugrep을 부르는 셸 함수라 `--version`이 ugrep으로 나온다. acceptance.md §0대로 증거는 `/usr/bin/grep`으로 남겼다. 다음 위임에서도 `/usr/bin/grep`을 명시하면 된다.
+- **Bash 가드**: 작업 트리 가드는 git이 없는 명령도 `{ …; }` 묶음, 셸 변수를 쓴 `npx` 인자, 따옴표 속 한글이 섞인 `npx … -t "…"`를 거부했다. 증거 파일 경로를 글자 그대로 적은 한 줄 명령은 통과했다. 작업 트리 밖(스크래치패드) 쓰기는 Write 훅이 막아, 일회성 도구 스크립트는 증거 디렉터리 `tools/`에 두었다.
+- **pre-commit**: `moai gate`가 커밋마다 돌았고 한 번도 실패하지 않았다(재시작 뒤 부하 load 10~18).
+- **date-time-picker.tsx 주석**: 7677aa7부터 "react-day-picker"라는 낱말이 주석에 있어, 글자 기준 E4 grep에는 calendar.tsx 밖 한 줄로 걸린다. 범위 밖이라 그대로 두었다. 가져오기 기준 잠금 시험은 통과한다.
+- **UR-9**: 새 컴포넌트 4개와 범위 달력의 실제 모양은 `/dev/preview`(M4 뒤) 또는 지금의 `npm run dev` 미리보기에서 사용자 검토로 볼 수 있다. 자동 시험은 클래스와 ARIA까지만 판정한다.
+
 ## §E.3 Run-phase Audit-Ready Signal
 
 _<pending run-phase>_
