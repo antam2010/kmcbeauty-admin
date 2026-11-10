@@ -15,10 +15,14 @@ import type { components } from "@/api/schema";
 
 export type Shop = components["schemas"]["ShopResponse"];
 
+/** 매장 목록 쪽 크기. 백엔드 최대값(openapi.json의 size maximum 100, 기본 50)이고, 이보다 많을 때만 Pagination이 생긴다(plan.md §B.13). */
+export const SHOPS_PAGE_SIZE = 100;
+
 export const shopsQueryOptions = (client: ApiClient, page: number) =>
   queryOptions({
     queryKey: qk.shops.list(page),
-    queryFn: ({ signal }) => unwrap(client.GET("/shops", { params: { query: { page } }, signal })),
+    queryFn: ({ signal }) =>
+      unwrap(client.GET("/shops", { params: { query: { page, size: SHOPS_PAGE_SIZE } }, signal })),
   });
 
 /** refetchOnWindowFocus "always"는 createQueryClient의 키 기본값이 정한다. */
