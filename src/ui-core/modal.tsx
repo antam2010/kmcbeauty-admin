@@ -55,6 +55,13 @@ export function Modal({
   className,
 }: ModalProps) {
   const [confirmingDiscard, setConfirmingDiscard] = useState(false);
+  // 부모가 밖에서 open=false로 닫으면 버리기 확인 상태를 버린다. 남겨 두면 다시 열자마자 확인이 뜬다(SPEC-UI-002 후속 과제 1).
+  // 렌더 중 이전 값과 비교하는 방식이라 effect의 한 박자 늦은 깜빡임이 없다.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (!open && confirmingDiscard) setConfirmingDiscard(false);
+  }
   // Radix Trigger 없이 여닫으므로, 열릴 때 포커스가 있던 요소(연 버튼)를 기억해 닫힐 때 돌려준다.
   const openerRef = useRef<HTMLElement | null>(null);
 

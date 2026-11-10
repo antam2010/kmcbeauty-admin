@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
@@ -226,6 +226,46 @@ describe("Modal — 작성 중 닫기 확인(AC-UI-001-22 가)", () => {
     expect(screen.getByRole("alertdialog")).toBeInTheDocument();
     await user.keyboard("{Escape}");
     expect(screen.queryByRole("alertdialog")).toBeNull();
+    expect(dialog()).toBeInTheDocument();
+  });
+});
+
+// 부모가 버튼으로 open을 바꾸는 제어형 하네스(후속 과제 1 재현용)
+function ControlledHarness() {
+  const [open, setOpen] = useState(true);
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(false)}>
+        밖에서 닫기
+      </button>
+      <button type="button" onClick={() => setOpen(true)}>
+        다시 열기
+      </button>
+      <Modal open={open} onOpenChange={setOpen} title="고객 등록" dirty>
+        <Field label="이름">
+          <Input />
+        </Field>
+      </Modal>
+    </>
+  );
+}
+
+describe("Modal — 밖에서 닫고 다시 열기(SPEC-UI-002 후속 과제 1)", () => {
+  it("버리기 확인을 띄운 채 부모가 open=false → open=true로 바꾸면 다시 열린 Modal에 버리기 확인이 없다", async () => {
+    const user = userEvent.setup();
+    render(<ControlledHarness />);
+    await user.keyboard("{Escape}");
+    expect(screen.getByRole("alertdialog")).toHaveAccessibleName(DISCARD_PROMPT);
+
+    // 확인이 떠 있는 동안 포커스는 대화상자 안에 갇혀 있으므로, 부모의 상태 변경은 버튼 fireEvent.click으로 흉내 낸다.
+    fireEvent.click(screen.getByRole("button", { name: "밖에서 닫기", hidden: true }));
+    await screen.findByRole("button", { name: "다시 열기" });
+    expect(queryDialog()).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "다시 열기" }));
+    expect(await screen.findByRole("dialog", { hidden: true })).toBeInTheDocument();
+    expect(screen.queryByRole("alertdialog", { hidden: true })).toBeNull();
+    expect(screen.queryByText(DISCARD_PROMPT)).toBeNull();
     expect(dialog()).toBeInTheDocument();
   });
 });
