@@ -294,7 +294,7 @@ const FOCUS_CLASSES = [
   "focus-visible:outline-ring",
 ];
 
-describe("검증 섹션(AC-UI-001-06·14, EC-28, plan.md §E.4)", () => {
+describe("검증 섹션(AC-UI-001-06·AC-UI-001-14, EC-28, plan.md §E.4)", () => {
   afterEach(() => {
     Reflect.deleteProperty(document, "fonts");
   });
