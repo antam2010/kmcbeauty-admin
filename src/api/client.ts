@@ -3,7 +3,13 @@
 // 미들웨어 방식 결정 근거: M2 사전 점검(onResponse가 새 Response를 돌려줄 수 있고, options.fetch로 다시 보낸 요청은 미들웨어를 거치지 않는다).
 import createClient, { type Client, type Middleware } from "openapi-fetch";
 import type { paths } from "./schema";
-import { configureSession, getAccessToken, refreshSession } from "./session";
+import {
+  configureSession,
+  getAccessToken,
+  getSessionGeneration,
+  isSessionExpired,
+  refreshSession,
+} from "./session";
 
 type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
@@ -43,8 +49,8 @@ function withToken(request: Request, token: string): Request {
 }
 
 function sessionMiddleware(options: ApiClientOptions): Middleware {
-  // 요청마다 재시도용 복제본과 보낸 토큰. 본문은 fetch가 읽어 버리므로 보내기 전에 복제한다.
-  const sent = new WeakMap<Request, { retry: Request; token: string | null }>();
+  // 요청마다 재시도용 복제본, 보낸 토큰, 보낼 때의 세션 세대. 본문은 fetch가 읽어 버리므로 보내기 전에 복제한다.
+  const sent = new WeakMap<Request, { retry: Request; token: string | null; generation: number }>();
   // 동시에 난 401 여럿이 같은 갱신 실패를 받아도 만료 처리기는 한 번만 부른다
   let expiredFor: Promise<boolean> | null = null;
 
@@ -53,16 +59,21 @@ function sessionMiddleware(options: ApiClientOptions): Middleware {
       const token = getAccessToken();
       let next = token ? withToken(request, token) : request;
       if (COOKIE_PATHS.has(schemaPath)) next = new Request(next, { credentials: "include" });
-      sent.set(next, { retry: next.clone(), token });
+      sent.set(next, { retry: next.clone(), token, generation: getSessionGeneration() });
       return next;
     },
 
-    // @MX:WARN: [AUTO] 401 재시도 — 보내기 전에 만든 복제본으로 새 토큰을 붙여 한 번만 다시 보낸다.
-    // @MX:REASON: 재전송은 options.fetch로 가서 미들웨어를 다시 거치지 않는다(그래서 두 번째 401은 그대로 돌아오는 것이 재시도 표시다). 이 경로를 client 호출로 바꾸면 무한 재시도가 되고, 복제를 빼면 POST 본문이 사라진다(EC-02).
+    // @MX:WARN: [AUTO] 401 재시도 — 보내기 전에 만든 복제본으로 새 토큰을 붙여 한 번만 다시 보낸다. 보낸 뒤 세션 세대가 바뀌었으면(로그아웃·갱신 401) 갱신·재전송·만료 처리기 없이 그 401로 끝낸다.
+    // @MX:REASON: 재전송은 options.fetch로 가서 미들웨어를 다시 거치지 않는다(그래서 두 번째 401은 그대로 돌아오는 것이 재시도 표시다). 이 경로를 client 호출로 바꾸면 무한 재시도가 되고, 복제를 빼면 POST 본문이 사라진다(EC-02). 세대 확인을 빼면 갱신 401 뒤 늦게 온 401이 갱신과 만료 처리기를 한 번 더 부른다(감사 결함 F2).
     async onResponse({ request, response, schemaPath, options: fetchOptions }) {
       let final = response;
       const record = sent.get(request);
-      if (response.status === 401 && !schemaPath.startsWith("/auth/") && record) {
+      if (
+        response.status === 401 &&
+        !schemaPath.startsWith("/auth/") &&
+        record &&
+        record.generation === getSessionGeneration()
+      ) {
         const current = getAccessToken();
         if (current !== null && current !== record.token) {
           // 다른 요청의 갱신이 이미 끝났다 — 다시 갱신하지 않고 새 토큰으로 보낸다
@@ -70,8 +81,11 @@ function sessionMiddleware(options: ApiClientOptions): Middleware {
         } else {
           const refresh = refreshSession(); // 403·429·5xx·네트워크면 그 ApiError로 원래 요청이 끝난다
           if (await refresh) {
-            final = await fetchOptions.fetch(withToken(record.retry, getAccessToken() ?? ""));
-          } else if (record.token !== null && expiredFor !== refresh) {
+            // 빈 토큰("Bearer ")은 보내지 않는다 — 토큰이 없으면 원래 401로 끝난다(감사 결함 F6)
+            const token = getAccessToken();
+            if (token !== null) final = await fetchOptions.fetch(withToken(record.retry, token));
+          } else if (record.token !== null && expiredFor !== refresh && isSessionExpired()) {
+            // 갱신 도중 로그아웃했으면(만료가 아님) 만료 처리기를 부르지 않는다
             // 토큰 없이 보낸 요청(첫 방문)에는 만료 처리기를 부르지 않는다(S0 결정)
             expiredFor = refresh;
             options.onSessionExpired();

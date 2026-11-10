@@ -3,7 +3,7 @@
 import { MutationObserver } from "@tanstack/react-query";
 import { delay, HttpResponse, http } from "msw";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { loginMutationOptions, logout, meQueryOptions } from "@/features/auth/queries";
+import { login, loginMutationOptions, logout, meQueryOptions } from "@/features/auth/queries";
 import {
   loginBody,
   loginHandler,
@@ -368,4 +368,150 @@ describe("AC-UI-002-05 (다) 응답을 기다리지 않는 로그아웃", () => 
       expect(sent[0]).toMatchObject({ method: "POST", credentials: "include" });
     },
   );
+});
+
+// ── 감사 결함 F1: 갱신이 진행 중일 때 로그아웃 ───────────────────────────────────────────
+// 로그아웃(clearSession)이 세션 세대를 올리므로, 그 전에 시작한 갱신의 늦은 응답은 토큰을 저장하지 않는다.
+
+/** 풀어 주기 전까지 응답하지 않는 갱신 처리기. reached는 갱신 요청이 처리기에 닿으면 풀린다. */
+function gatedRefresh(
+  respond: () => Response = () => HttpResponse.json(loginBody("access-2", "refresh-2")),
+) {
+  let release: () => void = () => undefined;
+  let markReached: () => void = () => undefined;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const reached = new Promise<void>((resolve) => {
+    markReached = resolve;
+  });
+  const handler = refreshHandler(BASE, async () => {
+    markReached();
+    await gate;
+    return respond();
+  });
+  return { handler, reached, release: () => release() };
+}
+
+/** /users/me: 주어진 토큰의 Bearer면 200, 그 밖에는 401. */
+function meAcceptsOnly(...tokens: string[]) {
+  return http.get(`${BASE}/users/me`, ({ request }) =>
+    tokens.map((t) => `Bearer ${t}`).includes(request.headers.get("authorization") ?? "")
+      ? HttpResponse.json({ ok: true })
+      : new HttpResponse(null, { status: 401 }),
+  );
+}
+
+/** 빈 토큰을 실은 Authorization("Bearer ")을 보낸 요청들. */
+const emptyBearer = () =>
+  log.requests.filter((r) => r.authorization !== null && /^Bearer\s*$/.test(r.authorization));
+
+describe("감사 결함 F1 — 갱신 중 로그아웃", () => {
+  it("새로고침 뒤 갱신이 진행 중일 때 로그아웃하면 늦게 온 갱신 응답이 토큰을 저장하지 않는다", async () => {
+    const refresh = gatedRefresh();
+    server.use(
+      refresh.handler,
+      logoutHandler(BASE, () => new HttpResponse(null, { status: 204 })),
+      meAcceptsOnly("access-2"),
+    );
+    const expired = vi.fn<() => void>();
+    const client = createApiClient({
+      baseUrl: BASE,
+      fetch: log.fetch,
+      onSessionExpired: expired,
+      onShopNotSelected: () => undefined,
+    });
+    const queryClient = createQueryClient();
+
+    const pending = ensureSession(); // 새로고침 뒤 route loader
+    const me = unwrap(client.GET("/users/me")).catch((e: unknown) => e); // 토큰 없이 보낸 보호 요청
+    await refresh.reached;
+    logout(client, queryClient);
+    const afterLogout = getAccessToken();
+    refresh.release();
+
+    await expect(pending).resolves.toBe(false);
+    const error = await me;
+    expect(afterLogout).toBeNull();
+    expect(getAccessToken()).toBeNull();
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).status).toBe(401);
+    expect(log.count("GET", "/users/me")).toBe(1);
+    expect(log.count("POST", "/auth/refresh")).toBe(1);
+    expect(expired).not.toHaveBeenCalled();
+    expect(emptyBearer()).toEqual([]);
+  });
+
+  it("토큰을 실어 보낸 요청의 401이 갱신을 기다리는 동안 로그아웃하면 다시 보내지 않고 만료 처리기도 부르지 않는다", async () => {
+    setAccessToken("expired-1");
+    const refresh = gatedRefresh();
+    server.use(
+      refresh.handler,
+      logoutHandler(BASE, () => new HttpResponse(null, { status: 204 })),
+      meAcceptsOnly("access-2"),
+    );
+    const expired = vi.fn<() => void>();
+    const client = createApiClient({
+      baseUrl: BASE,
+      fetch: log.fetch,
+      onSessionExpired: expired,
+      onShopNotSelected: () => undefined,
+    });
+
+    const me = unwrap(client.GET("/users/me")).catch((e: unknown) => e);
+    await refresh.reached; // 이 갱신은 /users/me의 401이 시작했다 — 그 401 처리는 갱신을 기다리는 중이다
+    logout(client, createQueryClient());
+    refresh.release();
+
+    const error = await me;
+    expect(getAccessToken()).toBeNull();
+    expect((error as ApiError).status).toBe(401);
+    expect(log.count("GET", "/users/me")).toBe(1);
+    expect(log.count("POST", "/auth/refresh")).toBe(1);
+    expect(expired).not.toHaveBeenCalled();
+    expect(emptyBearer()).toEqual([]);
+  });
+
+  it.each([
+    ["200", () => HttpResponse.json(loginBody("access-2", "refresh-2"))],
+    ["401", () => new HttpResponse(null, { status: 401 })],
+  ])(
+    "로그아웃 뒤 새 로그인이 먼저 끝나면 앞선 갱신의 늦은 %s 응답이 새 토큰을 덮어쓰거나 지우지 않는다",
+    async (_name, respond) => {
+      const refresh = gatedRefresh(respond);
+      server.use(
+        refresh.handler,
+        logoutHandler(BASE, () => new HttpResponse(null, { status: 204 })),
+        loginHandler(BASE, () => HttpResponse.json(loginBody("access-9", "refresh-9"))),
+      );
+      const client = makeClient();
+
+      const pending = ensureSession();
+      await refresh.reached;
+      logout(client, createQueryClient());
+      await login(client, { email: "owner@kmc.test", password: "pw" });
+      expect(getAccessToken()).toBe("access-9");
+      refresh.release();
+
+      await expect(pending).resolves.toBe(false);
+      expect(getAccessToken()).toBe("access-9");
+    },
+  );
+
+  it("갱신이 도는 사이 로그아웃했으면 갱신이 네트워크 오류여도 오류 없이 false다", async () => {
+    const refresh = gatedRefresh(() => HttpResponse.error());
+    server.use(
+      refresh.handler,
+      logoutHandler(BASE, () => new HttpResponse(null, { status: 204 })),
+    );
+    const client = makeClient();
+
+    const pending = ensureSession();
+    await refresh.reached;
+    logout(client, createQueryClient());
+    refresh.release();
+
+    await expect(pending).resolves.toBe(false);
+    expect(getAccessToken()).toBeNull();
+  });
 });

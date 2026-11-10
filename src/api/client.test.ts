@@ -8,7 +8,14 @@ import { server } from "@/test/msw/server";
 import { createApiClient } from "./client";
 import { ApiError, unwrap } from "./errors";
 import { createQueryClient } from "./query-client";
-import { __resetSessionForTest, ensureSession, getAccessToken, setAccessToken } from "./session";
+import {
+  __resetSessionForTest,
+  clearSession,
+  ensureSession,
+  getAccessToken,
+  sessionStore,
+  setAccessToken,
+} from "./session";
 
 const BASE = "http://api.test";
 const PROTECTED = ["/phonebooks", "/phonebooks/groups", "/users/me"] as const;
@@ -223,6 +230,57 @@ describe("동시 401과 갱신(AC-UI-002-06)", () => {
     expect(sent).toHaveLength(2);
     expect(sent[1].body).toBe(sent[0].body);
     expect(JSON.parse(sent[1].body)).toEqual({ name: "김민", phone_number: "010-1234-5678" });
+  });
+
+  it("갱신 401 뒤 늦게 도착한, 그 갱신 전에 보낸 요청의 401은 다시 갱신하지 않고 만료 처리기도 다시 부르지 않는다(감사 결함 F2)", async () => {
+    setAccessToken("expired-1");
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server.use(
+      refreshWith(BASE, 401),
+      http.get(`${BASE}/users/me`, () => new HttpResponse(null, { status: 401 })),
+      http.get(`${BASE}/phonebooks`, async () => {
+        await gate; // 갱신 401이 끝난 뒤에 응답한다
+        return new HttpResponse(null, { status: 401 });
+      }),
+    );
+    const client = makeClient();
+    const slow = unwrap(client.GET("/phonebooks")).catch((e: unknown) => e);
+    await unwrap(client.GET("/users/me")).catch(() => undefined);
+    expect(onSessionExpired).toHaveBeenCalledTimes(1);
+    release();
+    const error = await slow;
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).status).toBe(401);
+    expect(log.count("POST", "/auth/refresh")).toBe(1);
+    expect(log.count("GET", "/phonebooks")).toBe(1);
+    expect(onSessionExpired).toHaveBeenCalledTimes(1);
+  });
+
+  it("갱신이 성공했는데 다시 보낼 때 토큰이 없으면 빈 Bearer를 보내지 않고 원래 401로 끝난다(감사 결함 F6)", async () => {
+    // 일부러 만든 재현: 세션 구독자가 새 토큰 알림 안에서 세션을 지운다
+    setAccessToken("expired-1");
+    const unsubscribe = sessionStore.subscribe(() => {
+      if (getAccessToken() === "access-2") clearSession();
+    });
+    try {
+      server.use(...protectedHandlers(), refreshWith(BASE, 200));
+      const error = await unwrap(makeClient().GET("/users/me")).catch((e: unknown) => e);
+
+      expect((error as ApiError).status).toBe(401);
+      expect(log.count("GET", "/users/me")).toBe(1);
+      // Headers가 끝 공백을 잘라 "Bearer"로 기록될 수 있어 둘 다 잡는다
+      const emptyBearer = log.requests.filter(
+        (r) => r.authorization !== null && /^Bearer\s*$/.test(r.authorization),
+      );
+      expect(emptyBearer).toEqual([]);
+      expect(onSessionExpired).not.toHaveBeenCalled();
+    } finally {
+      unsubscribe();
+    }
   });
 });
 
