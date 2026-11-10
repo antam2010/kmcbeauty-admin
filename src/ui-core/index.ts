@@ -13,7 +13,12 @@ export type {
 export { Breadcrumb } from "./breadcrumb";
 export type { ButtonProps } from "./button";
 export { Button } from "./button";
-export type { CalendarProps } from "./calendar";
+export type {
+  CalendarProps,
+  CalendarRangeProps,
+  CalendarSingleProps,
+  DateRange,
+} from "./calendar";
 export { Calendar } from "./calendar";
 export type { CardTitleProps } from "./card";
 export {
@@ -45,6 +50,8 @@ export type { LoadingProps } from "./loading";
 export { Loading } from "./loading";
 export type { ModalProps } from "./modal";
 export { Modal } from "./modal";
+export type { NumberInputProps } from "./number-input";
+export { NumberInput } from "./number-input";
 export type { PageHeaderProps } from "./page-header";
 export { PageHeader } from "./page-header";
 export type { PaginationProps } from "./pagination";
