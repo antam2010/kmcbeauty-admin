@@ -132,13 +132,19 @@ export function Combobox({
 
   const visibleFor = (query: string) =>
     loading ? [] : filtering === "remote" ? options : filterLocally(options, query);
+  // 새 값 만들기 항목을 보일지: 동작이 있고, 불러오는 중이 아니며, 비어 있지 않고, 같은 라벨의 옵션이 없을 때.
+  const canCreate = (query: string) => {
+    const candidate = query.trim();
+    return (
+      createAction !== undefined &&
+      !loading &&
+      candidate !== "" &&
+      !options.some((option) => option.label === candidate)
+    );
+  };
   const trimmed = text.trim();
   const visible = visibleFor(text);
-  const showCreate =
-    createAction !== undefined &&
-    !loading &&
-    trimmed !== "" &&
-    !options.some((option) => option.label === trimmed);
+  const showCreate = canCreate(text);
   const itemValues = [
     ...visible.map((option) => option.value),
     ...(showCreate ? [createValue] : []),
@@ -205,13 +211,7 @@ export function Combobox({
     if (disabled) return;
     setOpen(true);
     // 글자가 바뀔 때마다 하이라이트를 첫 항목으로 되돌린다(cmdk 검색어를 쓰지 않으므로 직접 맞춘다).
-    const nextTrimmed = next.trim();
-    const nextCreate =
-      createAction !== undefined &&
-      !loading &&
-      nextTrimmed !== "" &&
-      !options.some((option) => option.label === nextTrimmed);
-    setHighlight(visibleFor(next)[0]?.value ?? (nextCreate ? createValue : ""));
+    setHighlight(visibleFor(next)[0]?.value ?? (canCreate(next) ? createValue : ""));
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
