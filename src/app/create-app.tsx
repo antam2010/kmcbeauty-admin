@@ -40,9 +40,10 @@ export function createApp(options: CreateAppOptions): AppInstance {
   /** 지금 이동해도 되는 업무 화면이면 현재 경로(쿼리 포함)를, 아니면 null. */
   const idleAppLocation = (): string | null => {
     if (!router) return null;
-    const { location, navigation } = router.state;
-    // 이동 중이면 그 이동의 loader가 목적지를 next로 실어 보낸다(지금 위치는 떠나는 화면이다)
-    if (navigation.state !== "idle" || SELF_ROUTED_PATHS.has(location.pathname)) return null;
+    const { location, navigation, initialized } = router.state;
+    // 첫 로딩 중이거나 이동 중이면 그 loader가 목적지를 next로 실어 보낸다(지금 위치는 떠나는 화면이다)
+    if (!initialized || navigation.state !== "idle") return null;
+    if (SELF_ROUTED_PATHS.has(location.pathname)) return null;
     return location.pathname + location.search;
   };
 

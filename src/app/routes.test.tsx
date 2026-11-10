@@ -206,3 +206,31 @@ describe("경로 오류 화면(EC-06)", () => {
     await waitFor(() => expect(document.body.textContent).not.toContain("놉"));
   });
 });
+
+describe("loader 안에서 끝난 세션과 확인할 수 없는 갱신", () => {
+  it("이동 중 매장 확인 요청이 401이고 갱신도 401이면(이 탭의 세션 만료) 목적지를 next로 실은 로그인 화면과 만료 문구다", async () => {
+    const { router } = renderRoute("/customers", {
+      session: "S2",
+      handlers: [
+        http.get(
+          `${TEST_API_ORIGIN}/shops/selected`,
+          () => new HttpResponse(null, { status: 401 }),
+        ),
+        refreshWith(TEST_API_ORIGIN, 401),
+      ],
+    });
+    await heading("로그인");
+    expectLocation(router, "/login?next=%2Fcustomers");
+    expect(screen.getAllByText(EXPIRED_MESSAGE)).toHaveLength(1);
+  });
+
+  it("로그인 화면 loader의 갱신이 네트워크 오류여도 오류 화면이 아니라 로그인 화면을 보인다", async () => {
+    const { router } = renderRoute("/login", {
+      session: "S0",
+      handlers: [refreshWith(TEST_API_ORIGIN, "network")],
+    });
+    await heading("로그인");
+    expectLocation(router, "/login");
+    expect(screen.queryByRole("heading", { name: "페이지를 불러오지 못했어요." })).toBeNull();
+  });
+});

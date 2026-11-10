@@ -29,8 +29,9 @@ export function createLoaders({ client, queryClient }: AppServices) {
       if (error instanceof ApiError && error.code === "SHOP_NOT_SELECTED") {
         throw redirect(withNext("/shops", args.request));
       }
-      // 확인 도중 세션이 만료됐다(갱신 401) — 만료 처리기가 안내를 켰고, 이동은 이 loader가 맡는다
-      if (error instanceof ApiError && error.status === 401 && getAccessToken() === null) {
+      // 확인 도중 세션이 끝났다(갱신 401) — 만료 처리기가 안내를 켜고 캐시를 비웠으며(그래서 이 확인은 401이나 취소로 끝난다),
+      // 이동은 이 loader가 맡는다
+      if (getAccessToken() === null) {
         throw redirect(withNext("/login", args.request));
       }
       throw error;
