@@ -1,7 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { expectNoAxeViolations } from "../test/axe";
-import { Breadcrumb, type BreadcrumbItem, type LinkComponent } from "./breadcrumb";
+import { Breadcrumb, type BreadcrumbItem, DefaultLink, type LinkComponent } from "./breadcrumb";
 
 const FOCUS_CLASSES = [
   "focus-visible:outline-2",
@@ -97,5 +97,47 @@ describe("Breadcrumb — 구조(AC-UI-001-25)", () => {
   it("axe 위반이 0건이다", async () => {
     const { container } = render(<Breadcrumb items={ITEMS} />);
     await expectNoAxeViolations(container);
+  });
+});
+
+// acceptance.md §3.10 후속 과제 4의 표본 그대로
+const UNSAFE_LINKS = [
+  "javascript:alert(1)",
+  "JavaScript:alert(1)",
+  " javascript:alert(1)",
+  "java\tscript:alert(1)",
+  "data:text/html,x",
+  "mailto:a@b.c",
+];
+const SAFE_LINKS = ["/customers", "customers", "https://example.com", "http://example.com"];
+
+describe("DefaultLink — 스킴 허용 목록(SPEC-UI-002 후속 과제 4)", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  for (const to of UNSAFE_LINKS) {
+    it(`${JSON.stringify(to)}는 href="#"이고 개발 모드 경고가 1번이다`, () => {
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+      render(<DefaultLink to={to}>이동</DefaultLink>);
+      expect(screen.getByText("이동").closest("a")).toHaveAttribute("href", "#");
+      expect(warn).toHaveBeenCalledTimes(1);
+    });
+  }
+
+  for (const to of SAFE_LINKS) {
+    it(`${JSON.stringify(to)}는 그대로 href가 되고 경고가 없다`, () => {
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+      render(<DefaultLink to={to}>이동</DefaultLink>);
+      expect(screen.getByText("이동").closest("a")).toHaveAttribute("href", to);
+      expect(warn).not.toHaveBeenCalled();
+    });
+  }
+
+  it('URL로 읽을 수 없는 값(http://[)도 href="#"로 바꾼다', () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    render(<DefaultLink to="http://[">이동</DefaultLink>);
+    expect(screen.getByText("이동").closest("a")).toHaveAttribute("href", "#");
+    expect(warn).toHaveBeenCalledTimes(1);
   });
 });

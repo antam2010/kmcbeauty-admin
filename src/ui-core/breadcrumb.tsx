@@ -12,10 +12,31 @@ export interface LinkComponentProps {
 /** 라우터 링크 자리. 기본값은 <a href={to}>이고 SPEC-UI-002가 라우터 링크를 넘긴다(design.md §8.2). */
 export type LinkComponent = ComponentType<LinkComponentProps>;
 
+const ALLOWED_PROTOCOLS = new Set(["http:", "https:"]);
+
+// @MX:NOTE: [AUTO] 스킴 판정은 글자 비교가 아니라 URL 파서에 맡긴다. 파서가 앞 공백·TAB·대소문자를 정규화하므로
+// " javascript:", "java\tscript:", "JavaScript:"도 같은 javascript:로 잡힌다(SPEC-UI-002 후속 과제 4).
+/** 상대 경로와 http·https만 그대로 두고, 그 밖의 스킴(javascript:·data:·mailto: 등)은 "#"로 바꾼다. */
+function safeHref(to: string): string {
+  let protocol: string;
+  try {
+    protocol = new URL(to, window.location.origin).protocol;
+  } catch {
+    protocol = "invalid:";
+  }
+  if (ALLOWED_PROTOCOLS.has(protocol)) return to;
+  if (import.meta.env.DEV) {
+    console.warn(
+      `[ui-core] 허용하지 않는 링크 스킴이라 href="#"로 바꿨어요: ${JSON.stringify(to)}`,
+    );
+  }
+  return "#";
+}
+
 /** 기본 링크: 받은 to를 href로 쓰는 네이티브 링크. Sidebar도 같은 기본값을 쓴다. */
 export function DefaultLink({ to, children, ...props }: LinkComponentProps) {
   return (
-    <a href={to} {...props}>
+    <a href={safeHref(to)} {...props}>
       {children}
     </a>
   );
