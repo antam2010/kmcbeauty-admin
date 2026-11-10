@@ -56,6 +56,8 @@ export type { PageHeaderProps } from "./page-header";
 export { PageHeader } from "./page-header";
 export type { PaginationProps } from "./pagination";
 export { Pagination } from "./pagination";
+export type { PopoverProps } from "./popover";
+export { Popover } from "./popover";
 export type { SearchProps } from "./search";
 export { Search } from "./search";
 export type { SelectGroup, SelectOption, SelectProps } from "./select";

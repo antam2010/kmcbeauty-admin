@@ -39,6 +39,7 @@ const PUBLIC_NAMES = [
   "NumberInput",
   "PageHeader",
   "Pagination",
+  "Popover",
   "Search",
   "Select",
   "Sidebar",
@@ -89,6 +90,7 @@ const COMPONENT_FILES = [
   "theme-provider.tsx",
   "theme-toggle.tsx",
   "number-input.tsx",
+  "popover.tsx",
 ];
 
 // AC-UI-001-09 기반 라이브러리 표
@@ -108,6 +110,7 @@ const BASE_LIBRARIES: Record<string, string[]> = {
   "toast.tsx": ["@radix-ui/react-toast"],
   "tooltip.tsx": ["@radix-ui/react-tooltip"],
   "tabs.tsx": ["@radix-ui/react-tabs"],
+  "popover.tsx": ["@radix-ui/react-popover"],
 };
 
 // 시연 허용 구역을 둘 수 있는 유일한 파일(design.md §9). 다른 파일의 표시는 위반이다.
@@ -449,9 +452,9 @@ describe("디자인 규칙 — 금지 패턴(AC-UI-001-10, AC-UI-001-12, AC-UI-0
 
 describe("디자인 규칙 — 공개 API와 구성(AC-UI-001-09)", () => {
   // SPEC-UI-001 M5에서 공개 이름 40개와 컴포넌트 파일 29개가 완성됐다. SPEC-UI-002 M3에서 새 컴포넌트 4개를 더해 44·33이 된다(acceptance.md §3.6).
-  it("@/ui-core의 런타임 내보내기가 공개 이름 41개와 정확히 같다", async () => {
+  it("@/ui-core의 런타임 내보내기가 공개 이름 42개와 정확히 같다", async () => {
     const module = await import("@/ui-core");
-    expect(PUBLIC_NAMES).toHaveLength(41);
+    expect(PUBLIC_NAMES).toHaveLength(42);
     expect(Object.keys(module).sort()).toEqual([...PUBLIC_NAMES].sort());
     // @/ui-core 전체를 처음 불러오는 사례라 전체 스위트의 병렬 실행에서 기본 제한(5초)에 닿는다(2026-11-09 실측 5.0~5.1초 — 단독 2.0초).
   }, 20_000);
@@ -460,11 +463,11 @@ describe("디자인 규칙 — 공개 API와 구성(AC-UI-001-09)", () => {
     expect(read("src/ui-core/index.ts")).not.toMatch(/export\s+\*/);
   });
 
-  it("컴포넌트 파일(테스트·cn.ts·index.ts 제외)이 정해진 30개와 정확히 같다", () => {
+  it("컴포넌트 파일(테스트·cn.ts·index.ts 제외)이 정해진 31개와 정확히 같다", () => {
     const files = UI_CORE_FILES.map((file) => path.basename(file)).filter(
       (file) => file.endsWith(".tsx") && !file.endsWith(".test.tsx"),
     );
-    expect(COMPONENT_FILES).toHaveLength(30);
+    expect(COMPONENT_FILES).toHaveLength(31);
     expect(files.sort()).toEqual([...COMPONENT_FILES].sort());
   });
 
