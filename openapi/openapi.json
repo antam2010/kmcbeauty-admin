@@ -1,0 +1,5934 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "뷰티앱",
+    "description": "이 프로젝트는 FastAPI로 개발된 API 서비스입니다.\n\n- 공통 미들웨어를 통해 사용자 인증 및 샵(상점) 선택 정보가 응답에 포함됩니다.\n- 액세스 토큰이 만료되었거나 리프레시 토큰이 없으면 `401 Unauthorized` 에러가 발생합니다.\n- 상점이 선택되지 않은 경우, 다음과 같은 에러 응답이 반환됩니다:\n  ```json\n  {\n    \"detail\": {\n      \"code\": \"SHOP_NOT_SELECTED\",\n      \"message\": \"상점이 선택되지 않았습니다.\"\n    }\n  }\n\n- 각 API의 응답에는 도메인별 에러 코드가 포함되며, 코드 앞에는 도메인 이름(`{DOMAIN}`)이 붙습니다.\n  예: `USER_NOT_FOUND`, `TREATMENT_MENU_CONFLICT`, `PHONEBOOK_VALIDATION_ERROR` 등\n- `{DOMAIN}` 값은 각 API 설명 옆에 명시되어 있습니다.",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Health Check",
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Health Check Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/me": {
+      "get": {
+        "tags": [
+          "유저"
+        ],
+        "summary": "사용자 조회",
+        "description": "현재 로그인한 사용자의 정보를 조회합니다.",
+        "operationId": "read_user_handler_users_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "리소스를 찾을 수 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_NOT_FOUND",
+                    "message": "요청한 리소스를 찾을 수 없습니다."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "유저"
+        ],
+        "summary": "사용자 수정",
+        "description": "사용자 정보를 수정합니다.",
+        "operationId": "update_user_handler_users_me_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "리소스를 찾을 수 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_NOT_FOUND",
+                    "message": "요청한 리소스를 찾을 수 없습니다."
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "중복 또는 충돌",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_DUPLICATE",
+                    "message": "이미 존재하는 리소스입니다."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "유저"
+        ],
+        "summary": "사용자 삭제",
+        "description": "현재 로그인한 사용자를 삭제합니다.",
+        "operationId": "delete_user_handler_users_me_delete",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "리소스를 찾을 수 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_NOT_FOUND",
+                    "message": "요청한 리소스를 찾을 수 없습니다."
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "중복 또는 충돌",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_DUPLICATE",
+                    "message": "이미 존재하는 리소스입니다."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/users": {
+      "post": {
+        "tags": [
+          "유저"
+        ],
+        "summary": "사용자 생성",
+        "description": "새로운 사용자를 생성합니다.",
+        "operationId": "create_user_handler_users_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "중복 또는 충돌",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_DUPLICATE",
+                    "message": "이미 존재하는 리소스입니다."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/me/force": {
+      "delete": {
+        "tags": [
+          "유저"
+        ],
+        "summary": "사용자 강제 삭제",
+        "description": "현재 로그인한 사용자를 강제로 삭제합니다.",
+        "operationId": "delete_user_force_handler_users_me_force_delete",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "리소스를 찾을 수 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_NOT_FOUND",
+                    "message": "요청한 리소스를 찾을 수 없습니다."
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "중복 또는 충돌",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_DUPLICATE",
+                    "message": "이미 존재하는 리소스입니다."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/users/exists/email": {
+      "get": {
+        "tags": [
+          "유저"
+        ],
+        "summary": "이메일 중복 체크",
+        "description": "이메일 중복 체크 API",
+        "operationId": "check_user_exsist_users_exists_email_get",
+        "parameters": [
+          {
+            "name": "email",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "이메일 주소",
+              "format": "email",
+              "title": "Email"
+            },
+            "description": "이메일 주소"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserEmailCheckResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": [
+          "인증"
+        ],
+        "summary": "사용자 로그인",
+        "description": "이메일(username)과 비밀번호(password)를 입력하여 JWT 토큰을 발급받습니다.",
+        "operationId": "login_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_login_auth_login_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "인증 필요",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_UNAUTHORIZED",
+                    "message": "인증이 필요합니다."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "tags": [
+          "인증"
+        ],
+        "summary": "엑세스 토큰 재발급",
+        "description": "리프레시 토큰을 쿠키로 받아 새로운 엑세스 토큰을 발급합니다.",
+        "operationId": "refresh_token_handler_auth_refresh_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "리프레시 토큰이 유효하지 않음"
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": [
+          "인증"
+        ],
+        "summary": "사용자 로그아웃",
+        "description": "로그아웃 시 쿠키 제거 및 레디스에서 리프레시 토큰 삭제",
+        "operationId": "logout_auth_logout_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/phonebooks": {
+      "get": {
+        "tags": [
+          "전화번호부"
+        ],
+        "summary": "전화번호부 목록 조회",
+        "description": "전화번호부 목록을 조회합니다.",
+        "operationId": "list_phonebook_phonebooks_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100000,
+              "minimum": 1,
+              "description": "Page number",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number"
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Page size",
+              "default": 50,
+              "title": "Size"
+            },
+            "description": "Page size"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_PhonebookResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "전화번호부"
+        ],
+        "summary": "전화번호부 생성",
+        "description": "새로운 전화번호부 항목을 생성합니다.",
+        "operationId": "create_phonebook_handler_phonebooks_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PhonebookCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhonebookResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "중복 또는 충돌",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_DUPLICATE",
+                    "message": "이미 존재하는 리소스입니다."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/phonebooks/groups": {
+      "get": {
+        "tags": [
+          "전화번호부"
+        ],
+        "summary": "전화번호부 그룹 목록 조회",
+        "description": "전화번호부 그룹 목록을 조회합니다.",
+        "operationId": "list_groups_by_group_name_phonebooks_groups_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "with_items",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "전화번호부 항목 포함 여부",
+              "default": false,
+              "title": "With Items"
+            },
+            "description": "전화번호부 항목 포함 여부"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PhonebookGroupedByGroupnameResponse"
+                  },
+                  "title": "Response List Groups By Group Name Phonebooks Groups Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/phonebooks/check-duplicate": {
+      "get": {
+        "tags": [
+          "전화번호부"
+        ],
+        "summary": "전화번호부 중복 확인",
+        "description": "이미 전화번호부에 등록된 번호인지 확인합니다.",
+        "operationId": "check_duplicate_phone_number_phonebooks_check_duplicate_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "phone_number",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 20,
+              "description": "확인할 전화번호",
+              "title": "Phone Number"
+            },
+            "description": "확인할 전화번호"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicateCheckResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/phonebooks/{phonebook_id}": {
+      "get": {
+        "tags": [
+          "전화번호부"
+        ],
+        "summary": "전화번호부 상세 조회",
+        "description": "전화번호부 항목을 상세 조회합니다.",
+        "operationId": "read_phonebook_handler_phonebooks__phonebook_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "phonebook_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Phonebook Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhonebookResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "리소스를 찾을 수 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_NOT_FOUND",
+                    "message": "요청한 리소스를 찾을 수 없습니다."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "전화번호부"
+        ],
+        "summary": "전화번호부 수정",
+        "description": "전화번호부 항목을 수정합니다.",
+        "operationId": "update_phonebook_handler_phonebooks__phonebook_id__put",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "phonebook_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Phonebook Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PhonebookUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhonebookResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "전화번호부"
+        ],
+        "summary": "전화번호부 삭제",
+        "description": "전화번호부 항목을 소프트 삭제합니다.",
+        "operationId": "delete_phonebook_handler_phonebooks__phonebook_id__delete",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "phonebook_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Phonebook Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/treatments": {
+      "get": {
+        "tags": [
+          "시술 예약"
+        ],
+        "summary": "시술 예약 목록 조회",
+        "description": "시술 예약 목록을 조회합니다.",
+        "operationId": "list_treatments_api_treatments_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100000,
+              "minimum": 1,
+              "description": "Page number",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number"
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Page size",
+              "default": 50,
+              "title": "Size"
+            },
+            "description": "Page size"
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Start Date"
+            }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "End Date"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/TreatmentStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "reserved_at",
+              "title": "Sort By"
+            }
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "desc",
+              "title": "Sort Order"
+            }
+          },
+          {
+            "name": "staff_user_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 2147483647,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Staff User Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_TreatmentResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "시술 예약"
+        ],
+        "summary": "시술 예약 생성",
+        "description": "시술 예약을 생성합니다.",
+        "operationId": "create_treatment_api_treatments_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TreatmentCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TreatmentSimpleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "잘못된 요청",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_BAD_REQUEST",
+                    "message": "요청이 잘못되었습니다."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "서버 오류",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_INTERNAL_ERROR",
+                    "message": "서버 내부 오류가 발생했습니다."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/treatments/{treatment_id}": {
+      "put": {
+        "tags": [
+          "시술 예약"
+        ],
+        "summary": "시술 예약 수정",
+        "description": "시술 예약을 수정합니다.",
+        "operationId": "update_treatment_api_treatments__treatment_id__put",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "treatment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Treatment Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TreatmentUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TreatmentSimpleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "잘못된 요청",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_BAD_REQUEST",
+                    "message": "요청이 잘못되었습니다."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "서버 오류",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_INTERNAL_ERROR",
+                    "message": "서버 내부 오류가 발생했습니다."
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "시술 예약"
+        ],
+        "summary": "시술 예약 삭제",
+        "description": "시술 예약을 삭제합니다. Treatment 는 소프트삭제 컬럼이 없어 상태를 CANCELLED 로 전환해 이력을 보존합니다. 이미 취소된 예약은 멱등하게 204.",
+        "operationId": "delete_treatment_api_treatments__treatment_id__delete",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "treatment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Treatment Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "리소스를 찾을 수 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_NOT_FOUND",
+                    "message": "요청한 리소스를 찾을 수 없습니다."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "서버 오류",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_INTERNAL_ERROR",
+                    "message": "서버 내부 오류가 발생했습니다."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/treatment-menus": {
+      "get": {
+        "tags": [
+          "시술 메뉴"
+        ],
+        "summary": "시술 메뉴 목록 조회",
+        "description": "시술 메뉴 목록을 조회합니다.",
+        "operationId": "get_menus_treatment_menus_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100000,
+              "minimum": 1,
+              "description": "Page number",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number"
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Page size",
+              "default": 50,
+              "title": "Size"
+            },
+            "description": "Page size"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_TreatmentMenuResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "시술 메뉴"
+        ],
+        "summary": "시술 메뉴 생성",
+        "description": "시술 메뉴를 생성합니다.",
+        "operationId": "create_menu_treatment_menus_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TreatmentMenuCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TreatmentMenuCreateResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "리소스를 찾을 수 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_NOT_FOUND",
+                    "message": "요청한 리소스를 찾을 수 없습니다."
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "중복 또는 충돌",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_DUPLICATE",
+                    "message": "이미 존재하는 리소스입니다."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/treatment-menus/{menu_id}": {
+      "put": {
+        "tags": [
+          "시술 메뉴"
+        ],
+        "summary": "시술 메뉴 수정",
+        "description": "시술 메뉴를 수정합니다.",
+        "operationId": "update_menu_treatment_menus__menu_id__put",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "menu_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Menu Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TreatmentMenuCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TreatmentMenuCreateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "시술 메뉴"
+        ],
+        "summary": "시술 메뉴 삭제",
+        "description": "시술 메뉴를 삭제합니다.",
+        "operationId": "delete_menu_treatment_menus__menu_id__delete",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "menu_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Menu Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/treatment-menus/{menu_id}/restore": {
+      "post": {
+        "tags": [
+          "시술 메뉴"
+        ],
+        "summary": "시술 메뉴 복구",
+        "description": "시술 메뉴를 복구합니다.",
+        "operationId": "restore_menu_treatment_menus__menu_id__restore_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "menu_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Menu Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/treatment-menus/{menu_id}/details": {
+      "get": {
+        "tags": [
+          "시술 메뉴"
+        ],
+        "summary": "시술 메뉴 상세 조회",
+        "description": "시술 메뉴 상세를 조회합니다.",
+        "operationId": "get_menu_detail_treatment_menus__menu_id__details_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "menu_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Menu Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TreatmentMenuDetailResponse"
+                  },
+                  "title": "Response Get Menu Detail Treatment Menus  Menu Id  Details Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "시술 메뉴"
+        ],
+        "summary": "시술 메뉴 상세 생성",
+        "description": "시술 메뉴 상세를 생성합니다.",
+        "operationId": "create_menu_detail_treatment_menus__menu_id__details_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "menu_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Menu Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TreatmentMenuDetailCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TreatmentMenuDetailResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "접근 권한 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_FORBIDDEN",
+                    "message": "허용되지 않은 작업입니다."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "리소스를 찾을 수 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_NOT_FOUND",
+                    "message": "요청한 리소스를 찾을 수 없습니다."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/treatment-menus/{menu_id}/details/{detail_id}": {
+      "put": {
+        "tags": [
+          "시술 메뉴"
+        ],
+        "summary": "시술 메뉴 상세 수정",
+        "description": "시술 메뉴 상세를 수정합니다.",
+        "operationId": "update_menu_detail_treatment_menus__menu_id__details__detail_id__put",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "menu_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Menu Id"
+            }
+          },
+          {
+            "name": "detail_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Detail Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TreatmentMenuDetailCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TreatmentMenuDetailResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "접근 권한 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_FORBIDDEN",
+                    "message": "허용되지 않은 작업입니다."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "리소스를 찾을 수 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_NOT_FOUND",
+                    "message": "요청한 리소스를 찾을 수 없습니다."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "시술 메뉴"
+        ],
+        "summary": "시술 메뉴 상세 삭제",
+        "description": "시술 메뉴 상세를 삭제합니다.",
+        "operationId": "delete_menu_detail_treatment_menus__menu_id__details__detail_id__delete",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "menu_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Menu Id"
+            }
+          },
+          {
+            "name": "detail_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Detail Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/shops": {
+      "get": {
+        "tags": [
+          "상점"
+        ],
+        "summary": "내 샵 목록 조회",
+        "description": "로그인한 유저의 샵 목록을 조회합니다.",
+        "operationId": "get_my_shops_shops_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100000,
+              "minimum": 1,
+              "description": "Page number",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number"
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Page size",
+              "default": 50,
+              "title": "Size"
+            },
+            "description": "Page size"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_ShopResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "상점"
+        ],
+        "summary": "샵 생성",
+        "description": "새로운 샵을 생성합니다.",
+        "operationId": "create_shop_shops_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShopCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "접근 권한 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_FORBIDDEN",
+                    "message": "허용되지 않은 작업입니다."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/shops/{shop_id}": {
+      "put": {
+        "tags": [
+          "상점"
+        ],
+        "summary": "샵 수정",
+        "description": "샵 정보를 수정합니다.",
+        "operationId": "update_shop_shops__shop_id__put",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "shop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Shop Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShopUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/shops/selected": {
+      "get": {
+        "tags": [
+          "상점"
+        ],
+        "summary": "선택한 샵 조회",
+        "description": "현재 선택된 샵을 조회합니다.",
+        "operationId": "get_selected_shop_shops_selected_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "리소스를 찾을 수 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_NOT_FOUND",
+                    "message": "요청한 리소스를 찾을 수 없습니다."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "상점"
+        ],
+        "summary": "선택한 샵 설정",
+        "description": "현재 선택한 샵을 설정합니다.",
+        "operationId": "select_shop_shops_selected_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShopSelect"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "리소스를 찾을 수 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_NOT_FOUND",
+                    "message": "요청한 리소스를 찾을 수 없습니다."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "상점"
+        ],
+        "summary": "선택한 샵 삭제",
+        "description": "현재 선택된 샵을 삭제합니다.",
+        "operationId": "delete_selected_shop_shops_selected_delete",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "리소스를 찾을 수 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_NOT_FOUND",
+                    "message": "요청한 리소스를 찾을 수 없습니다."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/shops/{shop_id}/invites": {
+      "post": {
+        "tags": [
+          "상점"
+        ],
+        "summary": "샵 초대코드 생성",
+        "description": "샵에 초대코드를 생성합니다. 만료 기간은 JSON 본문의 expire_in(초, 60초 이상 30일 이하)으로 정하며, 본문이 없거나 {} 이면 7일입니다.",
+        "operationId": "create_invite_link_shops__shop_id__invites_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "shop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Shop Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShopInviteCreateRequest",
+                "default": {
+                  "expire_in": 604800
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopInviteResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "접근 권한 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_FORBIDDEN",
+                    "message": "허용되지 않은 작업입니다."
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "중복 또는 충돌",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_DUPLICATE",
+                    "message": "이미 존재하는 리소스입니다."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "상점"
+        ],
+        "summary": "샵 초대코드 조회",
+        "description": "샵에 초대코드를 조회합니다.",
+        "operationId": "get_invite_link_shops__shop_id__invites_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "shop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Shop Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopInviteResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "접근 권한 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_FORBIDDEN",
+                    "message": "허용되지 않은 작업입니다."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "리소스를 찾을 수 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_NOT_FOUND",
+                    "message": "요청한 리소스를 찾을 수 없습니다."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "상점"
+        ],
+        "summary": "샵 초대코드 삭제",
+        "description": "샵에 초대코드를 삭제합니다.",
+        "operationId": "delete_invite_link_shops__shop_id__invites_delete",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "shop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Shop Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "접근 권한 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_FORBIDDEN",
+                    "message": "허용되지 않은 작업입니다."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "리소스를 찾을 수 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_NOT_FOUND",
+                    "message": "요청한 리소스를 찾을 수 없습니다."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/shops/{shop_id}/users": {
+      "get": {
+        "tags": [
+          "상점"
+        ],
+        "summary": "샵 유저 목록 조회",
+        "description": "특정 샵에 속한 유저 목록을 조회합니다.",
+        "operationId": "get_shop_users_shops__shop_id__users_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "shop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Shop Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ShopUserUserResponse"
+                  },
+                  "title": "Response Get Shop Users Shops  Shop Id  Users Get"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "접근 권한 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_FORBIDDEN",
+                    "message": "허용되지 않은 작업입니다."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "리소스를 찾을 수 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_NOT_FOUND",
+                    "message": "요청한 리소스를 찾을 수 없습니다."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "상점"
+        ],
+        "summary": "샵 유저 연결",
+        "description": "기존 유저(email)를 샵에 연결(멤버십 부여)합니다. 대표원장만 가능. 유저 계정 생성/role 결정은 하지 않습니다(SECURITY-001 소관).",
+        "operationId": "create_shop_user_shops__shop_id__users_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "shop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Shop Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShopUserAssociateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopUserUserResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "접근 권한 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_FORBIDDEN",
+                    "message": "허용되지 않은 작업입니다."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "리소스를 찾을 수 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_NOT_FOUND",
+                    "message": "요청한 리소스를 찾을 수 없습니다."
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "중복 또는 충돌",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_DUPLICATE",
+                    "message": "이미 존재하는 리소스입니다."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/shops/{shop_id}/users/{user_id}": {
+      "put": {
+        "tags": [
+          "상점"
+        ],
+        "summary": "샵 유저 연결 수정",
+        "description": "샵-유저 연결(대표원장 여부)을 수정합니다. 대표원장만 가능. role 등 권한 필드는 다루지 않습니다(SECURITY-001 소관).",
+        "operationId": "update_shop_user_shops__shop_id__users__user_id__put",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "shop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Shop Id"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShopUserAssociateUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopUserUserResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "접근 권한 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_FORBIDDEN",
+                    "message": "허용되지 않은 작업입니다."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "리소스를 찾을 수 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_NOT_FOUND",
+                    "message": "요청한 리소스를 찾을 수 없습니다."
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "중복 또는 충돌",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_DUPLICATE",
+                    "message": "이미 존재하는 리소스입니다."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "상점"
+        ],
+        "summary": "샵 유저 연결 삭제",
+        "description": "샵-유저 연결(멤버십)을 해제합니다. 대표원장만 가능. 연결 테이블 매핑만 제거하며 유저 계정은 유지됩니다.",
+        "operationId": "delete_shop_user_shops__shop_id__users__user_id__delete",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "shop_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Shop Id"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "User Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "접근 권한 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_FORBIDDEN",
+                    "message": "허용되지 않은 작업입니다."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "리소스를 찾을 수 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_NOT_FOUND",
+                    "message": "요청한 리소스를 찾을 수 없습니다."
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "중복 또는 충돌",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_DUPLICATE",
+                    "message": "이미 존재하는 리소스입니다."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/summary/dashboard": {
+      "get": {
+        "tags": [
+          "통계"
+        ],
+        "summary": "대시보드 요약 정보 조회",
+        "description": "오늘/이번달의 예약 통계, 시술 매출, 고객 인사이트 등을 포함한 대시보드 요약 정보를 조회합니다.",
+        "operationId": "get_dashboard_summary_summary_dashboard_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "target_date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "description": "조회 날짜 (YYYY-MM-DD)",
+              "title": "Target Date"
+            },
+            "description": "조회 날짜 (YYYY-MM-DD)"
+          },
+          {
+            "name": "force_refresh",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "캐시 무효화 여부. True인 경우 캐시를 무시하고 DB에서 직접 조회",
+              "default": false,
+              "title": "Force Refresh"
+            },
+            "description": "캐시 무효화 여부. True인 경우 캐시를 무시하고 DB에서 직접 조회"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardSummaryResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "리소스를 찾을 수 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_NOT_FOUND",
+                    "message": "요청한 리소스를 찾을 수 없습니다."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/device-tokens": {
+      "post": {
+        "tags": [
+          "디바이스 푸시 토큰"
+        ],
+        "summary": "디바이스 푸시 토큰 등록",
+        "description": "디바이스의 FCM 토큰을 등록합니다. 이미 존재하는 토큰이면 업데이트합니다. 토큰 소유자는 항상 로그인 사용자이며(본문 user_id 는 무시), shop_id 는 사용자가 멤버인 샵만 지정할 수 있습니다.",
+        "operationId": "register_device_token_device_tokens_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevicePushTokenCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevicePushTokenResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "접근 권한 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_FORBIDDEN",
+                    "message": "허용되지 않은 작업입니다."
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "중복 또는 충돌",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_DUPLICATE",
+                    "message": "이미 존재하는 리소스입니다."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "서버 오류",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_INTERNAL_ERROR",
+                    "message": "서버 내부 오류가 발생했습니다."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/device-tokens/me": {
+      "get": {
+        "tags": [
+          "디바이스 푸시 토큰"
+        ],
+        "summary": "내 디바이스 토큰 목록 조회",
+        "description": "현재 로그인한 사용자의 활성화된 디바이스 토큰 목록을 조회합니다.",
+        "operationId": "get_my_device_tokens_device_tokens_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DevicePushTokenResponse"
+                  },
+                  "type": "array",
+                  "title": "Response Get My Device Tokens Device Tokens Me Get"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "서버 오류",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_INTERNAL_ERROR",
+                    "message": "서버 내부 오류가 발생했습니다."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/device-tokens/{token_id}": {
+      "patch": {
+        "tags": [
+          "디바이스 푸시 토큰"
+        ],
+        "summary": "디바이스 토큰 수정",
+        "description": "디바이스 푸시 토큰 정보를 수정합니다. 본인 토큰만 대상이며, 다른 사용자의 토큰은 404 로 응답합니다. 이미 등록된 토큰 문자열로 바꾸면 409 로 응답합니다.",
+        "operationId": "update_device_token_device_tokens__token_id__patch",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "token_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Token Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevicePushTokenUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevicePushTokenResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "리소스를 찾을 수 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_NOT_FOUND",
+                    "message": "요청한 리소스를 찾을 수 없습니다."
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "중복 또는 충돌",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_DUPLICATE",
+                    "message": "이미 존재하는 리소스입니다."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "서버 오류",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_INTERNAL_ERROR",
+                    "message": "서버 내부 오류가 발생했습니다."
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "디바이스 푸시 토큰"
+        ],
+        "summary": "디바이스 토큰 삭제",
+        "description": "디바이스 푸시 토큰을 삭제합니다. 본인 토큰만 대상이며, 다른 사용자의 토큰은 404 로 응답합니다.",
+        "operationId": "delete_device_token_device_tokens__token_id__delete",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "token_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Token Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "리소스를 찾을 수 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_NOT_FOUND",
+                    "message": "요청한 리소스를 찾을 수 없습니다."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "서버 오류",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_INTERNAL_ERROR",
+                    "message": "서버 내부 오류가 발생했습니다."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/device-tokens/send-fcm": {
+      "post": {
+        "tags": [
+          "디바이스 푸시 토큰"
+        ],
+        "summary": "FCM 푸시 알림 전송",
+        "description": "특정 유저 또는 샵의 디바이스에 FCM 푸시 알림을 전송합니다. 같은 샵 멤버에게만 보낼 수 있습니다: user_id 는 본인이거나 샵을 공유하는 유저, shop_id 는 본인이 멤버인 샵(현재 멤버의 디바이스로만 전송).",
+        "operationId": "send_fcm_notification_device_tokens_send_fcm_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FCMMessageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FCMMessageResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "잘못된 요청",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_BAD_REQUEST",
+                    "message": "요청이 잘못되었습니다."
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "접근 권한 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_FORBIDDEN",
+                    "message": "허용되지 않은 작업입니다."
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "리소스를 찾을 수 없음",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_NOT_FOUND",
+                    "message": "요청한 리소스를 찾을 수 없습니다."
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "서버 오류",
+            "content": {
+              "application/json": {
+                "example": {
+                  "detail": {
+                    "code": "{DOMAIN}_INTERNAL_ERROR",
+                    "message": "서버 내부 오류가 발생했습니다."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/changelog": {
+      "get": {
+        "summary": "Get Api Changelog",
+        "operationId": "get_api_changelog_changelog_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Body_login_auth_login_post": {
+        "properties": {
+          "grant_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^password$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grant Type"
+          },
+          "username": {
+            "type": "string",
+            "title": "Username"
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "title": "Password"
+          },
+          "scope": {
+            "type": "string",
+            "title": "Scope",
+            "default": ""
+          },
+          "client_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Id"
+          },
+          "client_secret": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "format": "password",
+            "title": "Client Secret"
+          }
+        },
+        "type": "object",
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "Body_login_auth_login_post"
+      },
+      "DashboardCustomerInsight": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "예약 ID"
+          },
+          "reserved_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Reserved At",
+            "description": "예약 일시"
+          },
+          "customer_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Name",
+            "description": "고객 이름"
+          },
+          "phone_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone Number",
+            "description": "전화번호"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "예약 상태 (예: RESERVED, COMPLETED 등)"
+          },
+          "treatments": {
+            "items": {
+              "$ref": "#/components/schemas/TreatmentItemBase"
+            },
+            "type": "array",
+            "title": "Treatments",
+            "description": "시술 항목 이름 목록"
+          },
+          "total_duration_min": {
+            "type": "integer",
+            "title": "Total Duration Min",
+            "description": "총 시술 소요 시간 (분)"
+          },
+          "total_price": {
+            "type": "integer",
+            "title": "Total Price",
+            "description": "총 시술 금액 (원)"
+          },
+          "memo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Memo",
+            "description": "시술 메모"
+          },
+          "payment_method": {
+            "type": "string",
+            "title": "Payment Method",
+            "description": "결제 수단 (CARD, CASH, UNPAID 등)"
+          },
+          "staff": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Staff",
+            "description": "담당 직원 이름"
+          },
+          "staff_user": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserBaseResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "담당 직원 정보"
+          },
+          "total_reservations": {
+            "type": "integer",
+            "title": "Total Reservations",
+            "description": "고객의 총 예약 횟수"
+          },
+          "no_show_count": {
+            "type": "integer",
+            "title": "No Show Count",
+            "description": "노쇼 횟수"
+          },
+          "no_show_rate": {
+            "type": "number",
+            "title": "No Show Rate",
+            "description": "노쇼 비율 (%)"
+          },
+          "unpaid_amount": {
+            "type": "integer",
+            "title": "Unpaid Amount",
+            "description": "외상 금액 (미결제)"
+          },
+          "total_spent": {
+            "type": "integer",
+            "title": "Total Spent",
+            "description": "총 결제 금액"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "reserved_at",
+          "status",
+          "treatments",
+          "total_duration_min",
+          "total_price",
+          "payment_method",
+          "total_reservations",
+          "no_show_count",
+          "no_show_rate",
+          "unpaid_amount",
+          "total_spent"
+        ],
+        "title": "DashboardCustomerInsight"
+      },
+      "DashboardSalesSummary": {
+        "properties": {
+          "target_date": {
+            "items": {
+              "$ref": "#/components/schemas/TreatmentSalesItem"
+            },
+            "type": "array",
+            "title": "Target Date",
+            "description": "조회 날짜에 시술 항목별 매출/건수 요약"
+          },
+          "month": {
+            "items": {
+              "$ref": "#/components/schemas/TreatmentSalesItem"
+            },
+            "type": "array",
+            "title": "Month",
+            "description": "월간 시술 항목별 매출/건수 요약"
+          }
+        },
+        "type": "object",
+        "required": [
+          "target_date",
+          "month"
+        ],
+        "title": "DashboardSalesSummary"
+      },
+      "DashboardStaffSummary": {
+        "properties": {
+          "target_date": {
+            "items": {
+              "$ref": "#/components/schemas/DashboardStaffSummaryItem"
+            },
+            "type": "array",
+            "title": "Target Date"
+          },
+          "month": {
+            "items": {
+              "$ref": "#/components/schemas/DashboardStaffSummaryItem"
+            },
+            "type": "array",
+            "title": "Month"
+          }
+        },
+        "type": "object",
+        "required": [
+          "target_date",
+          "month"
+        ],
+        "title": "DashboardStaffSummary"
+      },
+      "DashboardStaffSummaryItem": {
+        "properties": {
+          "staff_id": {
+            "type": "integer",
+            "title": "Staff Id"
+          },
+          "staff_name": {
+            "type": "string",
+            "title": "Staff Name"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "staff_id",
+          "staff_name",
+          "count"
+        ],
+        "title": "DashboardStaffSummaryItem"
+      },
+      "DashboardSummary": {
+        "properties": {
+          "target_date": {
+            "$ref": "#/components/schemas/TreatmentSummarySchema",
+            "description": "조회 날짜에 대한 시술 통계"
+          },
+          "month": {
+            "$ref": "#/components/schemas/TreatmentSummarySchema",
+            "description": "해당 월의 시술 통계 (1일부터 조회 날짜까지)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "target_date",
+          "month"
+        ],
+        "title": "DashboardSummary"
+      },
+      "DashboardSummaryResponse": {
+        "properties": {
+          "target_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Target Date",
+            "description": "조회 날짜 (YYYY-MM-DD)"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/DashboardSummary",
+            "description": "대시보드 요약 정보"
+          },
+          "sales": {
+            "$ref": "#/components/schemas/DashboardSalesSummary",
+            "description": "시술 항목별 매출/건수 요약"
+          },
+          "customer_insights": {
+            "items": {
+              "$ref": "#/components/schemas/DashboardCustomerInsight"
+            },
+            "type": "array",
+            "title": "Customer Insights",
+            "description": "고객 인사이트 정보"
+          },
+          "staff_summary": {
+            "$ref": "#/components/schemas/DashboardStaffSummary",
+            "description": "직원별 시술 통계 요약"
+          }
+        },
+        "type": "object",
+        "required": [
+          "summary",
+          "sales",
+          "customer_insights",
+          "staff_summary"
+        ],
+        "title": "DashboardSummaryResponse"
+      },
+      "DevicePushTokenCreate": {
+        "properties": {
+          "shop_id": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647,
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shop Id",
+            "description": "샵 ID"
+          },
+          "device_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Id",
+            "description": "디바이스 고유 ID"
+          },
+          "token": {
+            "type": "string",
+            "maxLength": 512,
+            "title": "Token",
+            "description": "FCM 토큰"
+          },
+          "platform": {
+            "type": "string",
+            "maxLength": 10,
+            "title": "Platform",
+            "description": "플랫폼 (iOS/Android 등)"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active",
+            "description": "활성화 여부",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "token",
+          "platform"
+        ],
+        "title": "DevicePushTokenCreate",
+        "description": "디바이스 푸시 토큰 생성 요청 스키마.\n\nuser_id 는 받지 않는다. 토큰 소유자는 서버가 current_user.id 로 강제한다\n(IDOR 방지). 구버전 클라이언트가 user_id 를 보내도 거부(422)하지 않고\n무시한다(pydantic 기본 extra=\"ignore\") — 하위 호환 유지."
+      },
+      "DevicePushTokenResponse": {
+        "properties": {
+          "shop_id": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647,
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shop Id",
+            "description": "샵 ID"
+          },
+          "device_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Id",
+            "description": "디바이스 고유 ID"
+          },
+          "token": {
+            "type": "string",
+            "title": "Token",
+            "description": "FCM 토큰"
+          },
+          "platform": {
+            "type": "string",
+            "maxLength": 10,
+            "title": "Platform",
+            "description": "플랫폼 (iOS/Android 등)"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active",
+            "description": "활성화 여부",
+            "default": true
+          },
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "디바이스 푸시 토큰 ID"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id",
+            "description": "유저 ID"
+          }
+        },
+        "type": "object",
+        "required": [
+          "token",
+          "platform",
+          "id"
+        ],
+        "title": "DevicePushTokenResponse",
+        "description": "디바이스 푸시 토큰 응답 스키마."
+      },
+      "DevicePushTokenUpdate": {
+        "properties": {
+          "device_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Id",
+            "description": "디바이스 고유 ID"
+          },
+          "token": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Token",
+            "description": "FCM 토큰"
+          },
+          "platform": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform",
+            "description": "플랫폼 (iOS/Android 등)"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active",
+            "description": "활성화 여부"
+          }
+        },
+        "type": "object",
+        "title": "DevicePushTokenUpdate",
+        "description": "디바이스 푸시 토큰 수정 요청 스키마."
+      },
+      "DuplicateCheckResponse": {
+        "properties": {
+          "exists": {
+            "type": "boolean",
+            "title": "Exists",
+            "description": "중복 여부"
+          },
+          "phone_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone Number",
+            "description": "입력한 전화번호"
+          }
+        },
+        "type": "object",
+        "required": [
+          "exists"
+        ],
+        "title": "DuplicateCheckResponse"
+      },
+      "FCMMessageRequest": {
+        "properties": {
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647,
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id",
+            "description": "유저 ID (user_id 또는 shop_id 중 하나 필수)"
+          },
+          "shop_id": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647,
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shop Id",
+            "description": "샵 ID (user_id 또는 shop_id 중 하나 필수)"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "description": "푸시 알림 제목"
+          },
+          "body": {
+            "type": "string",
+            "title": "Body",
+            "description": "푸시 알림 내용"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data",
+            "description": "추가 데이터"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "body"
+        ],
+        "title": "FCMMessageRequest",
+        "description": "FCM 메시지 전송 요청 스키마."
+      },
+      "FCMMessageResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "description": "성공 여부"
+          },
+          "message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message Id",
+            "description": "FCM 메시지 ID"
+          },
+          "success_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Success Count",
+            "description": "성공한 메시지 수"
+          },
+          "failure_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Count",
+            "description": "실패한 메시지 수"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "FCMMessageResponse",
+        "description": "FCM 메시지 전송 응답 스키마."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "LoginResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "refresh_token": {
+            "type": "string",
+            "title": "Refresh Token"
+          },
+          "token_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Token Type",
+            "description": "토큰 타입",
+            "default": "bearer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "refresh_token"
+        ],
+        "title": "LoginResponse"
+      },
+      "Page_PhonebookResponse_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PhonebookResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Total"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Page"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Size"
+          },
+          "pages": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Pages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "size",
+          "pages"
+        ],
+        "title": "Page[PhonebookResponse]"
+      },
+      "Page_ShopResponse_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ShopResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Total"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Page"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Size"
+          },
+          "pages": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Pages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "size",
+          "pages"
+        ],
+        "title": "Page[ShopResponse]"
+      },
+      "Page_TreatmentMenuResponse_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TreatmentMenuResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Total"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Page"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Size"
+          },
+          "pages": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Pages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "size",
+          "pages"
+        ],
+        "title": "Page[TreatmentMenuResponse]"
+      },
+      "Page_TreatmentResponse_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TreatmentResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Total"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Page"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Size"
+          },
+          "pages": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Pages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "size",
+          "pages"
+        ],
+        "title": "Page[TreatmentResponse]"
+      },
+      "PaymentMethod": {
+        "type": "string",
+        "enum": [
+          "CARD",
+          "CASH",
+          "UNPAID"
+        ],
+        "title": "PaymentMethod"
+      },
+      "PhonebookCreate": {
+        "properties": {
+          "group_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Name",
+            "description": "그룹 이름"
+          },
+          "memo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Memo",
+            "description": "메모"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Name",
+            "description": "이름"
+          },
+          "phone_number": {
+            "type": "string",
+            "maxLength": 20,
+            "title": "Phone Number",
+            "description": "전화번호"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "phone_number"
+        ],
+        "title": "PhonebookCreate"
+      },
+      "PhonebookGroupedByGroupnameResponse": {
+        "properties": {
+          "group_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Name",
+            "description": "그룹 이름 (그룹 없음은 null)"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "description": "전화번호부 개수"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PhonebookResponse"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "전화번호부 목록",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "group_name",
+          "count"
+        ],
+        "title": "PhonebookGroupedByGroupnameResponse"
+      },
+      "PhonebookResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "전화번호부 ID"
+          },
+          "shop_id": {
+            "type": "integer",
+            "title": "Shop Id",
+            "description": "상점 ID"
+          },
+          "group_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Name",
+            "description": "그룹 이름"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Name",
+            "description": "이름"
+          },
+          "phone_number": {
+            "type": "string",
+            "maxLength": 20,
+            "title": "Phone Number",
+            "description": "전화번호"
+          },
+          "memo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Memo",
+            "description": "메모"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "생성일"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "description": "수정일"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "shop_id",
+          "name",
+          "phone_number",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "PhonebookResponse"
+      },
+      "PhonebookUpdate": {
+        "properties": {
+          "group_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group Name",
+            "description": "그룹 이름"
+          },
+          "memo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Memo",
+            "description": "메모"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "이름"
+          },
+          "phone_number": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone Number",
+            "description": "전화번호"
+          }
+        },
+        "type": "object",
+        "title": "PhonebookUpdate"
+      },
+      "ShopCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 2,
+            "title": "Name",
+            "description": "샵 이름"
+          },
+          "address": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 2,
+            "title": "Address",
+            "description": "주소"
+          },
+          "address_detail": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address Detail",
+            "description": "상세 주소"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone",
+            "description": "전화번호"
+          },
+          "business_number": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Business Number",
+            "description": "사업자 등록번호"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "address"
+        ],
+        "title": "ShopCreate"
+      },
+      "ShopInviteCreateRequest": {
+        "properties": {
+          "expire_in": {
+            "type": "integer",
+            "maximum": 2592000,
+            "minimum": 60,
+            "title": "Expire In",
+            "description": "초대코드 만료 기간(초 단위, 60초 이상 30일 이하)",
+            "default": 604800
+          }
+        },
+        "type": "object",
+        "title": "ShopInviteCreateRequest"
+      },
+      "ShopInviteResponse": {
+        "properties": {
+          "shop_id": {
+            "type": "integer",
+            "title": "Shop Id"
+          },
+          "invite_code": {
+            "type": "string",
+            "title": "Invite Code"
+          },
+          "expired_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expired At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "shop_id",
+          "invite_code",
+          "expired_at"
+        ],
+        "title": "ShopInviteResponse"
+      },
+      "ShopResponse": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 2,
+            "title": "Name",
+            "description": "샵 이름"
+          },
+          "address": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 2,
+            "title": "Address",
+            "description": "주소"
+          },
+          "address_detail": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address Detail",
+            "description": "상세 주소"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone",
+            "description": "전화번호"
+          },
+          "business_number": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Business Number",
+            "description": "사업자 등록번호"
+          },
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "샵 ID"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "생성일"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "description": "수정일"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "address",
+          "id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ShopResponse"
+      },
+      "ShopSelect": {
+        "properties": {
+          "shop_id": {
+            "type": "integer",
+            "maximum": 2147483647,
+            "minimum": 1,
+            "title": "Shop Id",
+            "description": "샵 ID"
+          }
+        },
+        "type": "object",
+        "required": [
+          "shop_id"
+        ],
+        "title": "ShopSelect"
+      },
+      "ShopUpdate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 2,
+            "title": "Name",
+            "description": "샵 이름"
+          },
+          "address": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 2,
+            "title": "Address",
+            "description": "주소"
+          },
+          "address_detail": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address Detail",
+            "description": "상세 주소"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone",
+            "description": "전화번호"
+          },
+          "business_number": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Business Number",
+            "description": "사업자 등록번호"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "address"
+        ],
+        "title": "ShopUpdate"
+      },
+      "ShopUserAssociateRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 50,
+            "format": "email",
+            "title": "Email",
+            "description": "연결할 대상 유저의 이메일"
+          },
+          "is_primary_owner": {
+            "type": "integer",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Is Primary Owner",
+            "description": "대표 원장 여부 (1=대표, 0=아님)",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "title": "ShopUserAssociateRequest",
+        "description": "샵에 기존 유저를 연결(멤버십 부여)하는 요청 스키마.\n\nemail 로 대상 유저를 식별한다. role/password 등 유저 계정 필드는 받지 않는다\n(계정 생성/권한 결정은 이 계약의 범위가 아니며 SECURITY-001 소관)."
+      },
+      "ShopUserAssociateUpdateRequest": {
+        "properties": {
+          "is_primary_owner": {
+            "type": "integer",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Is Primary Owner",
+            "description": "대표 원장 여부 (1=대표, 0=아님)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "is_primary_owner"
+        ],
+        "title": "ShopUserAssociateUpdateRequest",
+        "description": "샵-유저 연결(멤버십)을 수정하는 요청 스키마.\n\n현재는 대표원장 여부만 갱신 대상이다. role 등 권한 필드는 받지 않는다."
+      },
+      "ShopUserUserResponse": {
+        "properties": {
+          "shop_id": {
+            "type": "integer",
+            "title": "Shop Id",
+            "description": "샵 ID"
+          },
+          "user_id": {
+            "type": "integer",
+            "title": "User Id",
+            "description": "유저 ID"
+          },
+          "is_primary_owner": {
+            "type": "integer",
+            "title": "Is Primary Owner",
+            "description": "대표 원장 여부 (1=대표, 0=아님)"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserResponse",
+            "description": "유저 정보"
+          }
+        },
+        "type": "object",
+        "required": [
+          "shop_id",
+          "user_id",
+          "is_primary_owner",
+          "user"
+        ],
+        "title": "ShopUserUserResponse"
+      },
+      "TreatmentCreate": {
+        "properties": {
+          "phonebook_id": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647,
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phonebook Id",
+            "description": "시술 대상 고객 ID (선택)"
+          },
+          "customer_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Name",
+            "description": "고객명 (전화번호부 미등록 시)"
+          },
+          "customer_phone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Phone",
+            "description": "고객 전화번호 (전화번호부 미등록 시)"
+          },
+          "reserved_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Reserved At",
+            "description": "예약 일시"
+          },
+          "memo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Memo",
+            "description": "메모"
+          },
+          "status": {
+            "$ref": "#/components/schemas/TreatmentStatus",
+            "description": "예약 상태"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At",
+            "description": "시술 완료일시"
+          },
+          "payment_method": {
+            "$ref": "#/components/schemas/PaymentMethod",
+            "description": "결제 수단",
+            "default": "CARD"
+          },
+          "staff_user_id": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647,
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Staff User Id",
+            "description": "시술 담당자 유저 ID"
+          },
+          "treatment_items": {
+            "items": {
+              "$ref": "#/components/schemas/TreatmentItemCreate"
+            },
+            "type": "array",
+            "title": "Treatment Items",
+            "description": "시술 항목 리스트"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reserved_at",
+          "status"
+        ],
+        "title": "TreatmentCreate",
+        "description": "시술 생성 스키마."
+      },
+      "TreatmentItemBase": {
+        "properties": {
+          "treatment_id": {
+            "type": "integer",
+            "title": "Treatment Id",
+            "description": "시술 예약 ID"
+          },
+          "menu_detail_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Menu Detail Id",
+            "description": "시술 상세 ID"
+          },
+          "base_price": {
+            "type": "integer",
+            "title": "Base Price",
+            "description": "기본 가격",
+            "default": 0
+          },
+          "duration_min": {
+            "type": "integer",
+            "title": "Duration Min",
+            "description": "소요 시간 (분)",
+            "default": 0
+          },
+          "session_no": {
+            "type": "integer",
+            "title": "Session No",
+            "description": "시술 회차",
+            "default": 1
+          },
+          "menu_detail": {
+            "$ref": "#/components/schemas/TreatmentMenuDetailBase",
+            "description": "시술 항목 상세 정보"
+          }
+        },
+        "type": "object",
+        "required": [
+          "treatment_id"
+        ],
+        "title": "TreatmentItemBase",
+        "description": "시술 항목 기본 스키마."
+      },
+      "TreatmentItemCreate": {
+        "properties": {
+          "menu_detail_id": {
+            "type": "integer",
+            "maximum": 2147483647,
+            "minimum": 1,
+            "title": "Menu Detail Id",
+            "description": "시술 상세 ID"
+          },
+          "base_price": {
+            "type": "integer",
+            "maximum": 2147483647,
+            "minimum": 0,
+            "title": "Base Price",
+            "description": "기본 가격"
+          },
+          "duration_min": {
+            "type": "integer",
+            "maximum": 1440,
+            "minimum": 0,
+            "title": "Duration Min",
+            "description": "소요 시간 (분)"
+          },
+          "session_no": {
+            "type": "integer",
+            "maximum": 32767,
+            "minimum": 1,
+            "title": "Session No",
+            "description": "시술 회차"
+          }
+        },
+        "type": "object",
+        "required": [
+          "menu_detail_id",
+          "base_price",
+          "duration_min",
+          "session_no"
+        ],
+        "title": "TreatmentItemCreate",
+        "description": "시술 항목 생성 요청 스키마."
+      },
+      "TreatmentItemResponse": {
+        "properties": {
+          "treatment_id": {
+            "type": "integer",
+            "title": "Treatment Id",
+            "description": "시술 예약 ID"
+          },
+          "menu_detail_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Menu Detail Id",
+            "description": "시술 상세 ID"
+          },
+          "base_price": {
+            "type": "integer",
+            "title": "Base Price",
+            "description": "기본 가격",
+            "default": 0
+          },
+          "duration_min": {
+            "type": "integer",
+            "title": "Duration Min",
+            "description": "소요 시간 (분)",
+            "default": 0
+          },
+          "session_no": {
+            "type": "integer",
+            "title": "Session No",
+            "description": "시술 회차",
+            "default": 1
+          },
+          "menu_detail": {
+            "$ref": "#/components/schemas/TreatmentMenuDetailBase",
+            "description": "시술 항목 상세 정보"
+          },
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "시술 항목 ID"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "생성일시"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "description": "수정일시"
+          }
+        },
+        "type": "object",
+        "required": [
+          "treatment_id",
+          "id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "TreatmentItemResponse",
+        "description": "시술 항목 응답 스키마."
+      },
+      "TreatmentItemUpdate": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id",
+            "description": "시술 항목 ID"
+          },
+          "menu_detail_id": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647,
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Menu Detail Id",
+            "description": "시술 상세 ID"
+          },
+          "base_price": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647,
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Price",
+            "description": "기본 가격"
+          },
+          "duration_min": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 1440,
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Min",
+            "description": "소요 시간 (분)"
+          },
+          "session_no": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 32767,
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session No",
+            "description": "시술 회차"
+          }
+        },
+        "type": "object",
+        "title": "TreatmentItemUpdate",
+        "description": "시술 항목 수정 요청 스키마."
+      },
+      "TreatmentMenuCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Name",
+            "description": "시술 메뉴 이름"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "TreatmentMenuCreate"
+      },
+      "TreatmentMenuCreateResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "시술 메뉴 ID"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Name",
+            "description": "시술 메뉴 이름"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "생성일"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "description": "수정일"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "TreatmentMenuCreateResponse"
+      },
+      "TreatmentMenuDetailBase": {
+        "properties": {
+          "menu_id": {
+            "type": "integer",
+            "title": "Menu Id",
+            "description": "시술 메뉴 대분류 ID"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Name",
+            "description": "시술 항목명"
+          },
+          "duration_min": {
+            "type": "integer",
+            "title": "Duration Min",
+            "description": "기본 시술 시간 (분)"
+          },
+          "base_price": {
+            "type": "integer",
+            "title": "Base Price",
+            "description": "기본 시술 가격 (원)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "menu_id",
+          "name",
+          "duration_min",
+          "base_price"
+        ],
+        "title": "TreatmentMenuDetailBase",
+        "description": "시술 상세 정보 기본 스키마."
+      },
+      "TreatmentMenuDetailCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Name",
+            "description": "시술 메뉴 상세 이름"
+          },
+          "duration_min": {
+            "type": "integer",
+            "maximum": 2147483647,
+            "exclusiveMinimum": 0,
+            "title": "Duration Min",
+            "description": "시술 소요 시간(분)"
+          },
+          "base_price": {
+            "type": "integer",
+            "maximum": 2147483647,
+            "exclusiveMinimum": 0,
+            "title": "Base Price",
+            "description": "기본 가격"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "duration_min",
+          "base_price"
+        ],
+        "title": "TreatmentMenuDetailCreate"
+      },
+      "TreatmentMenuDetailResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "시술 메뉴 상세 ID"
+          },
+          "menu_id": {
+            "type": "integer",
+            "title": "Menu Id",
+            "description": "시술 메뉴 ID"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Name",
+            "description": "시술 메뉴 상세 이름"
+          },
+          "duration_min": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "title": "Duration Min",
+            "description": "시술 소요 시간(분)"
+          },
+          "base_price": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "title": "Base Price",
+            "description": "기본 가격"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "생성일"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "description": "수정일"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "menu_id",
+          "name",
+          "duration_min",
+          "base_price",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "TreatmentMenuDetailResponse"
+      },
+      "TreatmentMenuResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "시술 메뉴 ID"
+          },
+          "shop_id": {
+            "type": "integer",
+            "title": "Shop Id",
+            "description": "시술 메뉴 가게 ID"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Name",
+            "description": "시술 메뉴 이름"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "생성일"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "description": "수정일"
+          },
+          "details": {
+            "items": {
+              "$ref": "#/components/schemas/TreatmentMenuDetailResponse"
+            },
+            "type": "array",
+            "title": "Details",
+            "description": "시술 메뉴 상세 목록",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "shop_id",
+          "name",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "TreatmentMenuResponse"
+      },
+      "TreatmentResponse": {
+        "properties": {
+          "phonebook_id": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647,
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phonebook Id",
+            "description": "시술 대상 고객 ID (선택)"
+          },
+          "customer_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Name",
+            "description": "고객명 (전화번호부 미등록 시)"
+          },
+          "customer_phone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Phone",
+            "description": "고객 전화번호 (전화번호부 미등록 시)"
+          },
+          "reserved_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Reserved At",
+            "description": "예약 일시"
+          },
+          "memo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Memo",
+            "description": "메모"
+          },
+          "status": {
+            "$ref": "#/components/schemas/TreatmentStatus",
+            "description": "예약 상태"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At",
+            "description": "시술 완료일시"
+          },
+          "payment_method": {
+            "$ref": "#/components/schemas/PaymentMethod",
+            "description": "결제 수단",
+            "default": "CARD"
+          },
+          "staff_user_id": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647,
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Staff User Id",
+            "description": "시술 담당자 유저 ID"
+          },
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "시술 예약 ID"
+          },
+          "shop_id": {
+            "type": "integer",
+            "title": "Shop Id",
+            "description": "상점 ID"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "생성일시"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "description": "수정일시"
+          },
+          "created_user_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created User Id",
+            "description": "예약 생성자 유저 ID"
+          },
+          "status_label": {
+            "type": "string",
+            "title": "Status Label",
+            "description": "예약 상태 라벨"
+          },
+          "payment_method_label": {
+            "type": "string",
+            "title": "Payment Method Label",
+            "description": "결제 수단 라벨"
+          },
+          "treatment_items": {
+            "items": {
+              "$ref": "#/components/schemas/TreatmentItemResponse"
+            },
+            "type": "array",
+            "title": "Treatment Items",
+            "description": "시술 항목 리스트"
+          },
+          "phonebook": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PhonebookResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "시술 대상 고객 정보 (전화번호부 등록 고객)"
+          },
+          "staff_user": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserBase"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "시술 담당자 유저 정보"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reserved_at",
+          "status",
+          "id",
+          "shop_id",
+          "created_at",
+          "updated_at",
+          "created_user_id",
+          "treatment_items"
+        ],
+        "title": "TreatmentResponse",
+        "description": "시술 조회 스키마."
+      },
+      "TreatmentSalesItem": {
+        "properties": {
+          "menu_detail_id": {
+            "type": "integer",
+            "title": "Menu Detail Id",
+            "description": "시술 항목 ID"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "시술명"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "description": "예약 건수"
+          },
+          "expected_price": {
+            "type": "integer",
+            "title": "Expected Price",
+            "description": "총 예상 매출"
+          },
+          "actual_price": {
+            "type": "integer",
+            "title": "Actual Price",
+            "description": "실제 시술 완료된 금액"
+          }
+        },
+        "type": "object",
+        "required": [
+          "menu_detail_id",
+          "name",
+          "count",
+          "expected_price",
+          "actual_price"
+        ],
+        "title": "TreatmentSalesItem"
+      },
+      "TreatmentSimpleResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "TreatmentSimpleResponse"
+      },
+      "TreatmentStatus": {
+        "type": "string",
+        "enum": [
+          "RESERVED",
+          "VISITED",
+          "CANCELLED",
+          "NO_SHOW",
+          "COMPLETED"
+        ],
+        "title": "TreatmentStatus"
+      },
+      "TreatmentSummarySchema": {
+        "properties": {
+          "total_reservations": {
+            "type": "integer",
+            "title": "Total Reservations",
+            "description": "전체 예약 건수 (조회기간 내)"
+          },
+          "completed": {
+            "type": "integer",
+            "title": "Completed",
+            "description": "완료된 시술 수"
+          },
+          "reserved": {
+            "type": "integer",
+            "title": "Reserved",
+            "description": "예약 상태(미방문) 건수"
+          },
+          "visited": {
+            "type": "integer",
+            "title": "Visited",
+            "description": "방문하여 시술한 고객 수"
+          },
+          "canceled": {
+            "type": "integer",
+            "title": "Canceled",
+            "description": "취소된 예약 건수"
+          },
+          "no_show": {
+            "type": "integer",
+            "title": "No Show",
+            "description": "노쇼(예약 후 미방문) 건수"
+          },
+          "expected_sales": {
+            "type": "integer",
+            "title": "Expected Sales",
+            "description": "예상 매출 (RESERVED, VISITED, COMPLETED 합계)"
+          },
+          "actual_sales": {
+            "type": "integer",
+            "title": "Actual Sales",
+            "description": "실매출 (COMPLETED 상태 중 결제 완료만 집계)"
+          },
+          "unpaid_total": {
+            "type": "integer",
+            "title": "Unpaid Total",
+            "description": "외상 결제 합계 (COMPLETED 중 결제 미수금)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_reservations",
+          "completed",
+          "reserved",
+          "visited",
+          "canceled",
+          "no_show",
+          "expected_sales",
+          "actual_sales",
+          "unpaid_total"
+        ],
+        "title": "TreatmentSummarySchema"
+      },
+      "TreatmentUpdate": {
+        "properties": {
+          "phonebook_id": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647,
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phonebook Id",
+            "description": "시술 대상 고객 ID (선택)"
+          },
+          "customer_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Name",
+            "description": "고객명 (전화번호부 미등록 시)"
+          },
+          "customer_phone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Phone",
+            "description": "고객 전화번호 (전화번호부 미등록 시)"
+          },
+          "reserved_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Reserved At",
+            "description": "예약 일시"
+          },
+          "memo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Memo",
+            "description": "메모"
+          },
+          "status": {
+            "$ref": "#/components/schemas/TreatmentStatus",
+            "description": "예약 상태"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At",
+            "description": "시술 완료일시"
+          },
+          "payment_method": {
+            "$ref": "#/components/schemas/PaymentMethod",
+            "description": "결제 수단",
+            "default": "CARD"
+          },
+          "staff_user_id": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647,
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Staff User Id",
+            "description": "시술 담당자 유저 ID"
+          },
+          "treatment_items": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/TreatmentItemUpdate"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Treatment Items",
+            "description": "시술 항목 리스트. 생략하거나 null 이면 기존 항목을 유지하고, 목록을 보내면 그 목록으로 교체한다(빈 목록이면 전체 삭제)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "reserved_at",
+          "status"
+        ],
+        "title": "TreatmentUpdate",
+        "description": "시술 수정 스키마."
+      },
+      "UserBase": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 3,
+            "title": "Name",
+            "description": "이름"
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 50,
+            "format": "email",
+            "title": "Email",
+            "description": "유효한 이메일 주소"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "email"
+        ],
+        "title": "UserBase"
+      },
+      "UserBaseResponse": {
+        "properties": {
+          "role": {
+            "$ref": "#/components/schemas/UserRole",
+            "description": "유저 권한"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 3,
+            "title": "Name",
+            "description": "이름"
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 50,
+            "format": "email",
+            "title": "Email",
+            "description": "유효한 이메일 주소"
+          }
+        },
+        "type": "object",
+        "required": [
+          "role",
+          "name",
+          "email"
+        ],
+        "title": "UserBaseResponse",
+        "description": "유저 기본 응답 스키마."
+      },
+      "UserCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 3,
+            "title": "Name",
+            "description": "이름"
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 50,
+            "format": "email",
+            "title": "Email",
+            "description": "유효한 이메일 주소"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "title": "Password",
+            "description": "비밀번호 (8자 이상)"
+          },
+          "invite_code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 11,
+                "minLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invite Code",
+            "description": "초대 코드"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "email",
+          "password"
+        ],
+        "title": "UserCreate",
+        "description": "유저 생성 요청 스키마.\n\n권한 상승 방지: 클라이언트는 role 을 전송할 수 없다. 서버가 invite_code 유무로\nrole 을 결정한다(초대 코드 있으면 MANAGER, 없으면 기본값 MASTER)."
+      },
+      "UserEmailCheckResponse": {
+        "properties": {
+          "exists": {
+            "type": "boolean",
+            "title": "Exists",
+            "description": "이메일 중복 여부"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message",
+            "description": "메시지"
+          }
+        },
+        "type": "object",
+        "required": [
+          "exists"
+        ],
+        "title": "UserEmailCheckResponse"
+      },
+      "UserResponse": {
+        "properties": {
+          "role": {
+            "$ref": "#/components/schemas/UserRole",
+            "description": "유저 권한"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 3,
+            "title": "Name",
+            "description": "이름"
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 50,
+            "format": "email",
+            "title": "Email",
+            "description": "유효한 이메일 주소"
+          },
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "유저 고유 ID"
+          },
+          "role_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role Name",
+            "description": "유저 권한 이름(소스코드)"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "생성일시"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "description": "수정일시"
+          }
+        },
+        "type": "object",
+        "required": [
+          "role",
+          "name",
+          "email",
+          "id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "UserResponse",
+        "description": "유저 응답 스키마."
+      },
+      "UserRole": {
+        "type": "string",
+        "enum": [
+          "ADMIN",
+          "MASTER",
+          "MANAGER"
+        ],
+        "title": "UserRole"
+      },
+      "UserUpdate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 3,
+            "title": "Name",
+            "description": "이름"
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 50,
+            "format": "email",
+            "title": "Email",
+            "description": "유효한 이메일 주소"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "title": "Password",
+            "description": "비밀번호 (8자 이상, 변경할 때만 보낸다)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "email"
+        ],
+        "title": "UserUpdate",
+        "description": "유저 수정 요청 스키마.\n\n권한 상승 방지: role 등 권한 필드는 포함하지 않는다. 권한 변경은 별도 관리자\n경로에서만 허용된다(user_crud.update_user_db 화이트리스트로도 이중 차단)."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "OAuth2PasswordBearer": {
+        "type": "oauth2",
+        "flows": {
+          "password": {
+            "scopes": {},
+            "tokenUrl": "/auth/login"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "System"
+    },
+    {
+      "name": "유저",
+      "description": "{DOMAIN} = USER"
+    },
+    {
+      "name": "인증",
+      "description": "{DOMAIN} = AUTH"
+    },
+    {
+      "name": "전화번호부",
+      "description": "{DOMAIN} = PHONEBOOK"
+    },
+    {
+      "name": "시술 예약",
+      "description": "{DOMAIN} = TREATMENT"
+    },
+    {
+      "name": "시술 메뉴",
+      "description": "{DOMAIN} = TREATMENT_MENU"
+    },
+    {
+      "name": "상점",
+      "description": "{DOMAIN} = SHOP"
+    },
+    {
+      "name": "통계",
+      "description": "{DOMAIN} = SUMMARY"
+    }
+  ]
+}

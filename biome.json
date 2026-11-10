@@ -16,7 +16,9 @@
       "!node_modules",
       "!.github",
       "!CLAUDE.md",
-      "!README.md"
+      "!README.md",
+      "!openapi",
+      "!src/api/schema.d.ts"
     ]
   },
   "css": {
