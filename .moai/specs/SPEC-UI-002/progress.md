@@ -1047,6 +1047,41 @@ harness: thorough
 
 **하지 않은 것**: acceptance.md §3.3 규칙 문구·표본 행과 규칙 5·직렬화 관계 정리(정본 처리 결정대로 sync 단계), N-1~N-4.
 
+#### 수정 1회차 오케스트레이터 재검증·통합과 차분 재감사(2026-11-10)
+
+- 세션 `fdd1cc40-c0ec-4200-834d-4d010e630c30`, 시작 HEAD `e742d5d`(차이 `0 0`, 작업 트리는 주 체크아웃 하나, 같은 SPEC의 다른 세션 없음). 증거는 `.moai/state/verify/fdd1cc40-c0ec-4200-834d-4d010e630c30/`의 `m4-fix1/`(에이전트, 작업 트리에서 옮김 — 61개 파일, `diff -rq` 동일)와 `m4-fix1-orchestrator/`다.
+- 계획 감사 관문: 캐시 적중을 다시 확인했고 plan-auditor는 부르지 않았다. acceptance·design·plan·research의 sha256이 Run 1 지문과 같고, spec.md는 `status: draft`로 되돌리면 Run 1 지문과 같다. 계획 문서 5개를 바꾼 커밋은 여전히 6d870b7(M1 상태 전환)뿐이다. 일별 기록의 "Audit Run 5"에 남겼다. Phase 4 모드는 §F 판단(serial) 그대로다.
+- 수정 1회차 재검증(에이전트 작업 트리, HEAD `d172609`. grep은 `/usr/bin/grep`)
+  - 게이트: typecheck 0, lint 0(180개 파일). `npm test` 69 files / 992 tests, Duration 22.33s, 직후 load 16.18.
+  - 같은 실행의 JSON 보고(`ac-gate-files.txt`): `safe-next.test.ts` 43, `routes.test.tsx` 66, `ShopSelectPage.test.tsx` 21, `create-app.test.tsx` 6, `auth-flow.test.tsx` 1, `LoginPage.test.tsx` 17, 모두 통과. 게이트별 시험 파일 QG-06 39(6 + 33), QG-07 22, QG-08 27, QG-13 5, QG-14 9, QG-15 26, QG-16 2.
+  - 커버리지 exit 0, 줄 99.65 · 문장 98.61 · 함수 99.51 · 분기 95.02(기준 80/80/80/80). `safe-next.ts` 100/100/100/100, `create-app.tsx` 100 · 97.36 · 100 · 95.23. AC-04 (나) 보고 범위 검사 `coverage scope ok: 76 files`(exit 0).
+  - AC-03 프록시 표지 빌드 exit 0, 산출물 검사 exit 1·0바이트. QG-04 빌드 exit 0(`dist/index.html` 19:34:30), `check:dist` exit 0, QG-18 JS 검사 exit 1·출력과 stderr 0바이트, 원본 확인 1.
+  - `moai gate` exit 0(pwd=작업 트리, `CLAUDE_PROJECT_DIR`를 비우고 실행, HEAD `d172609`). spec lint 지적 없음.
+  - QG-11 경계 검사 exit 1·0바이트·자체 확인 2. QG-12 지정자 검사 exit 1·0바이트·자체 확인 2, `package.json` 키 검사 exit 0. `react-router-dom` 검색 exit 1·0바이트.
+  - 범위: 바뀐 파일 9개가 모두 `src/`와 progress.md 안이다. 계획 문서·`src/ui-core`·패키지 파일·스냅숏·스크립트 변경 0, 커밋 5개 모두 `🗿 MoAI` 줄이 있다. 주 체크아웃 `moai worktree verify` exit 0(갈라짐 없음).
+- 지시에 없던 추가(2241691): 코드를 읽고 받아들일 만하다고 보아 재감사 범위에 넣었다. 세션이 없을 때만 동작하고(토큰 조건을 뺀 돌연변이에서 "세션이 있으면 남긴다" 시험이 실패), 만료 처리기가 비운 캐시를 떠나는 화면이 다시 채우는 경합을 시점이 아니라 사건(마지막 관찰자 제거)에 묶어 막는다.
+- 통합: `git merge --ff-only` 뒤 `git push origin main`(`e742d5d` → `d172609`, 차이 `0 0`). 증거를 옮긴 뒤 작업 트리와 임시 브랜치를 지웠다. 주 체크아웃에서 다시 돌린 typecheck는 exit 0이다(`qg01-typecheck-primary.txt`).
+- 차분 재감사(sync-auditor, `.moai/reports/sync-audit/SPEC-UI-002-M4-rereview-1.md`, 증거 `m4-rereview-1-evidence/`): **PASS**, 조화 평균 88.94(기능 92 · 보안 90 · 품질 88 · 일관성 86). 필수 통과 차원(기능·보안) 통과, 차단 결함 0건. 판정 HEAD `d172609`, 감사 전후 `git status --short` 0줄.
+  - 이전 탐침(`m4-evidence/m4.probe.test.tsx`)을 고치지 않고 다시 돌린 결과 `9 failed | 2 passed (11)`로, 결함을 단언하던 9건이 모두 뒤집혔다. P1 4건 `safeNext=null`·`nextDestination="/reservations"`, P2 `Location="/reservations"`, P2b 외부 이동 오류 없음, P2c `location.assign` 0회, P3 `/reservations`·거부 0건, P6 `/login?next=%2Fshops`와 만료 문구. 단언이 없는 P4는 `/reservations`·거부 0건, P5는 갱신 2회 그대로(N-1).
+  - F-1: 후보 1,968개(`%2e`·`%2E`, 여러 겹 점 구간, 쿼리·해시, `@`·`user:pw@`, 유니코드 공백, 전각 문자, `%5c`, `javascript:`)를 같은 출처·react-router 절대 주소 정규식 비해당·재검사 멱등의 세 조건으로 돌려 위반 0건. 세 사용처에 새 모양 5개를 넣은 15건이 모두 `/reservations`, 문서 이동·거부 0건.
+  - F-2: `/shops` 만료는 갱신 지연 0ms·300ms 모두 `/login?next=%2Fshops`·만료 문구 1개·캐시 0개. 매장 미선택 처리기는 `/login`·`/shops`·약관 두 경로에서 그대로 머문다. 약관 화면의 만료 이동(`/login?next=%2Fterms-of-service`)은 REQ-UI-002-006 문장 그대로라 수용.
+  - 2241691: 후속 과제를 붙여 수용. 구독을 뺀 변형에서 300ms 시험이 실패하고 캐시에 2개가 남아 필요성이 재현됐다. 세션이 있으면 아무것도 버리지 않고(StrictMode 이중 마운트, S0 부팅 뒤 이동), 구독은 `createApp`마다 1개이며, 진행 중 요청은 `destroy` → `cancel({ silent: true })`로 조용히 끊긴다. 로그아웃 상태에서 쿼리를 쓰는 화면은 없다.
+  - N-5·N-6 확인, M4 AC 대상 16 files / 286 tests 통과. 게이트는 69 files / 992 tests(22.74s), 커버리지 99.65 · 98.61 · 99.51 · 95.02, AC-04 범위 76개 파일, typecheck·lint·빌드·`check:dist`·`moai gate` 0, AC-03·QG-11·QG-12·QG-18 exit 1·0바이트. LoginPage "(자)" 간헐 실패는 세 번 실행하는 동안 나타나지 않았다.
+  - 감사자가 확인하지 못한 것: 교차 모델 감사 도구 없음, 실제 브라우저 미실행, N-8의 실제 백엔드 401 경로는 코드 읽기로만 판단.
+
+**넘기는 항목**
+
+| ID | 내용 | 처리 |
+|---|---|---|
+| N-8 | 로그인 loader의 갱신이 늦게 끝나면 떠나는 매장 선택 화면이 토큰 없는 `GET /shops?page=1&size=100`·`GET /shops/selected`를 보낸다(2241691과 무관하게 원래 있던 동작, 화면 영향 없음) | M5: `ShopSelectPage`도 `AppShell`처럼 세션이 없으면 그리지 않게 하고, "만료 뒤 토큰 없는 요청 0건" 단언을 더한다 |
+| N-9 | "세션이 없을 때 관찰자가 떠난 쿼리는 버린다"는 앱 전체 규칙이 design.md에 없다 | M5: `create-app.tsx`의 구독에 `@MX:NOTE`를 단다. sync: design.md에 적는다 |
+| N-10 | F-2 300ms 시험이 실제 시계를 쓴다(이번 실행에서는 실패 없음) | 관찰 |
+| 간헐 실패 | `LoginPage.test.tsx` "(자) 매장 없음 + next 없음"이 약 10번에 1번 실패한다(S0 시험이 `/shops`에 닿은 뒤 목록 처리기가 없음, e742d5d에서도 재현) | M5: 그 시험에 `shopsListHandler`를 더한다 |
+| 정본 | 새 시험 표본이 정본보다 앞서 있다 | sync: manager-spec이 새 점 구간 표본(시험의 `// M4 감사 F-1 표본` 행)과 같은 출처·재검사 멱등 조건을 acceptance.md §3.3에 옮기고, 규칙 5를 "통과한 값을 같은 출처 경로로 직렬화해 쓴다"로 고친다(§0 규칙 회복) |
+| 이월 | N-1 수용, N-2 M5(시험 1건), N-3 선택, N-4 sync 문서, 표현 사용자 검토, M5 항목(F10, AC-07 (가)(나) 화면 부분, M3 NumberInput 문장 비교), sync 항목(design.md §3.1·§3.2·§17·§4.1~§4.3) | 위 M4 표 그대로 |
+
+- M4는 닫혔다(차분 재감사 PASS). 다음 마일스톤은 M5다. 착수 결정대로 독립 평가는 M8 직후에 한다.
+
 ## §E.3 Run-phase Audit-Ready Signal
 
 _<pending run-phase>_
