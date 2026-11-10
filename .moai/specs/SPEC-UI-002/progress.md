@@ -962,6 +962,91 @@ harness: thorough
 
 - 다음 단계: F-1·F-2 수정 1회차(manager-develop, 임시 작업 트리, 탐침 P1~P4·P6을 시험으로 옮겨 실패를 확인한 뒤 수정) → 오케스트레이터 재검증·통합 → 차분 재감사(sync-auditor, `m4-evidence/m4.probe.test.tsx` 다시 실행) → M5.
 
+#### 감사 결함 F-1·F-2 수정(1회차)
+
+- 2026-11-10, manager-develop, cycle_type=tdd, 수정·평가 1회차(최대 3회). 시작 HEAD e742d5d, 작업 트리 브랜치 `worktree-agent-aacd0f0b0cbf57eda`(밀어 올리지 않음)
+- 증거 디렉터리: `.moai/state/verify/fdd1cc40-c0ec-4200-834d-4d010e630c30/m4-fix1/`(일회용 스크립트는 `tools/`)
+- 시작 기준선(e742d5d): typecheck exit=0, lint exit=0(180개 파일), `npm test` 69 files / 949 tests passed, Duration 22.66s(`00-preflight.txt`, `01-baseline-*.txt`)
+
+**결함**(M4 sync-auditor 평가, e742d5d에서 재현)
+
+| 결함 | 등급 | 내용 |
+|---|---|---|
+| F-1 | High, 차단 | 열린 리디렉트. `safeNext`는 받은 값만 보고, `nextDestination`은 `new URL`로 다시 직렬화한 경로로 이동한다. 점 세그먼트가 지워져 `/.//evil.example`·`/a/..//evil.example`·`/%2e//evil.example`·`/reservations/..//evil.example/x`가 `//evil.example…`이 된다 |
+| F-2 | Medium, 차단 | `/shops`에서 갱신 401로 세션이 끝나도 경로가 그대로이고 만료 문구가 없다(REQ-UI-002-006). 만료 처리기가 매장 미선택 처리기와 같은 건너뛰기 집합을 썼다 |
+
+**원인**
+
+- F-1: 검사한 문자열(받은 값)과 이동에 쓰는 문자열(해석·직렬화한 경로)이 다르다. 이동 문자열이 `//`로 시작하면 브라우저와 라우터가 다른 출처 주소로 읽는다.
+- F-2: 건너뛰기 집합의 이유(로그인 직후 `SHOP_NOT_SELECTED`가 `/shops?next=/login…`으로 튀지 않게)는 매장 미선택 처리기에만 해당하는데, 만료 처리기도 같은 집합을 썼다.
+- F-2 후속(수정 중 발견): 만료 처리기가 캐시를 비운 뒤에도, 로그인 화면 loader가 갱신을 확인하는 동안 매장 선택 화면은 아직 붙어 있다. 매장 선택 요청의 실패로 화면이 다시 그려지면 목록·선택 매장 쿼리가 비운 캐시에 다시 생기고 다시 가져와진다. 그래서 로그인 화면에 닿은 뒤에도 캐시에 `["shops","list",{"page":1}]`·`["shops","selected"]` 2개가 남았다(상태 success).
+
+**원인 확인("원인인가 증상인가")**
+
+- F-1: RED와 GREEN 사이에 바꾼 앱 코드는 `safe-next.ts`의 한 줄뿐이고, F-1 새 시험 27건이 정확히 그때 뒤집혔다(`02-red-run.txt` 28 failed — F-2 시험 1건 포함 — / 101 passed → F-2 시험을 잠시 뺀 `03-f1-green.txt` 7개 파일 154 passed). 받은 값과 직렬화 형태 사이에 `//` 시작 말고 다른 규칙이 갈릴 수 있는지도 따졌다. 직렬화는 퍼센트 인코딩만 하므로 금지 글자(`\`·공백·C0)를 새로 만들지 않는다. 같은 출처 URL의 경로명은 항상 `/`로 시작하므로 "`/`로 시작" 규칙도 같다. 남는 차이는 경로명이 `//`로 시작해 출처 없는 주소가 되는 경우 하나다. 이 결론은 시험으로 고정했다. 모든 표본 17개에 대해 이동 주소를 다시 `safeNext`에 넣으면 그대로 통과하고 출처가 같다(수정 전에는 점 세그먼트 표본 4개에서만 실패).
+- F-2: 수정 전 P6 시험은 `/shops`에 머물며 Alert "로그인이 필요해요. 다시 로그인해 주세요."를 보이고 실패했다(`04-f2-red.txt`). 집합을 나누자 통과했다(`05-f2-green.txt`).
+- F-2 후속: 처음 전체 시험(`10-qg03-test.txt`, HEAD bf024f5)에서 P6 시험이 캐시 2개로 한 번 실패했다. 따로 돌리면 통과해서, 갱신 응답에 300ms 지연을 준 시험으로 바꿔 보니 매번 같은 2개가 남았다(`07-f2b-red.txt`). 이동이 끝난 뒤 한 번 더 비우는 방식(`.then(clear)`)은 부하를 준 반복에서 다시 실패했다(`08-f2b-flake-capture.txt`). React가 로그인 화면을 그리기 전에 떠나는 화면이 다시 그려질 수 있어서다. 그래서 시점 대신 사건(마지막 관찰자 제거)에 묶었다.
+
+**RED 증거**(구현 전)
+
+- `npx vitest run src/app/safe-next.test.ts src/app/routes.test.tsx src/features/shops/ShopSelectPage.test.tsx`(HEAD e742d5d) → 3 files failed, 28 failed / 101 passed(`02-red-run.txt`). 실패 내용: 단위 `expected '//evil.example' to be '/reservations'`, 이동 주소 재검사 `expected null to be '//evil.example'`, loader Location `Received: "//evil.example"`, 로그인 제출·매장 선택은 h1 "예약 캘린더"를 찾지 못함(처리되지 않은 `Error: External navigation is not allowed` 6건), P6은 h1 "로그인"을 찾지 못함
+- 브라우저 라우터 시험(P2c)만 다시 돌린 결과: `expected "vi.fn()" to not be called at all, but actually been called 1 times` — 1st call `["//evil.example"]`(`02-red-run-2-routes.txt`, 13 failed / 52 passed)
+- F-2 단독 재확인(HEAD 5a65b49, F-1 수정 뒤): 1 failed / 64 passed(`04-f2-red.txt`)
+- F-2 후속(HEAD bf024f5): 갱신 300ms 지연 시험 1 failed / 65 passed, 캐시에 `["shops","list",{"page":1}]`·`["shops","selected"]`(`07-f2b-red.txt`)
+
+**수정**
+
+- `src/app/safe-next.ts`: 출처 비교 뒤 해석한 경로명(`resolved.pathname`)이 `//`로 시작하면 `null`이다. `safeNext`의 반환 계약(통과하면 받은 값 그대로)과 `nextDestination`의 직렬화는 그대로다. `@MX:ANCHOR`의 `@MX:REASON`에 "실제로 이동하는 직렬화한 경로도 같은 규칙을 통과해야 한다"를 더했다.
+- `src/app/create-app.tsx`: 건너뛰기 집합을 처리기별로 나눴다. 세션 만료는 `/login`만, 매장 미선택은 기존 네 경로를 건너뛴다(첫 로딩·이동 중 검사와 세대 기반 한 번 처리는 그대로). 주석에 처리기별 이유를 적었다.
+- `src/app/create-app.tsx`(F-2 후속, 지시에 없던 추가): 세션이 없을 때(토큰 null) 마지막 관찰자가 떠난 쿼리는 캐시에서 버린다(쿼리 캐시 `observerRemoved` 구독). 세션이 있을 때는 아무것도 버리지 않는다. 토큰 조건을 뺀 돌연변이에서 "세션이 있으면 남긴다" 시험이 실패한다(`08-mutation-no-token-gate.txt`).
+- 선택 항목: N-5 `PreviewPage` 주석을 사실대로(개발 서버에서만 `/dev/preview`로 lazy 로드) 고쳤다. N-6 `LegalDocument` 문단 키를 `${index}-${paragraph}`로 바꿨다(정적 목록이라 `noArrayIndexKey`는 이유를 적고 껐다).
+
+**새 시험**(정본 §3.3 표 반영은 sync 단계 — 시험에 `// M4 감사 F-1 표본 …` 주석)
+
+| 위치 | 내용 |
+|---|---|
+| `src/app/safe-next.test.ts` | §3.3 표본 표에 4행(`%2F.%2F%2Fevil.example`·`%2Fa%2F..%2F%2Fevil.example`·`%2F%252e%2F%2Fevil.example`·`/reservations/..//evil.example/x`), `nextDestination` 4건, 모든 표본의 이동 주소 재검사 불변식 17건 |
+| `src/app/routes.test.tsx` AC-09 (나) | 표본 3개를 화면 시험 표에 더하고, loader가 던지는 redirect의 Location이 `/reservations`인지 3건, `createBrowserRouter` + 가짜 창(`location.assign`·`replace`는 `vi.fn()`)으로 다른 출처 문서 이동이 없고 `/reservations`에 닿는지 3건(P2c) |
+| `src/app/routes.test.tsx` AC-09 (다) | 표본 3개, 그리고 모든 표본에서 `router.navigate`에 `//`로 시작하는 주소가 없고 모든 호출이 fulfilled인지(거부된 외부 이동 없음) |
+| `src/features/shops/ShopSelectPage.test.tsx` AC-12 (다) | 표본 3개와 같은 `navigate` 단언 |
+| `src/app/routes.test.tsx` AC-06 (나) | P6: `/shops`에서 고르기 401 + 갱신 401 → `/login?next=%2Fshops`, 만료 문구 1개, 쿼리 캐시 0개. 갱신 응답이 300ms 늦은 같은 경우 1건 |
+| `src/app/create-app.test.tsx` | 세션이 있으면 화면이 내려가도 그 화면의 쿼리를 남긴다 |
+
+**GREEN·게이트**(판정 HEAD 2241691, grep은 `/usr/bin/grep` GNU grep 3.11)
+
+| 항목 | 결과 |
+|---|---|
+| 결함·AC 시험(`25-ac-matrix-summary.txt`) | 5개 파일 137 tests passed. F-1 P1 단위 12, P2 loader 9(화면·Location·브라우저 라우터), P3 로그인 제출 3, P4 매장 선택 3, F-2 P6 2, AC-09 54, AC-12 21, AC-06 (나) 5, AC-05 (라) 1, 처리기 6 |
+| QG-01 typecheck | exit=0 |
+| QG-02 lint | exit=0, 180개 파일, 새 지적 0건 |
+| QG-03 `npm test` | 69 files / 992 tests passed, Duration 21.04s, 직후 load average 12.78, 10.96, 8.87(120초를 넘지 않아 D12 재실행 없음) |
+| QG-04 빌드 | `VITE_API_BASE_URL=https://api-beauty.dongri.kr npm run build` exit=0, `dist/index.html` 2026-11-10 19:25:20 |
+| QG-05 커버리지 | exit=0, 줄 99.65 · 문장 98.61 · 함수 99.51 · 분기 95.02(기준 80/80/80/80). `safe-next.ts` 100/100/100/100, `create-app.tsx` 줄 100 · 문장 97.36 · 함수 100 · 분기 95.23. AC-04 (나) 범위 검사 `coverage scope ok: 76 files` exit=0 |
+| QG-06·07·08·13·14·15·16 | 39 · 22 · 27 · 5 · 9 · 26 · 2 passed |
+| QG-09 `moai gate` | `gate exit=0`, pwd=작업 트리, `CLAUDE_PROJECT_DIR=<unset>`, HEAD 2241691. 커밋 4개 모두 pre-commit을 우회 없이 통과 |
+| QG-10 | `moai spec lint .moai/specs/SPEC-UI-002/spec.md` exit=0, "No findings" |
+| QG-11 | 경계 검사 exit=1·출력 0바이트·stderr 0바이트, 자체 확인 `2` |
+| QG-12 | 지정자 검사 exit=1·출력 0바이트·stderr 0바이트, 자체 확인 `2`, `package.json` 키 검사 exit=0. `react-router-dom` grep exit=1·0바이트 |
+| QG-18 | `check:dist` exit=0("JS 파일 1개에 미리보기 흔적이 없습니다."), JS 검사 exit=1·출력 0바이트·stderr 0바이트, 원본 확인 `1` |
+
+**커밋**(밀어 올리지 않음)
+
+| SHA | 제목 |
+|---|---|
+| 5a65b49 | fix(SPEC-UI-002): M4 next 검사가 직렬화한 경로의 // 시작도 거부 |
+| 7de6169 | fix(SPEC-UI-002): M4 매장 선택 화면에서도 세션 만료 때 로그인 화면으로 |
+| bf024f5 | fix(SPEC-UI-002): M4 미리보기 주석 바로잡기와 약관 문단 키 겹침 방지 |
+| 2241691 | fix(SPEC-UI-002): M4 만료 뒤 떠나는 화면의 쿼리가 비운 캐시를 다시 채우지 않게 |
+
+**관찰(조치하지 않음)**
+
+- 세션 만료 처리기가 이제 약관·개인정보 화면에서도 `/login?next=…`으로 보낸다(지시대로 `/login`만 건너뜀). 두 화면은 요청을 보내지 않아 지금은 일어나지 않는다.
+- 기존 시험 `src/features/auth/LoginPage.test.tsx` "(자) 매장 없음 + next 없음"이 가끔 실패한다(`처리하지 않은 요청: GET https://api.test/shops?page=1&size=100`). S0 시험이 `/shops`에 닿은 뒤 목록 요청 처리기가 없어서다. e742d5d의 앱 코드로 되돌려 10번 돌려도 1번 실패해(`09-loginpage-flake-base.txt`) 이번 수정과 무관하고, 범위 밖이라 고치지 않았다. 그 시험에 `shopsListHandler`를 더하면 된다(M5 후보).
+- 새 쿼리 버리기 규칙은 세션이 없는 동안의 모든 화면에 적용된다. 로그아웃 뒤 떠나는 화면도 같은 이유로 혜택을 본다. 지금 세션 없이 쿼리를 쓰는 화면은 없다.
+- 디버그용으로 넣은 시험 수정을 작업 트리 안에서 파일 되돌리기(`checkout -- src/app/routes.test.tsx`)로 커밋 상태로 돌렸다(자기 변경만).
+
+**하지 않은 것**: acceptance.md §3.3 규칙 문구·표본 행과 규칙 5·직렬화 관계 정리(정본 처리 결정대로 sync 단계), N-1~N-4.
+
 ## §E.3 Run-phase Audit-Ready Signal
 
 _<pending run-phase>_
