@@ -50,7 +50,7 @@ const SHOWCASE_TABLE: [component: string, states: string[]][] = [
   ["Combobox", ["local", "remote", "create"]],
   ["Calendar", ["default", "disabled-dates"]],
   ["DateTimePicker", ["datetime", "date", "invalid"]],
-  ["Modal", ["sm", "md", "lg", "dirty", "submitting"]],
+  ["Modal", ["sm", "default", "lg", "dirty", "submitting"]],
   ["ConfirmDialog", ["default", "destructive", "async-failure"]],
   ["Toast", ["success", "info", "warning", "destructive", "queue", "action"]],
   ["Tooltip", ["default"]],

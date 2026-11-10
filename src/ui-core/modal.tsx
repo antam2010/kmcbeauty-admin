@@ -7,18 +7,19 @@ import { cn } from "./cn";
 import { ConfirmDialog } from "./confirm-dialog";
 import { useRestoreFocus } from "./internal/use-restore-focus";
 
-// 크기 sm·md·lg = 400·560·720px(system.md §10 오버레이, 폭 토큰 dialog-*)
+// 크기 sm·default·lg = 400·560·720px(system.md §8 오버레이, 폭 토큰 dialog-sm·dialog-md·dialog-lg).
+// 중간 크기 이름은 Button·Input과 같은 "default"다. 폭 토큰 이름 dialog-md는 그대로 둔다(SPEC-UI-002 후속 과제 16).
 const contentVariants = cva(
   "fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col gap-5 overflow-y-auto rounded-panel border border-border bg-popover p-6 text-popover-foreground shadow-overlay motion-safe:data-[state=open]:animate-dialog-in",
   {
     variants: {
       size: {
         sm: "max-w-dialog-sm",
-        md: "max-w-dialog-md",
+        default: "max-w-dialog-md",
         lg: "max-w-dialog-lg",
       },
     },
-    defaultVariants: { size: "md" },
+    defaultVariants: { size: "default" },
   },
 );
 
@@ -28,7 +29,7 @@ export interface ModalProps {
   title: string;
   /** 없으면 aria-describedby를 연결하지 않는다 */
   description?: string;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "default" | "lg";
   /** 작성 중. closeDisabled가 아닐 때 닫기 버튼·Esc·스크림으로 닫으려 하면 확인한다 */
   dirty?: boolean;
   /** 제출 중. dirty보다 먼저 판정해 닫기 요청을 모두 무시하고 닫기 버튼은 aria-disabled */

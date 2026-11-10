@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, expectTypeOf, it, vi } from "vitest";
 import { expectNoAxeViolations } from "../test/axe";
 import { Button } from "./button";
 import { Field } from "./field";
@@ -83,10 +83,12 @@ describe("Modal — 구조(AC-UI-001-22)", () => {
     expect(error).not.toHaveBeenCalled();
   });
 
-  it("크기 sm·md·lg는 dialog 폭 토큰 400·560·720px이고 기본은 md다", async () => {
+  it("크기 sm·default·lg는 dialog 폭 토큰 400·560·720px이고 기본은 default다", async () => {
     const user = userEvent.setup();
     const { rerender } = render(<Harness />);
     await openModal(user);
+    expect(dialog()).toHaveClass("max-w-dialog-md");
+    rerender(<Harness size="default" />);
     expect(dialog()).toHaveClass("max-w-dialog-md");
     rerender(<Harness size="sm" />);
     expect(dialog()).toHaveClass("max-w-dialog-sm");
@@ -249,6 +251,15 @@ function ControlledHarness() {
     </>
   );
 }
+
+describe("Modal — 크기 값(SPEC-UI-002 후속 과제 16)", () => {
+  it('크기 값은 sm·default·lg이고 "md"는 타입 오류다', () => {
+    expectTypeOf<NonNullable<ModalProps["size"]>>().toEqualTypeOf<"sm" | "default" | "lg">();
+    // @ts-expect-error -- 옛 이름 "md"는 받지 않는다
+    const legacy: ModalProps["size"] = "md";
+    expect(legacy).toBe("md");
+  });
+});
 
 describe("Modal — 밖에서 닫고 다시 열기(SPEC-UI-002 후속 과제 1)", () => {
   it("버리기 확인을 띄운 채 부모가 open=false → open=true로 바꾸면 다시 열린 Modal에 버리기 확인이 없다", async () => {

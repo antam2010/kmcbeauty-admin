@@ -143,7 +143,7 @@ export function OverlaysSection() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Panel title="Modal">
           <SizeDemo size="sm" label="작은 대화상자" />
-          <SizeDemo size="md" label="기본 대화상자" />
+          <SizeDemo size="default" label="기본 대화상자" />
           <SizeDemo size="lg" label="큰 대화상자" />
           <DirtyDemo />
           <SubmittingDemo />
