@@ -14,3 +14,14 @@ export const shopFixture: components["schemas"]["ShopResponse"] = {
   created_at: "2026-11-01T09:00:00+09:00",
   updated_at: "2026-11-01T09:00:00+09:00",
 };
+
+/** GET /users/me 대역(사용자 메뉴의 이름·역할·이메일). */
+export const userFixture: components["schemas"]["UserResponse"] = {
+  id: 1,
+  name: "김원장",
+  email: "owner@kmc.test",
+  role: "MASTER",
+  role_name: "원장",
+  created_at: "2026-10-01T09:00:00+09:00",
+  updated_at: "2026-10-01T09:00:00+09:00",
+};

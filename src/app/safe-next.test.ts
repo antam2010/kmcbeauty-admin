@@ -1,6 +1,6 @@
 // next 매개변수 검사(AC-UI-002-09 단위 부분, EC-05·EC-27~EC-30). 표본은 acceptance.md §3.3 `next` 표본 표를 그대로 옮겼다.
 import { describe, expect, it } from "vitest";
-import { safeNext } from "./safe-next";
+import { nextDestination, safeNext } from "./safe-next";
 
 const ORIGIN = "http://localhost:3000";
 
@@ -44,5 +44,17 @@ describe("safeNext(§3.3 next 규칙)", () => {
   it("C0 제어 문자(U+0000·U+001F)를 담으면 버린다", () => {
     expect(safeNext("/a\u0000b", ORIGIN)).toBeNull();
     expect(safeNext("/a\u001fb", ORIGIN)).toBeNull();
+  });
+});
+
+describe("nextDestination(이동 주소로 직렬화)", () => {
+  it("허용한 값의 한글은 퍼센트 인코딩하고(redirect의 Location 헤더), 이미 있는 %xx는 그대로 둔다", () => {
+    expect(nextDestination("/customers?q=김", ORIGIN)).toBe("/customers?q=%EA%B9%80");
+    expect(nextDestination("/customers?q=%EA%B9%80", ORIGIN)).toBe("/customers?q=%EA%B9%80");
+  });
+
+  it("거부한 값과 없는 값은 /reservations다", () => {
+    expect(nextDestination("//evil.example", ORIGIN)).toBe("/reservations");
+    expect(nextDestination(null, ORIGIN)).toBe("/reservations");
   });
 });

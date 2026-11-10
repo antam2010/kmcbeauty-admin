@@ -49,8 +49,12 @@ export function logout(client: ApiClient, queryClient: QueryClient): void {
   queryClient.clear();
 }
 
+/**
+ * 변경 캐시는 입력(variables)을 state에 담는다 — 로그인 입력에는 비밀번호가 있다. gcTime 0으로 관찰자가 떠나는 즉시 지운다
+ * (기본 5분 동안 남지 않게, 감사 결함 F4). 화면은 결과를 받은 뒤 reset()으로 관찰자를 떼어 실패 뒤에도 바로 지운다.
+ */
 export const loginMutationOptions = (client: ApiClient) =>
-  mutationOptions({ mutationFn: (input: LoginInput) => login(client, input) });
+  mutationOptions({ mutationFn: (input: LoginInput) => login(client, input), gcTime: 0 });
 
 export const meQueryOptions = (client: ApiClient) =>
   queryOptions({

@@ -23,3 +23,12 @@ export function safeNext(value: string | null, origin: string): string | null {
   if (!value.startsWith("/") || value.startsWith("//")) return null;
   return value;
 }
+
+/**
+ * safeNext를 통과한 값(없거나 거부하면 /reservations)을 이동 주소로 직렬화한다.
+ * redirect의 Location 헤더는 한글을 담을 수 없어 URL로 퍼센트 인코딩한다(이미 있는 %xx는 그대로 둔다).
+ */
+export function nextDestination(value: string | null, origin: string): string {
+  const url = new URL(safeNext(value, origin) ?? "/reservations", origin);
+  return url.pathname + url.search + url.hash;
+}
