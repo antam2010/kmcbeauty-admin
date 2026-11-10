@@ -9,6 +9,8 @@ export type PageItem = number | "start-ellipsis" | "end-ellipsis";
 // 현재 쪽 양옆은 한 쪽으로 고정한다(siblingCount prop 없음). 8쪽 이상이면 줄임표를 포함해 언제나 7칸이다.
 const FULL_LIST_LIMIT = 7;
 const EDGE_RUN = 5;
+// 끝 묶음(1 … 끝−4 ~ 끝)으로 바뀌는 현재 쪽: 끝에서 이만큼 떨어진 쪽부터다(끝−3).
+const TAIL_RUN_START = EDGE_RUN - 2;
 
 /**
  * 쪽 번호 배열(design.md §8.3, 정본은 acceptance.md §3.1 표). 공개 API가 아니다.
@@ -23,7 +25,7 @@ export function getPageItems(page: number, pageCount: number): PageItem[] {
 
   if (pageCount <= FULL_LIST_LIMIT) return range(1, pageCount);
   if (page <= EDGE_RUN - 1) return [...range(1, EDGE_RUN), "end-ellipsis", pageCount];
-  if (page >= pageCount - 3) {
+  if (page >= pageCount - TAIL_RUN_START) {
     return [1, "start-ellipsis", ...range(pageCount - EDGE_RUN + 1, pageCount)];
   }
   return [1, "start-ellipsis", page - 1, page, page + 1, "end-ellipsis", pageCount];
