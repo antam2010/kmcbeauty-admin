@@ -209,6 +209,47 @@
   - D12: QG-03이 120초를 넘으면 한 번 다시 실행하고 두 번의 Duration을 함께 기록한다(판정 기준은 그대로).
 - 다음 단계: 계획 산출물 커밋(late-branch, `main`) → 푸시 여부 결정 → `/clear` → 새 세션에서 `/moai run SPEC-UI-002`. 구현 착수 승인과 짧은 설계 패스(plan §L) 여부는 run 단계에서 묻는다.
 
+### A.10 run 단계 계획 감사 관문과 구현 착수 승인(2026-11-10)
+
+- 실행: `/moai run SPEC-UI-002`, 세션 `f2f06653-455e-4f0b-a6b6-b69d14ecb2e5`. 시작 HEAD `fd184ee`(`origin/main`과 같음, 차이 `0 0`).
+- 계획 감사 관문(Phase 1): 캐시 적중이라 plan-auditor를 다시 부르지 않았다.
+  - audit_cache_hit: true
+  - cached_audit_at: 2026-11-10T01:04:42+09:00(`SPEC-UI-002-review-2.md` 기록 시각)
+  - audit_verdict: PASS(0.934, Tier L 기준 0.85)
+  - 문서 불변 조건: 해시 대상 5개(spec·plan·acceptance·design·research)는 모두 보고서보다 먼저 마지막으로 고쳐졌다(가장 늦은 것 00:57:51). `tasks.md`는 없고 SPEC 폴더의 git 변경은 0이다. Go `ComputeHash` 값은 이 세션에서 낼 수 없어 sha256 지문으로 대신 남겼다(일별 기록 `.moai/reports/plan-audit/SPEC-UI-002-2026-11-10.md`, git 제외).
+  - 재개 메시지의 전제 2(`grep -c "plan_status: audit-ready"`)가 `2`를 낸 이유: 70행의 안내 문장에 같은 글자가 있다. 216행의 신호는 하나다(`grep -c "^plan_status: audit-ready"` → `1`).
+- 구현 착수 승인(사용자, AskUserQuestion):
+
+| 항목 | 결정 |
+|---|---|
+| 착수와 진행 방식 | 착수한다. 마일스톤을 이어서 진행하고, blocker·같은 실패 3회·사용자 결정이 필요할 때만 멈춘다 |
+| D9 미정 사항(첫 방문 S0의 만료 문구) | 첫 방문에는 문구를 보이지 않는다. 세션 만료 문구는 이 탭에서 로그인돼 있던 세션이 갱신 401로 끝났을 때만 보인다. 앱을 처음 열거나 새로고침할 때 갱신이 401이면 문구 없이 로그인 화면을 보인다. M4 시험에 "S0에서는 문구 없음" 단언을 더한다 |
+| 설계 패스(plan §L) | M1 전에 manager-design으로 §E 범위만 다루는 짧은 설계 패스를 한다. 결과는 system.md 1.2.0 커밋 하나이고, M1은 §E 첫 커밋을 건너뛴다 |
+| 독립 평가(sync-auditor) | M2·M4·M8 직후에 돌린다(보안 경계가 있는 마일스톤). 나머지 마일스톤은 오케스트레이터 검증 묶음만 하고, sync 단계의 전체 평가는 그대로 둔다 |
+
+- 실행 방식(C3 그대로): 진행 기록 커밋·푸시 → manager-develop이 임시 작업 트리에서 TDD로 구현·커밋 → 오케스트레이터가 그 작업 트리에서 다시 검증 → 주 체크아웃에서 `git merge --ff-only` → `git push origin main` → 증거를 주 체크아웃 `.moai/state/verify/`로 복사 → 작업 트리 정리.
+- 건너뛴 단계와 이유:
+  - Phase 5·6(재계획과 `tasks.md`): plan.md §F가 감사를 통과한 작업 분해다. `tasks.md`는 계획 산출물 해시 대상이라 만들면 다음 재개 때 감사 생략 조건이 깨진다.
+  - Phase 7(인수 기준별 작업 목록): 마일스톤 단위 작업 목록으로 대신한다. 인수 기준의 판정 시점은 acceptance.md §1이 정한다.
+  - Phase 8(빈 파일 미리 만들기): TDD로 시험부터 쓰고, 작업은 임시 작업 트리에서 한다.
+  - Phase 10(`contract.md`): acceptance.md §1 판정 시점과 §4 게이트 적용 시점이 마일스톤별 완료 계약이다.
+  - `ac_converge` 목표: 걸지 않는다. 배경 에이전트를 기다리는 동안 Stop 훅이 헛돌아 차단 상한을 써 버린 적이 있다. 에이전트 완료 알림을 받으면 다음 마일스톤을 잇는다.
+- 위임 지시문에 넣는 항목: acceptance.md §1 판정 시점 열, §A.9의 N1·N2·N3·D12, 위 S0 결정, 기존 @MX 태그 지도(`src/` 15개 파일).
+
+### A.11 설계 패스 결과(manager-design, 2026-11-10)
+
+- 결과: `.moai/design/system.md` 1.1.0 → 1.2.0(268행 → 440행). plan §E E-1~E-9를 모두 반영했다. 이 파일 하나만 바뀌었다. DesignSync·네트워크·외부 산출물은 쓰지 않았다.
+- 오케스트레이터 재검증(이번 실행, 커밋 전 트리, 증거 `.moai/state/verify/f2f06653-455e-4f0b-a6b6-b69d14ecb2e5/design-pass/`):
+  - 글자 그대로 옮김: acceptance.md §3.1·§3.2·§3.10의 표와 규칙 78줄이 system.md에 모두 같은 글자로 있다(`verbatim-check.txt`, `TOTAL expected=78 found=78`).
+  - E-3 변수 이름: 쓴 이름은 모두 research.md:387~388(Monarch theme.css 확인 기록)의 이름이나 그 묶음 표기를 푼 것이다. 새로 지은 이름은 없다.
+  - `npm run typecheck` exit 0, `npm run lint` exit 0(`Checked 94 files in 33ms. No fixes applied.`), `npm test` exit 0(`Test Files 38 passed (38)`, `Tests 551 passed (551)`, `Duration 12.43s`).
+- M7 사전 점검으로 넘기는 항목(system.md §14에 "M7 사전 점검에서 실제 이름 확인"으로 표시됨):
+  - 이름만 확인되고 역할은 확인되지 않은 Monarch 변수: `primary-over`·`primary-down`, `faint`·`faint-foreground`, `highlight`, `now`, `outline`, `selected` 계열, `secondary` 계열, `tertiary` 계열, `strong` 계열. 후보 토큰만 적혀 있다.
+  - 포커스 `box-shadow`를 끌 해시 선택자의 실제 이름, 테마 CSS 하위 경로 이름(패키지 `exports`).
+  - 캘린더 바탕을 `background`가 아니라 `card`에 연결한 것은 설계 판단이다(UR-5에서 확인).
+- 문서 사이 사소한 표기 차이(다음 SPEC 개정 때 manager-spec이 맞춤): 접근 이름 형식이 acceptance.md:397에는 `"<라벨> · <HH:mm> · <고객 이름>"`, plan.md:444·plan.md:255·design.md 9.2에는 `HH:mm`(꺾쇠 없음)이다. system.md는 정본인 acceptance.md 형태를 따랐다.
+- 확인하지 못한 것: Monarch 테마 CSS 원문, 범위 모드 시작·끝 칸과 주말 숫자 색이 겹칠 때의 대비(기존 검증 쌍에 기댐, 색 값 변화 없음), Drawer·Popover·NumberInput 모양(UR-9에서 확인), 마크다운 렌더링.
+
 ## §E.1 Plan-phase Audit-Ready Signal
 
 ```yaml
@@ -237,3 +278,19 @@ _<pending run-phase>_
 ## §E.4 Sync-phase Audit-Ready Signal
 
 _<pending sync-phase>_
+
+## §F Phase 4 Mode Selection
+
+- 입력: tier L · 새 파일 약 110개, 수정 약 45개(plan.md 요약, 추정) · 도메인 5개(설정·API와 인증·ui-core·업무 화면·배포와 보안) · 언어 TypeScript/TSX, CSS, Markdown, bash(`deploy.sh`) · 동시 실행 이점 낮음(코딩 중심, M2 → M4 → M5~M7 의존)
+
+| 모드 | 선택 | 이유 |
+|---|---|---|
+| direct | 아님 | 구현 범위가 크다 |
+| serial | **선택** | 마일스톤 사이 의존이 강한 코딩 작업이고, 쓰기 에이전트는 한 번에 하나만 둔다 |
+| fanout | 아님 | 연구 중심 작업이 아니다. 조사는 계획 단계에서 끝났다 |
+| sweep | 아님 | 한 가지 기계적 변환을 여러 파일에 반복하는 작업이 아니다 |
+| agent-team | 아님 | 명시 요청이 없다 |
+
+- Decision: serial
+- Justification: plan.md F.9가 적은 대로 마일스톤 사이 의존이 강하고, 병렬로 나눌 독립 작업은 M3 정도다. 그래서 마일스톤마다 manager-develop 하나를 차례로 부르고, M1 앞에 manager-design 설계 패스를 한 번 둔다. 코딩 작업은 연구보다 진짜로 병렬화할 몫이 적다는 Anthropic의 지적과도 맞는다.
+- Boundary Case: manager-lead 진입 조건(마일스톤 3개 이상, 파일 10개 이상, 도메인 간 분산)은 충족한다. 하지만 tie-breaker "코딩 중심 + 여러 도메인 → serial"을 따랐고, C3의 빨리 감기 통합을 마일스톤마다 오케스트레이터가 직접 확인하는 편이 안전하다.
