@@ -1,5 +1,6 @@
 import * as ToastPrimitive from "@radix-ui/react-toast";
 import { CircleAlert, CircleCheck, Info, type LucideIcon, TriangleAlert, X } from "lucide-react";
+import type { Tone } from "./badge";
 import { Button } from "./button";
 import { cn } from "./cn";
 import { FOCUS_RING } from "./internal/class-names";
@@ -11,7 +12,8 @@ export interface ToastOptions {
   action?: { label: string; onClick(): void };
 }
 
-type ToastTone = "success" | "info" | "warning" | "destructive";
+/** 공용 Tone에서 neutral을 뺀 것(Alert와 같은 규칙). 시험에서 확인하려고 내보내지만 index.ts는 내보내지 않는다 */
+export type ToastTone = Exclude<Tone, "neutral">;
 
 interface ToastItem extends ToastOptions {
   id: string;

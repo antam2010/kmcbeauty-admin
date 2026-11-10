@@ -1,8 +1,9 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from "vitest";
 import { expectNoAxeViolations } from "../test/axe";
-import { Toaster, toast } from "./toast";
+import type { Tone } from "./badge";
+import { Toaster, type ToastTone, toast } from "./toast";
 
 // acceptance.md AC-UI-001-23의 문구
 const SAVED = "예약을 저장했어요.";
@@ -263,5 +264,11 @@ describe("toast — 키보드와 자동 접근성 검사(AC-UI-001-11)", () => {
       toast.error(ERROR);
     });
     await expectNoAxeViolations(region());
+  });
+});
+
+describe("ToastTone 타입(SPEC-UI-002 후속 과제 15)", () => {
+  it("공용 Tone에서 neutral을 뺀 것과 같다", () => {
+    expectTypeOf<ToastTone>().toEqualTypeOf<Exclude<Tone, "neutral">>();
   });
 });
