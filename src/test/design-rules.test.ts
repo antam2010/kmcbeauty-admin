@@ -2,7 +2,8 @@
 // 디자인 규칙 점검(AC-UI-001-09, AC-UI-001-10, AC-UI-001-12, AC-UI-001-13).
 // 위반은 하나마다 `경로:줄`로 보고한다. 허용 구역(design-rules:allow-start ~ allow-end) 안에서는
 // 기본 테마 이름 규칙 하나만 건너뛰고, 그 구역은 VerificationSection.tsx에만 둘 수 있다(design.md §9).
-import { readdirSync, readFileSync } from "node:fs";
+// SPEC-UI-002 M1부터 앱 계층(src/app·src/api·src/features·src/lib)도 같은 금지 패턴과 @/ui-core 가져오기 규칙으로 본다.
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -317,16 +318,39 @@ function checkGlobalCssSelectors(file: string, css: string): Violation[] {
   );
 }
 
-/** 미리보기는 @/ui-core에서만 ui-core를 가져온다(하위 경로·상대 경로 금지). */
-function checkPreviewImports(file: string, text: string): Violation[] {
+// 문장 첫머리의 import·export … from "지정자"(여러 줄 가져오기 포함)와 import("지정자")
+const STATIC_SPECIFIER = /^\s*(import|export)\b[^;]*?\bfrom\s+["']([^"']+)["']/gm;
+const DYNAMIC_SPECIFIER = /\bimport\s*\(\s*["']([^"']+)["']/g;
+
+/**
+ * 미리보기와 앱 계층은 ui-core를 `import … from "@/ui-core"`로만 가져온다(AC-UI-002-04 (다)).
+ * 하위 경로·internal·상대 경로, ui-core 재내보내기, 동적 가져오기는 위반이다. 위치는 지정자가 있는 줄이다.
+ */
+function checkUiCoreImports(file: string, text: string): Violation[] {
   const lineOf = (offset: number) => text.slice(0, offset).split("\n").length;
-  return [...text.matchAll(/from\s+["']([^"']+)["']/g)]
-    .filter((match) => /ui-core/.test(match[1]) && match[1] !== "@/ui-core")
-    .map((match) => ({
+  const violations: Violation[] = [];
+  for (const match of text.matchAll(STATIC_SPECIFIER)) {
+    const [statement, keyword, specifier] = match;
+    if (!/ui-core/.test(specifier)) continue;
+    const offset = (match.index ?? 0) + statement.lastIndexOf(specifier);
+    const location = `${file}:${lineOf(offset)}`;
+    if (keyword === "export") {
+      violations.push({ location, rule: "ui-core 재내보내기", detail: specifier });
+    } else if (specifier !== "@/ui-core") {
+      violations.push({ location, rule: "@/ui-core 외 경로 가져오기", detail: specifier });
+    }
+  }
+  for (const match of text.matchAll(DYNAMIC_SPECIFIER)) {
+    if (!/ui-core/.test(match[1])) continue;
+    violations.push({
       location: `${file}:${lineOf(match.index ?? 0)}`,
-      rule: "@/ui-core 외 경로 가져오기",
+      rule: "ui-core 동적 가져오기",
       detail: match[1],
-    }));
+    });
+  }
+  return violations.sort(
+    (a, b) => Number(a.location.split(":").at(-1)) - Number(b.location.split(":").at(-1)),
+  );
 }
 
 /** 표에 적힌 파일 밖에서 react-day-picker·cmdk를 가져오는지 본다. */
@@ -349,16 +373,24 @@ function checkConfinedPackages(file: string, text: string): Violation[] {
 
 function listSources(relativeDir: string): string[] {
   const absolute = path.join(ROOT, relativeDir);
+  // 앱 계층 폴더(src/features, src/lib)는 마일스톤마다 생긴다. 아직 없으면 검사할 파일이 없다.
+  if (!existsSync(absolute)) return [];
   return readdirSync(absolute, { recursive: true, encoding: "utf8" })
     .filter((entry) => /\.(ts|tsx)$/.test(entry))
     .map((entry) => path.posix.join(relativeDir, entry.split(path.sep).join("/")))
     .sort();
 }
 
+// 생성 파일은 사람이 쓴 코드가 아니므로 규칙 검사에서 뺀다(AC-UI-002-04 (다))
+const GENERATED_FILES = new Set(["src/api/schema.d.ts"]);
+// 앱 계층(plan.md §D.2): ui-core와 같은 금지 패턴, @/ui-core만 쓰는 가져오기 규칙을 적용한다
+const APP_DIRS = ["src/app", "src/api", "src/features", "src/lib"];
+
 const read = (relative: string) => readFileSync(path.join(ROOT, relative), "utf8");
 const UI_CORE_FILES = listSources("src/ui-core");
 const PREVIEW_FILES = listSources("src/preview");
-const SCANNED_FILES = [...UI_CORE_FILES, ...PREVIEW_FILES];
+const APP_FILES = APP_DIRS.flatMap(listSources).filter((file) => !GENERATED_FILES.has(file));
+const SCANNED_FILES = [...UI_CORE_FILES, ...PREVIEW_FILES, ...APP_FILES];
 
 // ── 실제 소스 검사 ─────────────────────────────────────────────────────────────────────
 
@@ -366,6 +398,12 @@ describe("디자인 규칙 — 금지 패턴(AC-UI-001-10, AC-UI-001-12, AC-UI-0
   it("검사 대상은 src/ui-core(테스트 포함)와 src/preview의 소스다", () => {
     expect(UI_CORE_FILES.length).toBeGreaterThan(0);
     expect(PREVIEW_FILES.length).toBeGreaterThan(0);
+  });
+
+  it("검사 대상에 앱 계층(src/app·src/api·src/features·src/lib)이 들고 생성 파일은 빠진다(AC-UI-002-04 (다))", () => {
+    expect(APP_FILES).toContain("src/app/env.ts");
+    expect(APP_FILES).toContain("src/api/schema-sync.test.ts");
+    expect(SCANNED_FILES).not.toContain("src/api/schema.d.ts");
   });
 
   it("dark: 변형, 기본 테마 이름, outline-none, hover:opacity-, box-shadow 포커스 링, 조건 없는 animate-*가 0건이다", () => {
@@ -444,7 +482,12 @@ describe("디자인 규칙 — 공개 API와 구성(AC-UI-001-09)", () => {
   });
 
   it("미리보기는 @/ui-core에서만 ui-core를 가져온다", () => {
-    const violations = PREVIEW_FILES.flatMap((file) => checkPreviewImports(file, read(file)));
+    const violations = PREVIEW_FILES.flatMap((file) => checkUiCoreImports(file, read(file)));
+    expect(violations.map(format)).toEqual([]);
+  });
+
+  it("앱 계층은 @/ui-core에서만 ui-core를 가져온다(하위 경로·internal·상대 경로·재내보내기·동적 가져오기 금지)", () => {
+    const violations = APP_FILES.flatMap((file) => checkUiCoreImports(file, read(file)));
     expect(violations.map(format)).toEqual([]);
   });
 });
@@ -586,9 +629,43 @@ describe("디자인 규칙 자기 검사(EC-18)", () => {
       'import { Button as B } from "@/ui-core/button";',
       'import { cn } from "../ui-core/cn";',
     ].join("\n");
-    expect(checkPreviewImports("src/preview/Sample.tsx", source).map(format)).toEqual([
+    expect(checkUiCoreImports("src/preview/Sample.tsx", source).map(format)).toEqual([
       "src/preview/Sample.tsx:2 @/ui-core 외 경로 가져오기: @/ui-core/button",
       "src/preview/Sample.tsx:3 @/ui-core 외 경로 가져오기: ../ui-core/cn",
+    ]);
+  });
+
+  it("앱 계층 위반 표본 일곱 개를 각각 경로:줄로 잡고 @/ui-core 가져오기는 통과시킨다(AC-UI-002-04 (다))", () => {
+    const file = "src/features/sample/Sample.tsx";
+    const source = [
+      'import { Button } from "@/ui-core";', // 1 통과 표본
+      'const dark = "dark:bg-card";', // 2
+      'const palette = "bg-rose-700";', // 3
+      'import { Button } from "@/ui-core/button";', // 4
+      'import { x } from "@/ui-core/internal/class-names";', // 5
+      'import { Button } from "../../ui-core/button";', // 6
+      'export { Button } from "@/ui-core/button";', // 7
+      'const m = import("@/ui-core/button");', // 8
+    ].join("\n");
+    const messages = [...checkClassRules(file, source), ...checkUiCoreImports(file, source)].map(
+      format,
+    );
+    expect(messages).toEqual([
+      `${file}:2 dark: 변형: dark:bg-card`,
+      `${file}:3 기본 테마 이름: bg-rose-700`,
+      `${file}:4 @/ui-core 외 경로 가져오기: @/ui-core/button`,
+      `${file}:5 @/ui-core 외 경로 가져오기: @/ui-core/internal/class-names`,
+      `${file}:6 @/ui-core 외 경로 가져오기: ../../ui-core/button`,
+      `${file}:7 ui-core 재내보내기: @/ui-core/button`,
+      `${file}:8 ui-core 동적 가져오기: @/ui-core/button`,
+    ]);
+  });
+
+  it("@/ui-core 자체를 다시 내보내거나 동적으로 가져와도 잡는다", () => {
+    const source = ['export { Button } from "@/ui-core";', 'await import("@/ui-core");'].join("\n");
+    expect(checkUiCoreImports("src/app/Sample.tsx", source).map(format)).toEqual([
+      "src/app/Sample.tsx:1 ui-core 재내보내기: @/ui-core",
+      "src/app/Sample.tsx:2 ui-core 동적 가져오기: @/ui-core",
     ]);
   });
 
