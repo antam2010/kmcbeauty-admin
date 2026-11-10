@@ -35,7 +35,7 @@ const formatRange = (range: DateRange) =>
   `${format(range.from, "yyyy. M. d.")} ~ ${format(range.to, "yyyy. M. d.")}`;
 
 /**
- * 기간 입력. 트리거를 누르면 Radix Popover 안에 Calendar 범위 모드가 열린다(react-day-picker는 Calendar 안에만 있다).
+ * 기간 입력. 트리거를 누르면 Radix Popover 안에 Calendar 범위 모드가 열린다(날짜 라이브러리는 calendar.tsx 안에만 둔다).
  * 시작 → 끝을 고르면 한 번 알리고 닫히며, Esc는 값을 바꾸지 않고 닫는다. 닫히면 Radix가 트리거로 포커스를 돌린다.
  */
 export function DateRangePicker({
