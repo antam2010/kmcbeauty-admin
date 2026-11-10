@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { expectNoAxeViolations } from "../test/axe";
-import { Calendar, type CalendarProps } from "./calendar";
+import { Calendar, type CalendarSingleProps, type DateRange } from "./calendar";
 
 const FOCUS_CLASSES = [
   "focus-visible:outline-2",
@@ -24,7 +24,7 @@ function Harness({
   initial = null,
   onValueChange,
   ...props
-}: Partial<Omit<CalendarProps, "value" | "onValueChange">> & {
+}: Partial<Omit<CalendarSingleProps, "value" | "onValueChange">> & {
   initial?: Date | null;
   onValueChange?: (date: Date) => void;
 }) {
@@ -220,6 +220,150 @@ describe("Calendar — 주말 색·오늘·선택 단서(AC-UI-001-21, AC-UI-001
     const { container, rerender } = render(<Harness />);
     await expectNoAxeViolations(container);
     rerender(<Harness initial={new Date(2026, 9, 20)} isDateDisabled={(d) => d.getDay() === 3} />);
+    await expectNoAxeViolations(container);
+  });
+});
+
+// ── 범위 모드(SPEC-UI-002 plan.md §D.1, system.md §8 "Calendar 범위 모드") ─────────────────────────
+
+function RangeHarness({
+  initial = null,
+  onValueChange,
+}: {
+  initial?: DateRange | null;
+  onValueChange?: (range: DateRange) => void;
+}) {
+  const [value, setValue] = useState<DateRange | null>(initial);
+  return (
+    <Calendar
+      mode="range"
+      value={value}
+      onValueChange={(next) => {
+        setValue(next);
+        onValueChange?.(next);
+      }}
+    />
+  );
+}
+
+describe("Calendar — 범위 모드(SPEC-UI-002)", () => {
+  const RANGE: DateRange = { from: new Date(2026, 9, 12), to: new Date(2026, 9, 15) };
+
+  it("시작·사이·끝 날짜가 모두 aria-selected이고 범위 밖은 아니다", () => {
+    render(<RangeHarness initial={RANGE} />);
+    for (const iso of ["2026-10-12", "2026-10-13", "2026-10-14", "2026-10-15"]) {
+      expect(cell(iso)).toHaveAttribute("aria-selected", "true");
+    }
+    expect(cell("2026-10-11")).not.toHaveAttribute("aria-selected");
+    expect(cell("2026-10-16")).not.toHaveAttribute("aria-selected");
+  });
+
+  it("시작·끝 날짜는 접근 이름으로 시작·끝을 알리고, 사이 날짜는 범위 안임을 알린다(색이 아닌 단서)", () => {
+    render(<RangeHarness initial={RANGE} />);
+    expect(dayButton("2026-10-12")).toHaveAccessibleName(/시작 날짜/);
+    expect(dayButton("2026-10-15")).toHaveAccessibleName(/끝 날짜/);
+    expect(dayButton("2026-10-13")).toHaveAccessibleName(/선택한 기간/);
+    expect(dayButton("2026-10-13")).not.toHaveAccessibleName(/시작 날짜|끝 날짜/);
+    expect(dayButton("2026-10-16")).not.toHaveAccessibleName(/시작 날짜|끝 날짜|선택한 기간/);
+  });
+
+  it("시작·끝은 primary 채움 + font-semibold, 사이는 primary-subtle 띠이고 띠는 바깥 모서리만 둥글다", () => {
+    render(<RangeHarness initial={RANGE} />);
+    expect(dayButton("2026-10-12")).toHaveClass(
+      "bg-primary",
+      "text-primary-foreground",
+      "font-semibold",
+    );
+    expect(dayButton("2026-10-15")).toHaveClass(
+      "bg-primary",
+      "text-primary-foreground",
+      "font-semibold",
+    );
+    expect(dayButton("2026-10-13")).toHaveClass("text-primary-subtle-foreground");
+    expect(dayButton("2026-10-13")).not.toHaveClass("bg-primary");
+    expect(cell("2026-10-13")).toHaveClass("bg-primary-subtle");
+    expect(cell("2026-10-12")).toHaveClass("bg-primary-subtle", "rounded-s-control");
+    expect(cell("2026-10-15")).toHaveClass("bg-primary-subtle", "rounded-e-control");
+    expect(cell("2026-10-13")).not.toHaveClass("rounded-s-control", "rounded-e-control");
+  });
+
+  it("채움·띠 위의 주말 날짜는 주말 숫자 색 대신 채움·띠의 글자 토큰을 쓴다", () => {
+    // 2026-10-17(토)~2026-10-19(월): 토요일 시작, 일요일 사이
+    render(<RangeHarness initial={{ from: new Date(2026, 9, 17), to: new Date(2026, 9, 19) }} />);
+    expect(cell("2026-10-17")).not.toHaveClass("text-primary");
+    expect(cell("2026-10-18")).not.toHaveClass("text-destructive");
+    expect(dayButton("2026-10-18")).toHaveClass("text-primary-subtle-foreground");
+    // 범위 밖 주말은 그대로다
+    expect(cell("2026-10-24")).toHaveClass("text-primary");
+  });
+
+  it("고대비 모드에서도 시작·끝·사이 날짜에 윤곽선 단서가 남는다", () => {
+    render(<RangeHarness initial={RANGE} />);
+    expect(dayButton("2026-10-12")).toHaveClass("forced-colors:outline-2");
+    expect(dayButton("2026-10-13")).toHaveClass("forced-colors:outline-1");
+    expect(dayButton("2026-10-16")).not.toHaveClass(
+      "forced-colors:outline-1",
+      "forced-colors:outline-2",
+    );
+  });
+
+  it("Enter로 시작, 다시 Enter로 끝을 고르면 onValueChange가 { from, to }로 한 번 불린다", async () => {
+    const user = userEvent.setup();
+    const onValueChange = vi.fn();
+    render(<RangeHarness onValueChange={onValueChange} />);
+    dayButton("2026-10-29").focus();
+    await user.keyboard("{Enter}");
+    expect(onValueChange).not.toHaveBeenCalled();
+    expect(dayButton("2026-10-29")).toHaveAccessibleName(/시작 날짜/);
+    await user.keyboard("{ArrowRight}{ArrowRight}{Enter}");
+    expect(onValueChange).toHaveBeenCalledTimes(1);
+    expect(onValueChange).toHaveBeenCalledWith({
+      from: new Date(2026, 9, 29),
+      to: new Date(2026, 9, 31),
+    });
+  });
+
+  it("끝을 시작보다 앞 날짜로 고르면 순서를 바로잡아 알린다", async () => {
+    const user = userEvent.setup();
+    const onValueChange = vi.fn();
+    render(<RangeHarness onValueChange={onValueChange} />);
+    await user.click(dayButton("2026-10-20"));
+    await user.click(dayButton("2026-10-14"));
+    expect(onValueChange).toHaveBeenCalledWith({
+      from: new Date(2026, 9, 14),
+      to: new Date(2026, 9, 20),
+    });
+  });
+
+  it("같은 날을 두 번 고르면 하루짜리 범위다", async () => {
+    const user = userEvent.setup();
+    const onValueChange = vi.fn();
+    render(<RangeHarness onValueChange={onValueChange} />);
+    await user.click(dayButton("2026-10-20"));
+    await user.click(dayButton("2026-10-20"));
+    expect(onValueChange).toHaveBeenCalledWith({
+      from: new Date(2026, 9, 20),
+      to: new Date(2026, 9, 20),
+    });
+  });
+
+  it("범위가 있을 때 새로 고르면 새 시작부터 다시 고른다", async () => {
+    const user = userEvent.setup();
+    const onValueChange = vi.fn();
+    render(<RangeHarness initial={RANGE} onValueChange={onValueChange} />);
+    await user.click(dayButton("2026-10-20"));
+    expect(onValueChange).not.toHaveBeenCalled();
+    expect(dayButton("2026-10-20")).toHaveAccessibleName(/시작 날짜/);
+    expect(cell("2026-10-13")).not.toHaveAttribute("aria-selected");
+    await user.click(dayButton("2026-10-22"));
+    expect(onValueChange).toHaveBeenCalledWith({
+      from: new Date(2026, 9, 20),
+      to: new Date(2026, 9, 22),
+    });
+  });
+
+  it("범위 모드에서 axe 위반이 0건이다", async () => {
+    const { container } = render(<RangeHarness initial={RANGE} />);
     await expectNoAxeViolations(container);
   });
 });
