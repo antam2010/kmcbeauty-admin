@@ -525,6 +525,30 @@ harness: thorough
 |---|---|
 | 1d3e22d | fix(SPEC-UI-002): M2 로그아웃 중 갱신 응답이 토큰을 되살리지 않게 세션 세대 확인 |
 
+#### 오케스트레이터 재검증과 독립 평가(2026-11-10)
+
+- 세션 `e545850e-8214-419f-8a10-cc4b0eb89c6d`, 시작 HEAD `9010753`(차이 `0 0`, 작업 트리는 주 체크아웃 하나). 증거는 `.moai/state/verify/e545850e-8214-419f-8a10-cc4b0eb89c6d/`의 `m2/`·`m2-orchestrator/`·`m2-fix1/`·`m2-fix1-orchestrator/`다(에이전트 증거는 작업 트리에서 옮김).
+- 계획 감사 관문: 캐시 적중을 다시 확인했고 plan-auditor는 부르지 않았다. spec·plan·acceptance·design·research의 sha256이 §A.10 기록과 같고, spec.md는 M1의 run 단계 소유 전환인 `status: draft → in-progress` 한 줄만 다르다. 일별 기록 `.moai/reports/plan-audit/SPEC-UI-002-2026-11-10.md`의 "Audit Run 2"에 남겼다.
+- M2 재검증(에이전트 작업 트리, HEAD `23b0d62`): typecheck 0, lint 0(125개 파일), `npm test` 53 files / 703 tests(Duration 14.66s, load 10.13), AC 시험 5개 파일 102개 통과, 커버리지 98.43 · 95.48 · 99.28 · 99.72, 빌드 0, `moai gate` 0, spec lint 지적 없음, QG-11·12 exit 1·stderr 0바이트·자체 확인 2·2, 게이트별 시험 파일 130/130(QG-06 39, QG-07 22, QG-08 27, QG-13 5, QG-14 9, QG-15 26, QG-16 2), 보호 경로 변경 0, 주 체크아웃 `moai worktree verify` 0. `git merge --ff-only` 뒤 `git push origin main`(`9010753..23b0d62`).
+- 독립 평가 1차(sync-auditor, `.moai/reports/sync-audit/SPEC-UI-002-M2.md`): **FAIL**, 조화 평균 84.5(기능 85 · 보안 75 · 품질 90 · 일관성 90). M2에서 판정하는 AC 부분은 모두 통과했고 일탈 11건도 모두 수용됐다. 차단 결함은 F1(로그아웃 중 갱신 응답이 토큰을 되살림, 탐침 `afterLogout= null afterRefreshSettled= access-2`)이고, F2·F6을 함께 고쳤다.
+- 수정 1회차 재검증(HEAD `aacd03f`): typecheck 0, lint 0, `npm test` 53 / 710(Duration 17.97s, load 16.12), `src/api src/features src/lib` 9개 파일 122개 통과, 빌드 0, `moai gate` 0. 첫 `npm run test:coverage`는 손대지 않은 `src/preview/PreviewPage.test.tsx` 한 건이 시간 초과(7383ms > 5000ms, load 16)로 exit 1이었고, 한 번 다시 실행해 53 / 710 통과, 98.46 · 95.68 · 99.29 · 99.73이었다. 합치기 직전에 남아 있던 0바이트 `.git/index.lock`(13:44:16, 실행 중인 git 없음)을 지운 뒤 `23b0d62..aacd03f`로 합치고 푸시했다. 주 체크아웃에서 다시 돌린 `moai gate`는 exit 0이다(`m2-fix1-orchestrator/qg09-gate-primary.txt`. 성공하면 출력이 비므로 종료 코드를 따로 적는다).
+- 차분 재감사(`.moai/reports/sync-audit/SPEC-UI-002-M2-rereview-1.md`): **PASS**, 87.3(기능 90 · 보안 80 · 품질 90 · 일관성 90). F1·F2·F6이 닫혔다(탐침 `afterRefreshSettled= null`, `refreshCount= 1 expiredCalls= 1`). 구현자가 더한 `isSessionExpired()`는 S0 결정에 맞는 최소 변경으로 판정됐다.
+
+**넘기는 항목과 사용자 결정(2026-11-10, AskUserQuestion)**
+
+| ID | 내용 | 처리 |
+|---|---|---|
+| N1 | 로그인이 세션 세대를 올리지 않는다. 로그아웃 없이 다시 로그인하면 그 전에 시작된 갱신의 늦은 결과가 새 토큰을 덮어쓴다(탐침 `afterLogin= access-userB afterBootRefreshSettled= access-userA`, 수정 전부터 있던 결함) | **사용자 결정: M4 첫 커밋.** 탐침 P8·P8b를 시험으로 옮겨 실패를 확인한 뒤, 로그인 때 세대를 올리는 `startSession(token)`으로 고친다 |
+| F5 | 인증 3개 경로 밖 요청의 `credentials: "same-origin"`(개발 프록시에서 리프레시 쿠키가 다른 요청에도 실릴 수 있음, 추론) | **사용자 결정: `"omit"`으로 바꾼다.** 코드와 시험은 M4, design.md §4.1 문구는 sync 단계 |
+| F3 | 백엔드 `hint`가 개발자용 글이다(`"놉"`, `"redis에 만료되거나 없음."`, `"전화번호 중복 확인하쇼."`) | **사용자 결정: 화면에 보이지 않는다.** 정규화 결과에는 남기고(AC-08), M4·M5 화면 시험에 "hint를 그리지 않는다" 단언을 둔다. 계획 문서는 고치지 않는다 |
+| F4 | 로그인 비밀번호가 변경 캐시의 `variables`에 남는다(기본 gcTime 5분) | M4: 로그인 변경에 `gcTime: 0` 또는 성공 뒤 `reset()` |
+| F8 | `configureSession`이 모듈 전역 설정을 덮어쓴다 | M4: 클라이언트를 한 번만 만드는지 확인 |
+| N2 | 새 세션의 401이 이전 세대의 진행 중 갱신에 합류해 401로 끝난다(구간이 매우 좁음) | 선택. M4에서 N1과 함께 검토 |
+| F10 | 실제 409 응답의 기본 `detail`이 "요청이 충돌되었습니다."다 | M5: 고객 폼이 필드 오류로 바꾸는지 확인 |
+| F7·N3 | design.md §4.1의 미들웨어 3개 그림, §4.2·§4.3에 세대 규칙과 `isSessionExpired()`가 없다 | sync 단계 문서 갱신 |
+
+- 다음 마일스톤은 M3다. 착수 결정대로 독립 평가는 M4·M8 직후에 한다.
+
 ## §E.3 Run-phase Audit-Ready Signal
 
 _<pending run-phase>_
