@@ -731,6 +731,33 @@ harness: thorough
 - **date-time-picker.tsx 주석**: 7677aa7부터 "react-day-picker"라는 낱말이 주석에 있어, 글자 기준 E4 grep에는 calendar.tsx 밖 한 줄로 걸린다. 범위 밖이라 그대로 두었다. 가져오기 기준 잠금 시험은 통과한다.
 - **UR-9**: 새 컴포넌트 4개와 범위 달력의 실제 모양은 `/dev/preview`(M4 뒤) 또는 지금의 `npm run dev` 미리보기에서 사용자 검토로 볼 수 있다. 자동 시험은 클래스와 ARIA까지만 판정한다.
 
+#### 오케스트레이터 재검증과 통합(2026-11-10)
+
+- 세션 `f64b7914-6a56-4436-86f6-7a9eef484222`, 시작 HEAD `7677aa7`(차이 `0 0`, 작업 트리는 주 체크아웃 하나, 같은 SPEC의 다른 세션 없음). 증거는 `.moai/state/verify/f64b7914-6a56-4436-86f6-7a9eef484222/`의 `m3/`(에이전트, 작업 트리에서 옮김 — 44개 파일, `diff -rq` 동일)와 `m3-orchestrator/`다.
+- 계획 감사 관문: 캐시 적중을 다시 확인했고 plan-auditor는 부르지 않았다. acceptance·design·plan·research의 sha256이 Run 1 지문과 같고, spec.md는 `status: draft`로 되돌리면 Run 1 지문과 같다. `fd184ee..HEAD`에서 계획 문서 5개를 바꾼 커밋은 6d870b7(M1의 상태 전환)뿐이다. 일별 기록의 "Audit Run 3"에 남겼다.
+- 중단과 재개: 첫 위임은 ae80cc3 뒤 기기 재시작으로 보고 없이 끊겼다. 작업 트리에는 커밋 3개와 과제 6·7·8의 미커밋 변경이 남아 있었고, 같은 에이전트를 같은 작업 트리에서 이어 가게 했다. 최종 HEAD는 `ba3a78c`(코드 판정 HEAD `4c51403` + 진행 기록 커밋)다.
+- M3 재검증(에이전트 작업 트리, HEAD `ba3a78c`. grep은 `/usr/bin/grep` GNU grep 3.11)
+  - 게이트: typecheck 0, lint 0(136개 파일). `npm test` 57 files / 783 tests, Duration 12.02s, 직후 load 9.32. 같은 출력에 "Not implemented: HTMLCanvasElement" 0건, "not wrapped in act" 0건(과제 12·14).
+  - AC-23 기준선 비교: 새로 만든 `m3-after-orch.json`(57 files / 783 passed)을 에이전트의 `m3-baseline.json`·`m3-intentional-changes.txt`(18줄)와 §4.1 스크립트로 비교했다 → exit 0, `baseline ok: 710 tests kept or listed`.
+  - 게이트별 시험 파일(같은 JSON): QG-06 39, QG-07 22, QG-08 27, QG-13 5, QG-14 9, QG-15 26, QG-16 2. 새 시험: date-range-picker 10, drawer 9, popover 10, number-input 18(AC-22 (마)~(사)·EC-23·EC-24), calendar 28, 결함 재현이 든 modal 22·date-time-picker 24·breadcrumb 19, 모두 통과. 새 시험 4개 파일의 제목을 §3.10 키보드 계약 표와 맞춰 봤다(`new-component-test-titles.txt`).
+  - 커버리지 98.55 · 95.94 · 99.35 · 99.64(기준 80/80/80/80). 빌드 0(`dist/index.html` 15:06:54). `moai gate` exit 0(pwd=작업 트리, `CLAUDE_PROJECT_DIR` 없음). spec lint 지적 없음.
+  - QG-11 경계 검사 exit 1·stderr 0바이트·자체 확인 2. QG-12 지정자 검사 exit 1·stderr 0바이트·자체 확인 2, `package.json` 키 검사 exit 0.
+  - §3.10 항목 증거: 6 `canCreate` 3회. 7·8은 포커스 링·선택 상태 문자열이 시험 밖 ui-core에서 `internal/class-names.ts`에만 있다. 9는 toast·confirm이 `internal/external-store`를 가져오고, `@MX:WARN`이 `internal/external-store.ts:13`에만 있다. 10 `useCallback`, 11 `TAIL_RUN_START`, 13 `cva(` 2·1, 14 `act(` 1, 16 `size="md"` 출력 없음(exit 1), 17 한 줄.
+  - 공개 표면: `PUBLIC_NAMES`가 §3.6의 44개와 글자·순서까지 같다. 컴포넌트 파일 33개, `index.ts`에 `internal` 없음, ui-core 안에서 앱 코드(`@/lib`·`@/api`·`@/features`·`@/app`) 가져오기 없음. react-day-picker를 가져오는 곳은 `calendar.tsx`뿐이다(`date-time-picker.tsx`에는 7677aa7부터 있던 주석의 낱말만 있다).
+  - 범위: 바뀐 파일 46개가 모두 `src/`와 `.moai/` 안이다. `.moai/` 변경은 progress.md(+182, −0)뿐이다. `openapi/`·`src/api/schema.d.ts`·`package.json`·`package-lock.json`·`.claude/`·SPEC-UI-001·`.moai/design/`·계획 문서 5개는 바뀌지 않았다. 커밋 22개 모두 `🗿 MoAI` 줄이 있다. 주 체크아웃 `moai worktree verify` exit 0.
+- 통합: `git merge --ff-only` 뒤 `git push origin main`(`7677aa7..ba3a78c`, 차이 `0 0`). 증거를 옮긴 뒤 작업 트리와 임시 브랜치를 지웠다. 주 체크아웃에서 다시 돌린 typecheck는 exit 0이다(`qg01-typecheck-primary.txt`).
+- 독립 평가: 착수 결정대로 M3 직후에는 돌리지 않는다. 다음 평가는 M4 직후다.
+
+**넘기는 항목(M3에서 생김)**
+
+| 내용 | 처리 |
+|---|---|
+| 정본에 글자가 없어 구현자가 정한 표현: Calendar 범위 모드의 사이 날짜 접근 이름 "선택한 기간", 고대비 단서(시작·끝 `outline-2`, 사이 `outline-1`), NumberInput의 범위 오류 문장(예: "1,000원 이하로 입력해 주세요."), 0 이상의 정수·15자리 제한 | UR-9에서 모양을 확인한다. 범위 문장이 acceptance.md §3.2 필드 문구("0 이상 입력해 주세요." 등)와 맞는지는 M5~M7에서 폼에 붙일 때 확인한다(이번에 비교하지 않음) |
+| `src/ui-core/internal/external-store.ts`와 `src/lib/external-store.ts`의 중복 | 경계 규칙상 의도된 중복. 조치 없음 |
+| 다음 위임 팁: 작업 트리에 `node_modules`가 없어 `npm ci`가 먼저 필요하다. 증거용 grep은 `/usr/bin/grep`(셸의 `grep`은 ugrep 함수)으로 부른다. 작업 트리 가드는 git 없이도 `{ …; }`·셸 변수 인자·따옴표 속 한글 `-t "…"`를 거부한다. 일회성 스크립트는 증거 디렉터리 `tools/`에 둔다 | M4 위임 지시문에 넣는다 |
+
+- 다음 마일스톤은 M4다. 위임 때 M2의 N1·F5·F3·F4·F8·N2 행을 그대로 옮기고, M4 직후 sync-auditor 독립 평가를 한다.
+
 ## §E.3 Run-phase Audit-Ready Signal
 
 _<pending run-phase>_
