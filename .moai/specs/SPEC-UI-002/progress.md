@@ -383,6 +383,98 @@ harness: thorough
 - 백엔드 드리프트 판단: 백엔드 reflog에 2026-11-10 11:29:24 `pull --ff-only`(`eb8b06d → c626dd3`)가 있다. 이 SPEC 밖의 작업이다. 스냅숏과의 차이는 `DELETE /users/me/force`의 설명 글 하나이고, 이 엔드포인트는 범위 밖인 계정 관리 기능이다(plan.md §M.2). REQ-002·AC-02가 스냅숏 출처를 `eb8b06d`로 정했으므로 스냅숏은 그대로 둔다. 다시 맞추려면 R3 절차(blocker → REQ-002·AC-02·QG-16 개정 → `api:sync`)를 밟는다. 그 전까지 `api:check`의 exit 1은 예상된 결과이며, 다음 위임 지시문에 이 사실을 적는다.
 - 작업 트리 환경: `.worktreeinclude`가 주 체크아웃의 `.env`를 작업 트리로 복사하고, 그 안의 값은 예전 API 주소다. 검증 명령은 앞에 넘긴 `VITE_API_BASE_URL`이 이 값을 덮어쓴다. 로컬 `.env` 정리는 동기화 단계의 README 항목(S-F10)에서 다룬다.
 
+### M2 — API 클라이언트·인증 세션·오류 계층 (2026-11-10, manager-develop, cycle_type=tdd)
+
+- M2 시작 SHA: 9010753(작업 트리 브랜치 `worktree-agent-ae76c2d44abc4d848`, 밀어 올리지 않음)
+- 증거 디렉터리: `.moai/state/verify/e545850e-8214-419f-8a10-cc4b0eb89c6d/m2/`(작업 트리에서 기록)
+- 시작 기준선(9010753): typecheck exit=0, lint exit=0(106개 파일), `npm test` 45 files / 590 tests passed(Duration 13.71s) — `preflight-*.txt`
+- M2 범위: plan.md §F M2(§B.1 전부). M3·M4 작업은 하지 않았다. 패키지 추가 없음, 스냅숏·생성 타입 손대지 않음(`api:sync`·`api:export` 실행 안 함)
+
+#### 사전 점검(openapi-fetch 0.17.0, research.md §9)
+
+| 점검 | 결과 |
+|---|---|
+| `onResponse`가 응답을 바꿀 수 있는가 | 된다. `coreFetch`가 반환값이 `Response`인지 검사하고 바꾼다. `options.fetch`로 다시 보낸 요청은 미들웨어를 거치지 않아 재시도가 구조적으로 1회다. 본문은 `onRequest`에서 `clone()`해 두면 보존된다(임시 시험 실측 후 삭제) |
+| `credentials`를 요청마다 정하는 방법 | 전역 `createClient({ credentials })`와 호출별 `init`, `onRequest`에서 `new Request(req, { credentials })` 모두 된다 |
+| 실측 주의 | MSW 3 처리기가 받는 `request.credentials`는 언제나 `"same-origin"`이다(MSW가 요청을 다시 만든다). 그래서 쿠키 전송 범위는 `createApiClient`에 넣는 기록용 `fetch`(`src/test/msw/request-log.ts`)에서 판정한다 |
+| 고른 구현 | 래퍼가 아니라 미들웨어. 기록: `precheck-openapi-fetch.md` |
+
+#### 커밋
+
+| SHA | 제목 |
+|---|---|
+| 75ec477 | feat(SPEC-UI-002): M2 오류 정규화와 쿼리 기본값 |
+| 350d866 | feat(SPEC-UI-002): M2 외부 저장소와 메모리 세션·single-flight 갱신 |
+| 5b695b7 | feat(SPEC-UI-002): M2 API 클라이언트 미들웨어 — 401 갱신 재시도와 매장 미선택 |
+| 9b99672 | feat(SPEC-UI-002): M2 쿼리 키 공장과 인증·매장 쿼리 훅 |
+| a40ad7e | test(SPEC-UI-002): M2 로그아웃 시험의 판정 뒤 응답 처리를 진짜 타이머로 |
+
+#### 인수 기준(판정 HEAD a40ad7e)
+
+| AC | 판정 | 명령 | 관찰 |
+|---|---|---|---|
+| AC-UI-002-05 (가)(나)(다) | PASS | `npx vitest run src/api/session.test.ts` | 21 passed. 저장소 쓰기·쿠키 설정자·`indexedDB.open` 0회, 쿼리·변경 캐시와 세션 모듈 값에 `refresh-` 없음, 새로고침 흉내 뒤 갱신 1회(본문 없음, include)와 `Bearer access-2`, 로그아웃 500·네트워크·응답 없음 세 경우 즉시 비움 + include 1회. (라)는 M4 |
+| AC-UI-002-06 (가)~(사) API 부분 | PASS | `npx vitest run src/api/client.test.ts src/api/session.test.ts` | 40 passed. 갱신 1회·각 요청 2회·재시도 `Bearer access-2`, 갱신 401 → 만료 처리기 1회, 재시도 401 → 갱신 늘지 않음, 로그인 401 → 갱신 0회, 네트워크·429·503 → 그 종류 오류·만료 0회·세션 유지, EC-01·EC-02·EC-03·EC-31·EC-32, 모든 요청 기록에서 include는 인증 3개 경로에만·`X-Refresh-Token` 없음. (나)의 화면 부분은 M4 |
+| AC-UI-002-07 (다) + (가) 처리기 호출 | PASS | `npx vitest run src/api/client.test.ts src/api/query-keys.test.ts` | 28 passed. §3.11 키 6행 일치, `SHOP_NOT_SELECTED` → 처리기 1회. 화면 부분은 M5 |
+| AC-UI-002-08 | PASS | `npx vitest run src/api/errors.test.ts src/api/query-client.test.ts` | 53 passed. §3.2 표 전부 정규화, 4xx·취소 1회 / 500·503·네트워크 3회 / 변경 1회, 키 변경 시 앞 `signal.aborted === true`·최종 데이터 "김민"·`error` null |
+| S0 결정 | PASS | 위 AC-06 명령 | `client.test.ts > 첫 방문 S0(만료 문구 없음) > 메모리 토큰 없이 ensureSession()의 갱신이 401이면 false이고 만료 처리기를 부르지 않는다` ✓, 같은 묶음의 "토큰 없이 보낸 요청이 401이고 갱신도 401이면 만료 처리기를 부르지 않는다" ✓ |
+
+#### 품질 게이트(판정 HEAD a40ad7e, grep은 GNU grep 3.11)
+
+| QG | 판정 | 관찰 |
+|---|---|---|
+| QG-01 | PASS | typecheck exit=0 |
+| QG-02 | PASS | lint exit=0, 125개 파일, 새 지적 0건(기준선 106개 파일 0건) |
+| QG-03 | PASS | 53 files / 703 tests passed, Duration 15.10s, 직후 uptime load average 11.65, 11.99, 10.52(9b99672에서는 22.06s, load 11.03) |
+| QG-04 | PASS | `VITE_API_BASE_URL=https://api-beauty.dongri.kr npm run build` exit=0, `dist/index.html` 13:10:21 |
+| QG-05 | PASS | 기준 80/80/80/80, 줄 99.72 · 문장 98.43 · 함수 99.28 · 분기 95.48 |
+| QG-06 | PASS | 39 passed |
+| QG-07 | PASS | 22 passed |
+| QG-08 | PASS | 27 passed(공개 이름 40·파일 29 유지, 새 앱 파일도 검사 대상) |
+| QG-09 | PASS | `moai gate` exit=0(pwd=작업 트리, `CLAUDE_PROJECT_DIR` 없음, HEAD a40ad7e). 코드 커밋 5개 모두 훅 우회 없이 통과. 진행 기록 커밋의 첫 시도는 pre-commit `moai gate`가 막았다(아래 관찰) |
+| QG-10 | PASS | spec lint 결과 없음 |
+| QG-11 | PASS | 경계 검사 exit=1·stderr 0바이트, 자체 확인 2(양성·라벨 검사는 M6). 9b99672에서 실행, 9b99672..a40ad7e 차이는 `src/api/session.test.ts` 하나라 검사 대상과 무관 |
+| QG-12 | PASS | 지정자 검사 exit=1·stderr 0바이트, 자체 확인 2, 키 검사 exit=0(실행 HEAD는 QG-11과 같음) |
+| QG-13 | PASS | `deploy-guard.test.ts` 5 passed |
+| QG-14 | PASS | 9 passed |
+| QG-15 | PASS | 26 passed(전시 29개) |
+| QG-16 | PASS | `schema-sync.test.ts` 2 passed |
+
+#### RED 증거(구현 전 실패 출력)
+
+| 묶음 | 파일 |
+|---|---|
+| 오류 정규화 | `red-01-errors.txt`(모듈 없음) |
+| 쿼리 기본값·재시도·취소 | `red-02-query-client.txt`(모듈 없음) |
+| 외부 저장소 | `red-03-external-store.txt`(모듈 없음) |
+| 세션·갱신 결과·single-flight | `red-04-session-refresh.txt`(모듈 없음) |
+| 클라이언트 미들웨어 | `red-05-client.txt`(모듈 없음) |
+| 쿼리 키 | `red-06-query-keys.txt`(모듈 없음) |
+| AC-05 흐름·인증 훅 | `red-07-auth-flow.txt`(모듈 없음) |
+| 매장 훅 | `red-08-shops-queries.txt`(모듈 없음) |
+
+#### 계획과 달라진 점
+
+- design.md §4.1의 미들웨어 세 개(`auth`·`retry`·`shop`)를 하나로 합쳤다. `onResponse`는 등록 역순으로 돌아서, 나누면 매장 검사가 재시도 전 응답을 볼 수 있다. 같은 규칙을 한 미들웨어 안의 순서로 정했다(재시도한 응답의 `SHOP_NOT_SELECTED`도 처리기 1회 — 시험 있음).
+- `createApiClient`가 `configureSession({ baseUrl, fetch })`로 세션 모듈에 기준 주소와 fetch를 넘긴다. design.md §4.3의 `refreshSession()`·`ensureSession()`이 인자 없이 불리기 때문이다. fetch는 부를 때 찾는다(모듈 적재 때 `globalThis.fetch`를 잡으면 MSW 시험에서 실제 네트워크로 나간다 — 첫 GREEN 실행에서 실측).
+- 갱신이 이미 끝난 뒤 옛 토큰으로 보낸 요청의 401은 다시 갱신하지 않고 새 토큰으로 한 번 보낸다(겹친 갱신 방지 보강, 시험 있음).
+- 만료 처리기는 같은 갱신 결과에 한 번만 부른다(동시 401 세 개 → 1회, AC-06 (나)). 쿼리 캐시 비우기는 design.md §4.2대로 주입한 처리기의 일이며, 시험은 처리기에서 `queryClient.clear()`를 불러 캐시 0개를 확인한다.
+- S0: 토큰 없이 보낸 요청의 401도 갱신은 시도하지만(쿠키가 있으면 복구), 갱신이 401이면 만료 처리기를 부르지 않는다.
+- 키 공장에 매장 범위 접두사 `qk.shopScope()`(`["shop"]`)를 더했다. 매장 전환의 `removeQueries`가 이 함수를 쓴다.
+- 훅은 클라이언트를 인자로 받는다(`useMe(client)` 등). 클라이언트를 어디에 둘지(컨텍스트 등)는 앱 조립(M4) 때 정한다.
+- 로그인 응답에 `access_token`이 없으면(EC-04) status 502·서버 문구의 `ApiError`로 실패시킨다(정본 표에 이 경우의 status가 없어 서버 문제로 분류).
+- §3.2 메모에 따라 409 표본 코드를 백엔드 실제 이름 `PHONEBOOK_CONFLICT`로 맞췄다(`kmcbeauty-fastapi/app/exceptions.py` 기본 코드 + `phonebook_service.py` `DOMAIN = "PHONEBOOK"`). `PHONEBOOK_NOT_FOUND`·`SHOP_NOT_SELECTED`는 같다.
+- 표에 없는 4xx는 400 문구, 표에 없는 5xx는 서버 문구로 둔다(정본 표 밖의 기본값).
+- 시험 장치에 `src/test/msw/request-log.ts`(fetch 층 요청 기록)를 더했다. `src/features/auth`·`src/features/shops`에 훅 시험을 더했다. `src/api/session.test.ts`는 AC-05 판정 때문에 `@/features/auth/queries`를 가져온다(시험 파일만, 앱 코드의 API → features 의존은 없음 — `final-api-boundary-grep.txt`).
+
+#### 관찰(조치하지 않음)
+
+- 백엔드 실제 `SHOP_NOT_SELECTED` 응답의 `hint`는 `"redis에 만료되거나 없음."`(개발자용 글)이다. 정규화는 `hint`를 그대로 담으므로 화면이 `hint`를 보이면 이 글이 나온다. 화면에서 `hint` 노출 여부는 M4 이후 판단.
+- MSW 처리기에서 `request.credentials`가 보이지 않는 점은 이후 마일스톤의 시험도 같은 기록용 fetch를 써야 한다는 뜻이다.
+- 앱 코드의 저장소 문자열 검색(`final-token-storage-grep.txt`)은 `session.ts` 맨 위 주석 두 줄만 잡는다(코드 사용 0건).
+- 진행 기록 커밋의 첫 시도에서 pre-commit `moai gate`가 실패했다(6 failed / 697 passed, Duration 32.47s, 직후 load average 35.06). 다섯 개는 다른 세션의 부하로 ui-core·design-rules 시험이 기본 제한 시간을 넘긴 것이고(단독 재실행 통과), 하나는 M2 로그아웃 500 시험이었다. 그 시험은 부하가 없어도 가짜 타이머가 켜진 채 시험 정리가 약 4초 멈췄다(본문은 0ms에 끝나고 다음 정리 단계까지 4,000ms — 시각 기록으로 확인, 앞 묶음 "refreshSession 결과"와 함께 돌 때만 재현). 판정 뒤 요청 전달 확인부터 진짜 타이머로 바꿔(a40ad7e) 3ms가 됐다. 멈춤의 정확한 원인(MSW·undici 내부의 어느 타이머인지)은 확인하지 않았다. 판정 자체는 그대로 가짜 타이머를 흘리지 않은 상태에서 한다.
+- 새 파일 커버리지: `client.ts` 문장 97.56·분기 94.11·함수 88.88(73행 `?? ""` 분기, 91행 기본 fetch 화살표 함수), `session.ts` 분기 83.33(16행 기본 fetch 화살표 함수) — 시험은 언제나 fetch를 주입한다.
+
 ## §E.3 Run-phase Audit-Ready Signal
 
 _<pending run-phase>_
