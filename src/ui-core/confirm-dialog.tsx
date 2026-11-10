@@ -1,7 +1,9 @@
 import * as AlertDialog from "@radix-ui/react-alert-dialog";
-import { useRef, useState, useSyncExternalStore } from "react";
+import { useState } from "react";
 import { Alert } from "./alert";
 import { Button } from "./button";
+import { createExternalStore, useExternalStore } from "./internal/external-store";
+import { useRestoreFocus } from "./internal/use-restore-focus";
 
 export interface ConfirmOptions {
   /** 해요체 질문 */
@@ -109,7 +111,7 @@ function DialogBody({ options, onSettle, onOpenAutoFocus, onCloseAutoFocus }: Di
 
 function DialogView({ open, options, onSettle }: DialogViewProps) {
   // Radix Trigger 없이 여닫으므로, 열릴 때 포커스가 있던 요소(연 버튼)를 기억해 닫힐 때 돌려준다.
-  const openerRef = useRef<HTMLElement | null>(null);
+  const restoreFocus = useRestoreFocus();
   return (
     <AlertDialog.Root
       open={open}
@@ -121,13 +123,8 @@ function DialogView({ open, options, onSettle }: DialogViewProps) {
         <DialogBody
           options={options}
           onSettle={onSettle}
-          onOpenAutoFocus={() => {
-            openerRef.current = document.activeElement as HTMLElement | null;
-          }}
-          onCloseAutoFocus={(event) => {
-            event.preventDefault();
-            if (openerRef.current?.isConnected) openerRef.current.focus();
-          }}
+          onOpenAutoFocus={restoreFocus.onOpenAutoFocus}
+          onCloseAutoFocus={restoreFocus.onCloseAutoFocus}
         />
       </AlertDialog.Portal>
     </AlertDialog.Root>
@@ -150,30 +147,16 @@ interface ConfirmRequest {
   resolve(result: boolean): void;
 }
 
-// @MX:WARN: [AUTO] 모듈 수준 가변 상태(요청 대기열·구독자)와 비동기 onConfirm 실패 처리가 있다.
-// @MX:REASON: ConfirmDialogHost는 앱 루트(src/main.tsx)에 하나만 둔다. 둘이면 같은 요청이 두 번 그려진다. 테스트는 매번 resetConfirmStore()로 비워야 다음 테스트로 요청이 새지 않는다(plan.md §B B-13, design.md §5.1).
-let queue: readonly ConfirmRequest[] = [];
+// 확인 요청 대기열. 모듈 수준 저장소의 주의점은 internal/external-store.ts의 경고 태그에 적었다.
+// 비동기 onConfirm 실패는 DialogBody가 대화상자 안 오류로 처리한다.
+const store = createExternalStore<readonly ConfirmRequest[]>([]);
 let nextId = 0;
-const listeners = new Set<() => void>();
-
-function setQueue(next: readonly ConfirmRequest[]) {
-  queue = next;
-  for (const listener of listeners) listener();
-}
-
-function subscribe(listener: () => void) {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-}
-
-const getSnapshot = () => queue;
 
 function settle(id: number, result: boolean) {
+  const queue = store.get();
   const request = queue.find((candidate) => candidate.id === id);
   if (!request) return;
-  setQueue(queue.filter((candidate) => candidate.id !== id));
+  store.set(queue.filter((candidate) => candidate.id !== id));
   request.resolve(result);
 }
 
@@ -184,20 +167,20 @@ function settle(id: number, result: boolean) {
 export function showConfirm(options: ConfirmOptions): Promise<boolean> {
   return new Promise<boolean>((resolve) => {
     nextId += 1;
-    setQueue([...queue, { id: nextId, options, resolve }]);
+    store.set([...store.get(), { id: nextId, options, resolve }]);
   });
 }
 
 /** 테스트 전용: 남은 요청을 false로 끝내고 대기열을 비운다(index.ts에 내보내지 않는다). */
 export function resetConfirmStore() {
-  const pending = queue;
-  setQueue([]);
+  const pending = store.get();
+  store.set([]);
   for (const request of pending) request.resolve(false);
 }
 
 /** 대기열의 맨 앞 요청 하나를 그린다. props 없음, 앱 루트에 하나. */
 export function ConfirmDialogHost() {
-  const requests = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  const requests = useExternalStore(store);
   const current = requests[0];
   if (!current) return null;
   return (

@@ -1,10 +1,11 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { cva } from "class-variance-authority";
 import { X } from "lucide-react";
-import { type ReactNode, useRef, useState } from "react";
+import { type ReactNode, useState } from "react";
 import { Button } from "./button";
 import { cn } from "./cn";
 import { ConfirmDialog } from "./confirm-dialog";
+import { useRestoreFocus } from "./internal/use-restore-focus";
 
 // 크기 sm·md·lg = 400·560·720px(system.md §10 오버레이, 폭 토큰 dialog-*)
 const contentVariants = cva(
@@ -63,7 +64,7 @@ export function Modal({
     if (!open && confirmingDiscard) setConfirmingDiscard(false);
   }
   // Radix Trigger 없이 여닫으므로, 열릴 때 포커스가 있던 요소(연 버튼)를 기억해 닫힐 때 돌려준다.
-  const openerRef = useRef<HTMLElement | null>(null);
+  const restoreFocus = useRestoreFocus();
 
   const requestClose = () => {
     if (closeDisabled) return;
@@ -86,13 +87,8 @@ export function Modal({
           <Dialog.Content
             // 설명이 없으면 Radix 기본 연결을 덮어써 aria-describedby를 두지 않는다(콘솔 경고 0, plan.md §B B-17).
             {...(description ? {} : { "aria-describedby": undefined })}
-            onOpenAutoFocus={() => {
-              openerRef.current = document.activeElement as HTMLElement | null;
-            }}
-            onCloseAutoFocus={(event) => {
-              event.preventDefault();
-              if (openerRef.current?.isConnected) openerRef.current.focus();
-            }}
+            onOpenAutoFocus={restoreFocus.onOpenAutoFocus}
+            onCloseAutoFocus={restoreFocus.onCloseAutoFocus}
             onEscapeKeyDown={(event) => {
               event.preventDefault();
               requestClose();

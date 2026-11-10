@@ -1,9 +1,9 @@
 import * as ToastPrimitive from "@radix-ui/react-toast";
 import { CircleAlert, CircleCheck, Info, type LucideIcon, TriangleAlert, X } from "lucide-react";
-import { useSyncExternalStore } from "react";
 import { Button } from "./button";
 import { cn } from "./cn";
 import { FOCUS_RING } from "./internal/class-names";
+import { createExternalStore, useExternalStore } from "./internal/external-store";
 
 export interface ToastOptions {
   description?: string;
@@ -38,30 +38,14 @@ const TONE_ICON: Record<ToastTone, { icon: LucideIcon; className: string }> = {
 // 한 번에 보이는 알림 수. 나머지는 대기열에서 기다린다.
 const MAX_VISIBLE = 3;
 
-// @MX:WARN: [AUTO] 모듈 수준 가변 상태(알림 대기열·구독자·id 순번)다.
-// @MX:REASON: Toaster는 앱 루트(src/main.tsx)에 하나만 둔다. 둘이면 같은 알림이 두 번 보이고 F8 단축키가 겹친다. 테스트는 매번 resetToastStore()로 비워야 다음 테스트로 알림이 새지 않는다(plan.md §B B-13, design.md §5.1).
-let items: readonly ToastItem[] = [];
+// 알림 대기열. 모듈 수준 저장소의 주의점은 internal/external-store.ts의 경고 태그에 적었다.
+const store = createExternalStore<readonly ToastItem[]>([]);
 let nextId = 0;
-const listeners = new Set<() => void>();
-
-function setItems(next: readonly ToastItem[]) {
-  items = next;
-  for (const listener of listeners) listener();
-}
-
-function subscribe(listener: () => void) {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-}
-
-const getSnapshot = () => items;
 
 function push(tone: ToastTone, message: string, options: ToastOptions = {}): string {
   nextId += 1;
   const id = `toast-${nextId}`;
-  setItems([...items, { id, tone, message, ...options }]);
+  store.set([...store.get(), { id, tone, message, ...options }]);
   return id;
 }
 
@@ -74,15 +58,16 @@ export const toast = {
   error: (message: string, options?: ToastOptions) => push("destructive", message, options),
   /** 없는 id는 무시한다 */
   dismiss: (id: string) => {
+    const items = store.get();
     if (items.some((item) => item.id === id)) {
-      setItems(items.filter((item) => item.id !== id));
+      store.set(items.filter((item) => item.id !== id));
     }
   },
 };
 
 /** 테스트 전용: 대기열을 비운다(index.ts에 내보내지 않는다). */
 export function resetToastStore() {
-  setItems([]);
+  store.set([]);
 }
 
 function ToastCard({ item }: { item: ToastItem }) {
@@ -130,7 +115,7 @@ function ToastCard({ item }: { item: ToastItem }) {
  * 위치는 768px 이상 오른쪽 아래, 그보다 좁으면 가운데 아래, z 60(system.md §7).
  */
 export function Toaster() {
-  const queue = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  const queue = useExternalStore(store);
   return (
     // label은 화면 낭독기가 알림을 읽을 때 앞에 붙이는 이름이다(Radix 기본값은 영어 "Notification").
     <ToastPrimitive.Provider label="알림" swipeDirection="right" swipeThreshold={50}>
