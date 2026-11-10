@@ -1,5 +1,13 @@
 import { type ReactNode, useEffect, useRef, useState } from "react";
-import { Calendar, Combobox, type ComboboxOption, DateTimePicker, Field } from "@/ui-core";
+import {
+  Calendar,
+  Combobox,
+  type ComboboxOption,
+  type DateRange,
+  DateRangePicker,
+  DateTimePicker,
+  Field,
+} from "@/ui-core";
 import { PreviewSection } from "../PreviewSection";
 
 function Panel({ title, children }: { title: string; children: ReactNode }) {
@@ -138,6 +146,46 @@ function CalendarDemo({
   );
 }
 
+/** 범위 달력: 시작 → 끝을 고르면 한 번 알린다 */
+function RangeCalendarDemo() {
+  const [value, setValue] = useState<DateRange | null>(null);
+  return (
+    <div data-showcase="Calendar:range" className="rounded-panel border border-border">
+      <Calendar aria-label="기간 달력" mode="range" value={value} onValueChange={setValue} />
+    </div>
+  );
+}
+
+/** 시연용 빠른 기간. 실제 화면에서는 앱이 오늘을 기준으로 만든다 */
+const RANGE_PRESETS = [
+  { label: "2026년 11월 첫 주", range: { from: new Date(2026, 10, 1), to: new Date(2026, 10, 7) } },
+  { label: "2026년 11월", range: { from: new Date(2026, 10, 1), to: new Date(2026, 10, 30) } },
+];
+
+function DateRangeDemos() {
+  const [value, setValue] = useState<DateRange | null>(null);
+  const [preset, setPreset] = useState<DateRange | null>(null);
+  return (
+    <>
+      <Field label="시술 기간">
+        <DateRangePicker
+          data-showcase="DateRangePicker:default"
+          value={value}
+          onValueChange={setValue}
+        />
+      </Field>
+      <Field label="조회 기간" description="빠른 기간을 고르거나 달력에서 시작과 끝을 골라요.">
+        <DateRangePicker
+          data-showcase="DateRangePicker:presets"
+          value={preset}
+          onValueChange={setPreset}
+          presets={RANGE_PRESETS}
+        />
+      </Field>
+    </>
+  );
+}
+
 const BUSINESS_HOURS = { start: "10:00", end: "20:00" };
 
 /** 예약 일시: 날짜와 시간을 모두 골라야 값이 정해진다 */
@@ -186,7 +234,7 @@ function InvalidDemo() {
   );
 }
 
-/** 고급 입력 섹션: Combobox(design.md §7.1), Calendar·DateTimePicker(design.md §7.2). */
+/** 고급 입력 섹션: Combobox(design.md §7.1), Calendar·DateTimePicker(design.md §7.2), 범위 달력·DateRangePicker(SPEC-UI-002). */
 export function AdvancedInputsSection() {
   return (
     <PreviewSection
@@ -207,12 +255,16 @@ export function AdvancedInputsSection() {
               <CalendarDemo showcase="Calendar:disabled-dates" label="휴무일 달력" disabled />
               <p className="text-body-sm text-muted-foreground">월요일은 휴무라 고를 수 없어요.</p>
             </div>
+            <RangeCalendarDemo />
           </div>
         </Panel>
         <Panel title="DateTimePicker">
           <ReservationDemo />
           <DateOnlyDemo />
           <InvalidDemo />
+        </Panel>
+        <Panel title="DateRangePicker">
+          <DateRangeDemos />
         </Panel>
       </div>
     </PreviewSection>

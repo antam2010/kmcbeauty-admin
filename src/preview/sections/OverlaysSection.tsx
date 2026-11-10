@@ -2,10 +2,12 @@ import { CircleQuestionMark, RefreshCw } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import {
   Button,
+  Drawer,
   Field,
   Input,
   Modal,
   type ModalProps,
+  Popover,
   showConfirm,
   Textarea,
   Tooltip,
@@ -132,7 +134,30 @@ function SubmittingDemo() {
   );
 }
 
-/** 모달·확인 대화상자·알림·툴팁을 보여 준다(acceptance.md AC-UI-001-14 전시 목록의 Modal~Tooltip 행). */
+/** 왼쪽 서랍: 768px 미만에서 사이드바 자리 */
+function DrawerDemo() {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Button variant="outline" data-showcase="Drawer:left" onClick={() => setOpen(true)}>
+        서랍 열기
+      </Button>
+      <Drawer open={open} onOpenChange={setOpen} title="주 메뉴" side="left">
+        <p className="text-body-sm text-muted-foreground">
+          좁은 화면에서는 사이드바가 이 서랍으로 열려요.
+        </p>
+        <Button variant="ghost" className="justify-start" onClick={() => setOpen(false)}>
+          예약
+        </Button>
+        <Button variant="ghost" className="justify-start" onClick={() => setOpen(false)}>
+          고객
+        </Button>
+      </Drawer>
+    </>
+  );
+}
+
+/** 모달·서랍·확인 대화상자·알림·툴팁·팝오버를 보여 준다(acceptance.md AC-UI-001-14 전시 목록의 Modal~Tooltip 행 + SPEC-UI-002 Drawer·Popover). */
 export function OverlaysSection() {
   return (
     <PreviewSection
@@ -147,6 +172,10 @@ export function OverlaysSection() {
           <SizeDemo size="lg" label="큰 대화상자" />
           <DirtyDemo />
           <SubmittingDemo />
+        </Panel>
+
+        <Panel title="Drawer">
+          <DrawerDemo />
         </Panel>
 
         <Panel title="ConfirmDialog">
@@ -271,6 +300,22 @@ export function OverlaysSection() {
               <CircleQuestionMark />
             </Button>
           </Tooltip>
+        </Panel>
+
+        <Panel title="Popover">
+          <Popover
+            aria-label="사용자 메뉴"
+            trigger={
+              <Button variant="outline" data-showcase="Popover:default">
+                김민지 원장
+              </Button>
+            }
+          >
+            <p className="text-body-sm text-muted-foreground">kim@example.com</p>
+            <Button variant="outline" size="sm">
+              로그아웃
+            </Button>
+          </Popover>
         </Panel>
       </div>
     </PreviewSection>

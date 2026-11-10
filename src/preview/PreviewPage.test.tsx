@@ -12,7 +12,8 @@ import {
 } from "./sections/VerificationSection";
 import { SHOWCASE } from "./showcase";
 
-// acceptance.md AC-UI-001-14 전시 목록 표(29개 컴포넌트)를 그대로 옮겼다.
+// acceptance.md AC-UI-001-14 전시 목록 표(29개 컴포넌트)를 그대로 옮기고, SPEC-UI-002 M3의 새 컴포넌트 4개와
+// Calendar 범위 모드를 더했다(33개, AC-UI-002-23 (다)·QG-15).
 const SHOWCASE_TABLE: [component: string, states: string[]][] = [
   [
     "Button",
@@ -42,18 +43,22 @@ const SHOWCASE_TABLE: [component: string, states: string[]][] = [
     "Input",
     ["sm", "default", "lg", "start-adornment", "end-adornment", "invalid", "read-only", "disabled"],
   ],
+  ["NumberInput", ["default", "suffix", "out-of-range"]],
   ["Textarea", ["default", "invalid", "disabled"]],
   ["Checkbox", ["unchecked", "checked", "indeterminate", "disabled", "invalid"]],
   ["Search", ["empty", "filled"]],
   ["Select", ["default", "grouped", "invalid", "disabled"]],
   ["Filter", ["default", "count"]],
   ["Combobox", ["local", "remote", "create"]],
-  ["Calendar", ["default", "disabled-dates"]],
+  ["Calendar", ["default", "disabled-dates", "range"]],
   ["DateTimePicker", ["datetime", "date", "invalid"]],
+  ["DateRangePicker", ["default", "presets"]],
   ["Modal", ["sm", "default", "lg", "dirty", "submitting"]],
+  ["Drawer", ["left"]],
   ["ConfirmDialog", ["default", "destructive", "async-failure"]],
   ["Toast", ["success", "info", "warning", "destructive", "queue", "action"]],
   ["Tooltip", ["default"]],
+  ["Popover", ["default"]],
   ["Table", ["default", "sorted", "rail", "loading", "empty"]],
   ["Tabs", ["default", "disabled"]],
   ["Pagination", ["first", "middle", "last"]],
@@ -146,8 +151,8 @@ function nonHaeyoSentences(text: string): string[] {
 }
 
 describe("미리보기 페이지(AC-UI-001-14)", () => {
-  it("전시 목록 표는 29개 컴포넌트이고 showcase.ts는 그 표와 정확히 같다", () => {
-    expect(SHOWCASE_TABLE).toHaveLength(29);
+  it("전시 목록 표는 33개 컴포넌트이고 showcase.ts는 그 표와 정확히 같다", () => {
+    expect(SHOWCASE_TABLE).toHaveLength(33);
     expect(SHOWCASE).toEqual(expectedShowcase());
   });
 

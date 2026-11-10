@@ -6,6 +6,7 @@ import {
   Filter,
   type FilterOption,
   Input,
+  NumberInput,
   Search,
   Select,
   type SelectGroup,
@@ -24,6 +25,38 @@ function Panel({ title, children }: { title: string; children: ReactNode }) {
 }
 
 const noop = () => undefined;
+
+/** 금액·소요 시간 입력: 천 단위 쉼표, 단위 부가 표시, 범위 밖 오류(SPEC-UI-002 M3) */
+function NumberInputDemos() {
+  const [count, setCount] = useState<number | null>(3);
+  const [price, setPrice] = useState<number | null>(35000);
+  const [minutes, setMinutes] = useState<number | null>(720);
+  return (
+    <>
+      <Field label="방문 횟수">
+        <NumberInput data-showcase="NumberInput:default" value={count} onValueChange={setCount} />
+      </Field>
+      <Field label="기본 가격" description="숫자만 입력해요. 붙여넣은 ₩·쉼표는 빼요.">
+        <NumberInput
+          data-showcase="NumberInput:suffix"
+          value={price}
+          onValueChange={setPrice}
+          suffix="원"
+        />
+      </Field>
+      <Field label="소요 시간">
+        <NumberInput
+          data-showcase="NumberInput:out-of-range"
+          value={minutes}
+          onValueChange={setMinutes}
+          min={10}
+          max={600}
+          suffix="분"
+        />
+      </Field>
+    </>
+  );
+}
 
 const TREATMENTS: SelectOption[] = [
   { value: "gel", label: "젤 네일" },
@@ -150,6 +183,10 @@ export function FormsSection() {
           <Field label="매장명">
             <Input data-showcase="Input:disabled" disabled defaultValue="강남점" />
           </Field>
+        </Panel>
+
+        <Panel title="NumberInput">
+          <NumberInputDemos />
         </Panel>
 
         <Panel title="Textarea">
