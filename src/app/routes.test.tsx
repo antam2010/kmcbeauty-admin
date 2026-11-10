@@ -272,6 +272,29 @@ describe("AC-UI-002-06 (나) 화면 부분 — 이 탭에서 로그인돼 있던
     expect(app.services.queryClient.getQueryCache().getAll()).toHaveLength(0);
   });
 
+  // M4 감사 F-2 — 매장 선택 화면도 업무 화면처럼 만료 때 로그인 화면으로 간다(REQ-UI-002-006)
+  it("/shops에서 매장 선택 요청 401과 갱신 401 → /login?next=%2Fshops와 만료 문구 한 번, 쿼리 캐시 0개", async () => {
+    const user = userEvent.setup();
+    const { router, app } = renderRoute("/shops", {
+      session: "S2",
+      shops: [shopFixture, { ...shopFixture, id: 2, name: "홍대점" }],
+      handlers: [
+        http.post(
+          `${TEST_API_ORIGIN}/shops/selected`,
+          () => new HttpResponse(null, { status: 401 }),
+        ),
+        refreshWith(TEST_API_ORIGIN, 401),
+      ],
+    });
+    await heading("매장 선택");
+    await user.click(await screen.findByRole("button", { name: /홍대점/ }));
+
+    await heading("로그인");
+    expectLocation(router, "/login?next=%2Fshops");
+    expect(screen.getAllByText(EXPIRED_MESSAGE)).toHaveLength(1);
+    expect(app.services.queryClient.getQueryCache().getAll()).toHaveLength(0);
+  });
+
   it("S0 결정: 첫 방문(새로고침)의 갱신 401은 문구 없이 로그인 화면이다", async () => {
     const { router } = renderRoute("/customers", { session: "S0" });
     await heading("로그인");
