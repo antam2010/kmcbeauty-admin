@@ -122,12 +122,26 @@ describe("AC-UI-002-12 매장 선택 — 고르기", () => {
     "/%09/evil.example",
     "/%0A/evil.example",
     "/%20/evil.example",
+    // M4 감사 F-1 표본 — 정본 §3.3 표 반영은 sync 단계(직렬화하면 //로 시작하는 값)
+    "%2F.%2F%2Fevil.example",
+    "%2Fa%2F..%2F%2Fevil.example",
+    "%2F%252e%2F%2Fevil.example",
   ])("(다) next=%s(거부 표본) → /reservations", async (raw) => {
     const view = await openShops(`/shops?next=${raw}`);
+    const navigate = vi.spyOn(view.router, "navigate");
     await view.user.click(await shopButton("홍대점"));
     await screen.findByRole("heading", { level: 1, name: "예약 캘린더" });
     expect(view.log.count("POST", "/shops/selected")).toBe(1);
     expectLocation(view.router, "/reservations");
+    // 외부 주소로 가려다 거부된 이동(External navigation is not allowed)이 없다
+    expect(
+      navigate.mock.calls.map(([to]) => String(to)).filter((to) => to.startsWith("//")),
+    ).toEqual([]);
+    await waitFor(() =>
+      expect(navigate.mock.settledResults.map((result) => result.type)).toEqual(
+        navigate.mock.calls.map(() => "fulfilled"),
+      ),
+    );
   });
 
   it("(다) next=%2Fcustomers%3Fq%3D%EA%B9%80(허용 표본) → /customers?q=김", async () => {

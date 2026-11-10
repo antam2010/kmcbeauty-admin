@@ -24,6 +24,11 @@ const SAMPLES: [string | null, string | null, string][] = [
   ["/%09/evil.example", "/\t/evil.example", "/reservations"],
   ["/%0A/evil.example", "/\n/evil.example", "/reservations"],
   ["/%20/evil.example", "/ /evil.example", "/reservations"],
+  // M4 감사 F-1 표본 — 정본 §3.3 표 반영은 sync 단계. 점 세그먼트를 지우면 //로 시작하는 값
+  ["%2F.%2F%2Fevil.example", "/.//evil.example", "/reservations"],
+  ["%2Fa%2F..%2F%2Fevil.example", "/a/..//evil.example", "/reservations"],
+  ["%2F%252e%2F%2Fevil.example", "/%2e//evil.example", "/reservations"],
+  ["/reservations/..//evil.example/x", "/reservations/..//evil.example/x", "/reservations"],
 ];
 
 describe("safeNext(§3.3 next 규칙)", () => {
@@ -56,5 +61,22 @@ describe("nextDestination(이동 주소로 직렬화)", () => {
   it("거부한 값과 없는 값은 /reservations다", () => {
     expect(nextDestination("//evil.example", ORIGIN)).toBe("/reservations");
     expect(nextDestination(null, ORIGIN)).toBe("/reservations");
+  });
+
+  // M4 감사 F-1 표본 — 정본 §3.3 표 반영은 sync 단계
+  it.each([
+    "/.//evil.example",
+    "/a/..//evil.example",
+    "/%2e//evil.example",
+    "/reservations/..//evil.example/x",
+  ])("직렬화하면 //로 시작하는 값 %s는 /reservations다", (value) => {
+    expect(nextDestination(value, ORIGIN)).toBe("/reservations");
+  });
+
+  it.each(SAMPLES)("next=%s의 이동 주소는 같은 규칙을 다시 통과하고 같은 출처다", (raw) => {
+    const destination = nextDestination(decodedNext(raw), ORIGIN);
+    // 검사한 값과 이동하는 값이 다른 규칙을 타면 안 된다(이동 주소를 다시 검사해도 그대로)
+    expect(safeNext(destination, ORIGIN)).toBe(destination);
+    expect(new URL(destination, ORIGIN).origin).toBe(ORIGIN);
   });
 });

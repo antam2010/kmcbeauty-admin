@@ -1,19 +1,72 @@
 // 경로 표·보호·next(AC-UI-002-09), 미리보기 개발 전용 경로(AC-UI-002-13 (가)(나)), 갱신 401 뒤 화면(AC-UI-002-06 (나) 화면 부분),
 // S0 결정(첫 방문에는 만료 문구 없음), 경로 오류 화면(EC-06). 기대값은 acceptance.md §3.3·§3.2 표를 그대로 옮겼다.
-import { screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HttpResponse, http } from "msw";
-import { describe, expect, it } from "vitest";
-import { shopFixture, TEST_API_ORIGIN } from "@/test/msw/fixtures";
+import { createBrowserRouter, type LoaderFunctionArgs } from "react-router";
+import { describe, expect, it, onTestFinished, vi } from "vitest";
+import { __resetSessionForTest, setAccessToken } from "@/api/session";
+import { shopFixture, TEST_API_ORIGIN, userFixture } from "@/test/msw/fixtures";
 import { loginBody, loginHandler, refreshWith } from "@/test/msw/handlers/auth";
-import { selectedShopHandler } from "@/test/msw/handlers/shops";
+import { selectedShopHandler, shopsListHandler } from "@/test/msw/handlers/shops";
+import { meHandler } from "@/test/msw/handlers/users";
 import { server } from "@/test/msw/server";
-import { expectLocation, renderRoute, type SessionState } from "@/test/render-route";
+import { expectLocation, locationOf, renderRoute, type SessionState } from "@/test/render-route";
+import { App, createApp } from "./create-app";
 import { devRoutes } from "./dev-routes";
+import { createLoaders } from "./loaders";
 
 const EXPIRED_MESSAGE = "로그인이 만료됐어요. 다시 로그인해 주세요.";
 
 const heading = (name: string) => screen.findByRole("heading", { level: 1, name });
+
+/**
+ * 브라우저 라우터에 넘길 창. 문서 이동(location.assign·replace)만 가짜로 바꿔 다른 출처로 가려는 시도를 센다.
+ * 나머지(주소·history·이벤트)는 jsdom 창을 그대로 쓴다. 시험이 끝나면 주소를 /로 되돌린다.
+ */
+function fakeBrowserWindow(path: string) {
+  window.history.replaceState(null, "", path);
+  onTestFinished(() => window.history.replaceState(null, "", "/"));
+  const assign = vi.fn();
+  const replace = vi.fn();
+  const location = {
+    get href() {
+      return window.location.href;
+    },
+    get origin() {
+      return window.location.origin;
+    },
+    get protocol() {
+      return window.location.protocol;
+    },
+    get host() {
+      return window.location.host;
+    },
+    get pathname() {
+      return window.location.pathname;
+    },
+    get search() {
+      return window.location.search;
+    },
+    get hash() {
+      return window.location.hash;
+    },
+    assign,
+    replace,
+    reload: vi.fn(),
+    toString: () => window.location.href,
+  };
+  const win = {
+    location,
+    history: window.history,
+    document: window.document,
+    sessionStorage: window.sessionStorage,
+    addEventListener: window.addEventListener.bind(window),
+    removeEventListener: window.removeEventListener.bind(window),
+    scrollTo: vi.fn(),
+  } as unknown as Window;
+  return { win, assign, replace };
+}
 
 // [상태, 연 경로, 결과 경로, 보이는 h1] — acceptance.md §3.3 경로 표
 const ROUTE_TABLE: [SessionState, string, string, string][] = [
@@ -88,6 +141,17 @@ const NEXT_SAMPLES: [string | null, string][] = [
   ["/%09/evil.example", "/reservations"],
   ["/%0A/evil.example", "/reservations"],
   ["/%20/evil.example", "/reservations"],
+  // M4 감사 F-1 표본 — 정본 §3.3 표 반영은 sync 단계(직렬화하면 //로 시작하는 값)
+  ["%2F.%2F%2Fevil.example", "/reservations"],
+  ["%2Fa%2F..%2F%2Fevil.example", "/reservations"],
+  ["%2F%252e%2F%2Fevil.example", "/reservations"],
+];
+
+// M4 감사 F-1 표본 — 정본 §3.3 표 반영은 sync 단계
+const DOT_SEGMENT_SAMPLES = [
+  "%2F.%2F%2Fevil.example",
+  "%2Fa%2F..%2F%2Fevil.example",
+  "%2F%252e%2F%2Fevil.example",
 ];
 
 const loginPath = (raw: string | null) => (raw === null ? "/login" : `/login?next=${raw}`);
@@ -100,6 +164,55 @@ describe("AC-UI-002-09 (나) S2에서 /login?next= — 로그인 화면 loader �
     await heading(titleOf(destination));
     expectLocation(router, destination);
   });
+
+  it.each(DOT_SEGMENT_SAMPLES)(
+    "loader가 던지는 redirect의 Location은 /reservations다(next=%s)",
+    async (raw) => {
+      const { app } = renderRoute("/terms-of-service", { session: "S2" });
+      await heading("이용약관");
+      const args = {
+        request: new Request(`${window.location.origin}${loginPath(raw)}`),
+        params: {},
+        context: undefined,
+      } as unknown as LoaderFunctionArgs;
+      const thrown = await createLoaders(app.services)
+        .redirectIfSession(args)
+        .catch((error: unknown) => error);
+      expect(thrown).toBeInstanceOf(Response);
+      expect((thrown as Response).headers.get("Location")).toBe("/reservations");
+    },
+  );
+
+  it.each(DOT_SEGMENT_SAMPLES)(
+    "브라우저 라우터로 연 앱도 다른 출처로 문서 이동하지 않고 /reservations에 닿는다(next=%s)",
+    async (raw) => {
+      const { win, assign, replace } = fakeBrowserWindow(loginPath(raw));
+      __resetSessionForTest();
+      setAccessToken("access-1");
+      server.use(
+        refreshWith(TEST_API_ORIGIN, 401),
+        meHandler(TEST_API_ORIGIN, userFixture),
+        selectedShopHandler(TEST_API_ORIGIN, shopFixture),
+        shopsListHandler(TEST_API_ORIGIN, [shopFixture]),
+      );
+      const app = createApp({
+        baseUrl: TEST_API_ORIGIN,
+        devRoutes: [],
+        createRouter: (routes) => createBrowserRouter(routes, { window: win }),
+      });
+      onTestFinished(() => app.router.dispose());
+      render(<App app={app} />);
+      // 문서 이동을 시도하면 이 대기가 끝나지 않고, 실패 메시지에 assign 인자(이동하려던 주소)가 남는다
+      await waitFor(() => {
+        expect(assign).not.toHaveBeenCalled();
+        expect(app.router.state.initialized).toBe(true);
+      });
+      await heading("예약 캘린더");
+      expect(locationOf(app.router)).toBe("/reservations");
+      expect(assign).not.toHaveBeenCalled();
+      expect(replace).not.toHaveBeenCalled();
+    },
+  );
 });
 
 describe("AC-UI-002-09 (다) S0에서 /login?next= 뒤 로그인 — 로그인 제출 사용처", () => {
@@ -113,11 +226,21 @@ describe("AC-UI-002-09 (다) S0에서 /login?next= 뒤 로그인 — 로그인 �
       ],
     });
     await heading("로그인");
+    const navigate = vi.spyOn(router, "navigate");
     await user.type(screen.getByLabelText(/^이메일/), "owner@kmc.test");
     await user.type(screen.getByLabelText(/^비밀번호/), "pw");
     await user.click(screen.getByRole("button", { name: "로그인" }));
     await heading(titleOf(destination));
     expectLocation(router, destination);
+    // 외부 주소로 가려다 거부된 이동(External navigation is not allowed)이 없다
+    expect(
+      navigate.mock.calls.map(([to]) => String(to)).filter((to) => to.startsWith("//")),
+    ).toEqual([]);
+    await waitFor(() =>
+      expect(navigate.mock.settledResults.map((result) => result.type)).toEqual(
+        navigate.mock.calls.map(() => "fulfilled"),
+      ),
+    );
   });
 });
 
