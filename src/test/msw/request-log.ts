@@ -5,6 +5,8 @@
 export interface LoggedRequest {
   method: string;
   path: string;
+  /** 쿼리 문자열(물음표 포함, 없으면 빈 문자열) */
+  search: string;
   credentials: RequestCredentials;
   authorization: string | null;
   refreshTokenHeader: string | null;
@@ -19,6 +21,7 @@ export function createRequestLog() {
     requests.push({
       method: request.method,
       path: new URL(request.url).pathname,
+      search: new URL(request.url).search,
       credentials: request.credentials,
       authorization: request.headers.get("authorization"),
       refreshTokenHeader: request.headers.get("x-refresh-token"),

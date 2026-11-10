@@ -1,11 +1,23 @@
 // 세션 저장소와 갱신(AC-UI-002-05, AC-UI-002-06의 갱신 결과 종류, EC-01·EC-03·EC-31·EC-32).
 // 토큰은 모듈 변수에만 있다. 갱신은 미들웨어를 거치지 않는 맨 요청이고 single-flight다.
-import { HttpResponse } from "msw";
+import { MutationObserver } from "@tanstack/react-query";
+import { delay, HttpResponse, http } from "msw";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { refreshHandler, refreshWith, slowRefresh } from "@/test/msw/handlers/auth";
+import { loginMutationOptions, logout, meQueryOptions } from "@/features/auth/queries";
+import {
+  loginBody,
+  loginHandler,
+  logoutHandler,
+  refreshHandler,
+  refreshWith,
+  slowRefresh,
+} from "@/test/msw/handlers/auth";
 import { createRequestLog } from "@/test/msw/request-log";
 import { server } from "@/test/msw/server";
-import { ApiError } from "./errors";
+import { createApiClient } from "./client";
+import { ApiError, unwrap } from "./errors";
+import { createQueryClient } from "./query-client";
+import * as sessionModule from "./session";
 import {
   __resetSessionForTest,
   clearSession,
@@ -49,6 +61,7 @@ describe("refreshSession 결과", () => {
       {
         method: "POST",
         path: "/auth/refresh",
+        search: "",
         credentials: "include",
         authorization: null,
         refreshTokenHeader: null,
@@ -182,4 +195,175 @@ describe("구독 저장소", () => {
     __resetSessionForTest();
     expect(getAccessToken()).toBeNull();
   });
+});
+
+// ── AC-UI-002-05: 로그인 → 보호 요청 → 새로고침 흉내 → 로그아웃 ───────────────────────────
+// 로그인·로그아웃 함수는 features/auth/queries.ts에 있다(앱 계층이 쓰는 그대로 시험한다).
+
+const TOKENS = ["access-1", "access-2", "refresh-1", "refresh-2"];
+
+function makeClient() {
+  return createApiClient({
+    baseUrl: BASE,
+    fetch: log.fetch,
+    onSessionExpired: () => undefined,
+    onShopNotSelected: () => undefined,
+  });
+}
+
+/** /users/me: 보낸 Authorization을 그대로 돌려준다. */
+function meEcho() {
+  return http.get(`${BASE}/users/me`, ({ request }) =>
+    request.headers.get("authorization")
+      ? HttpResponse.json({
+          id: 1,
+          email: "owner@kmc.test",
+          auth: request.headers.get("authorization"),
+        })
+      : new HttpResponse(null, { status: 401 }),
+  );
+}
+
+function storageEntries(storage: Storage): string[] {
+  return Array.from({ length: storage.length }, (_, i) => {
+    const key = storage.key(i) ?? "";
+    return `${key}=${storage.getItem(key)}`;
+  });
+}
+
+const containsToken = (value: unknown) =>
+  TOKENS.some((token) => JSON.stringify(value ?? null).includes(token));
+
+describe("AC-UI-002-05 메모리 토큰과 새로고침 복원", () => {
+  it("(가)(나) 토큰은 어떤 저장소에도 쓰이지 않고, 새로고침 뒤 갱신 1회로 Bearer access-2를 쓴다", async () => {
+    const setItem = vi.spyOn(Storage.prototype, "setItem");
+    const cookieSet = vi.spyOn(Document.prototype, "cookie", "set");
+    const indexedDbOpen = vi.mocked(globalThis.indexedDB.open);
+    server.use(
+      loginHandler(BASE, () => HttpResponse.json(loginBody("access-1", "refresh-1"))),
+      refreshWith(BASE, 200),
+      meEcho(),
+    );
+    const queryClient = createQueryClient();
+    const client = makeClient();
+
+    // (가) 로그인 → 보호 요청
+    const login = new MutationObserver(queryClient, loginMutationOptions(client));
+    await expect(
+      login.mutate({ email: "owner@kmc.test", password: "pw" }),
+    ).resolves.toBeUndefined();
+    const me = await queryClient.fetchQuery(meQueryOptions(client));
+    expect(me).toMatchObject({ auth: "Bearer access-1" });
+
+    // (나) 새로고침 흉내: 세션 모듈을 초기 상태로 → ensureSession → 보호 요청
+    __resetSessionForTest();
+    await expect(ensureSession()).resolves.toBe(true);
+    await expect(unwrap(client.GET("/users/me"))).resolves.toMatchObject({
+      auth: "Bearer access-2",
+    });
+
+    const refreshes = log.requests.filter((r) => r.path === "/auth/refresh");
+    expect(refreshes).toHaveLength(1);
+    expect(refreshes[0]).toMatchObject({ method: "POST", body: "", credentials: "include" });
+    const login1 = log.requests.find((r) => r.path === "/auth/login");
+    expect(login1).toMatchObject({
+      credentials: "include",
+      contentType: "application/x-www-form-urlencoded",
+    });
+    expect(new URLSearchParams(login1?.body)).toEqual(
+      new URLSearchParams({
+        username: "owner@kmc.test",
+        password: "pw",
+        grant_type: "password",
+        scope: "",
+      }),
+    );
+
+    // (가) 감시한 쓰기의 인자, 흐름 뒤의 저장소·쿠키, indexedDB.open 호출
+    expect(setItem.mock.calls.filter((args) => containsToken(args))).toEqual([]);
+    expect(cookieSet.mock.calls.filter((args) => containsToken(args))).toEqual([]);
+    expect(storageEntries(localStorage).filter(containsToken)).toEqual([]);
+    expect(storageEntries(sessionStorage).filter(containsToken)).toEqual([]);
+    expect(containsToken(document.cookie)).toBe(false);
+    expect(indexedDbOpen).not.toHaveBeenCalled();
+
+    // (나) 쿼리 캐시·변경 캐시·세션 모듈이 내보내는 값에 refresh- 가 없다
+    const queryStates = JSON.stringify(
+      queryClient
+        .getQueryCache()
+        .getAll()
+        .map((q) => q.state),
+    );
+    const mutationStates = JSON.stringify(
+      queryClient
+        .getMutationCache()
+        .getAll()
+        .map((m) => m.state),
+    );
+    const exported = JSON.stringify(
+      Object.entries(sessionModule).map(([name, value]) => [
+        name,
+        typeof value === "function" ? null : value,
+      ]),
+    );
+    expect(queryClient.getMutationCache().getAll()).toHaveLength(1);
+    expect(queryStates).not.toContain("refresh-");
+    expect(mutationStates).not.toContain("refresh-");
+    expect(exported).not.toContain("refresh-");
+    expect(getAccessToken()).toBe("access-2");
+  });
+
+  it("로그인 응답에 access_token이 없으면 실패로 처리하고 세션을 만들지 않는다(EC-04)", async () => {
+    server.use(loginHandler(BASE, () => HttpResponse.json({ refresh_token: "refresh-1" })));
+    const login = new MutationObserver(createQueryClient(), loginMutationOptions(makeClient()));
+    await expect(login.mutate({ email: "owner@kmc.test", password: "pw" })).rejects.toBeInstanceOf(
+      ApiError,
+    );
+    expect(getAccessToken()).toBeNull();
+  });
+});
+
+describe("AC-UI-002-05 (다) 응답을 기다리지 않는 로그아웃", () => {
+  it.each([
+    ["500", () => new HttpResponse(null, { status: 500 })],
+    ["네트워크 오류", () => HttpResponse.error()],
+    [
+      "응답하지 않음",
+      async () => {
+        await delay("infinite");
+        return new HttpResponse(null, { status: 204 });
+      },
+    ],
+  ])(
+    "%s: 돌아온 즉시 토큰 null·쿼리 캐시 0개, POST /auth/logout이 include로 1회",
+    async (_name, respond) => {
+      vi.useFakeTimers();
+      let markReached: () => void = () => undefined;
+      const reached = new Promise<void>((resolve) => {
+        markReached = resolve;
+      });
+      server.use(
+        logoutHandler(BASE, () => {
+          markReached();
+          return respond();
+        }),
+      );
+      const queryClient = createQueryClient();
+      queryClient.setQueryData(["me"], { id: 1 });
+      queryClient.setQueryData(["shop", 7, "customers", "groups"], []);
+      const client = makeClient();
+      setAccessToken("access-1");
+
+      logout(client, queryClient);
+
+      // 타이머를 전혀 흘리지 않은 채 판정한다
+      expect(getAccessToken()).toBeNull();
+      expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
+      // 요청은 그래도 서버에 닿는다(시험이 끝나기 전에 처리기까지 간 것을 확인한다)
+      await reached;
+      const sent = log.requests.filter((r) => r.path === "/auth/logout");
+      expect(sent).toHaveLength(1);
+      expect(sent[0]).toMatchObject({ method: "POST", credentials: "include" });
+    },
+  );
 });

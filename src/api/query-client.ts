@@ -2,6 +2,7 @@
 // 401 뒤 갱신하고 한 번 다시 보내는 것은 클라이언트 미들웨어의 일이라 이 재시도 정책 밖이다.
 import { QueryClient } from "@tanstack/react-query";
 import { ApiError } from "./errors";
+import { qk } from "./query-keys";
 
 const STALE_TIME_MS = 30_000;
 const MAX_QUERY_RETRIES = 2;
@@ -24,6 +25,6 @@ export function createQueryClient(): QueryClient {
   });
   // 선택 매장은 서버(사용자 단위)가 정본이다. 다른 기기에서 바꿨을 수 있으므로 신선도와 상관없이
   // 창 포커스 때 다시 가져온다(기본값 true는 staleTime 30초 안의 포커스를 놓친다 — design.md §4.4).
-  queryClient.setQueryDefaults(["shops", "selected"], { refetchOnWindowFocus: "always" });
+  queryClient.setQueryDefaults(qk.shops.selected(), { refetchOnWindowFocus: "always" });
   return queryClient;
 }
