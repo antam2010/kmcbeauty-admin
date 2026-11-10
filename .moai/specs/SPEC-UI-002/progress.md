@@ -475,6 +475,56 @@ harness: thorough
 - 진행 기록 커밋의 첫 시도에서 pre-commit `moai gate`가 실패했다(6 failed / 697 passed, Duration 32.47s, 직후 load average 35.06). 다섯 개는 다른 세션의 부하로 ui-core·design-rules 시험이 기본 제한 시간을 넘긴 것이고(단독 재실행 통과), 하나는 M2 로그아웃 500 시험이었다. 그 시험은 부하가 없어도 가짜 타이머가 켜진 채 시험 정리가 약 4초 멈췄다(본문은 0ms에 끝나고 다음 정리 단계까지 4,000ms — 시각 기록으로 확인, 앞 묶음 "refreshSession 결과"와 함께 돌 때만 재현). 판정 뒤 요청 전달 확인부터 진짜 타이머로 바꿔(a40ad7e) 3ms가 됐다. 멈춤의 정확한 원인(MSW·undici 내부의 어느 타이머인지)은 확인하지 않았다. 판정 자체는 그대로 가짜 타이머를 흘리지 않은 상태에서 한다.
 - 새 파일 커버리지: `client.ts` 문장 97.56·분기 94.11·함수 88.88(73행 `?? ""` 분기, 91행 기본 fetch 화살표 함수), `session.ts` 분기 83.33(16행 기본 fetch 화살표 함수) — 시험은 언제나 fetch를 주입한다.
 
+#### 감사 결함 F1 수정(1회차)
+
+- 2026-11-10, manager-develop, cycle_type=tdd, 수정·평가 1회차(최대 3회). 시작 HEAD 23b0d62, 작업 트리 브랜치 `worktree-agent-af0577476753c767d`(밀어 올리지 않음)
+- 증거 디렉터리: `.moai/state/verify/e545850e-8214-419f-8a10-cc4b0eb89c6d/m2-fix1/`
+- 시작 기준선: `npx vitest run src/api src/features src/lib` 9 files / 115 tests passed
+
+**결함**(M2 단계별 sync-auditor 검토, 23b0d62에서 재현)
+
+| 결함 | 등급 | 내용 |
+|---|---|---|
+| F1 | Medium, 차단 | 갱신이 진행 중일 때 로그아웃하면 늦게 온 갱신 응답이 새 토큰을 저장한다(`afterLogout= null afterRefreshSettled= access-2`) |
+| F2 | Low | 갱신 401 뒤 그 갱신 전에 보낸 요청의 401이 늦게 오면 갱신과 만료 처리기가 한 번 더 불린다(`refreshCount= 2 expiredCalls= 2`) |
+| F6 | Low | 같은 경합에서 재전송이 빈 `Authorization: Bearer `를 보낼 수 있다(`?? ""`) |
+
+**원인**: 갱신 결과와 401 응답을, 그것을 낸 세션이 아니라 결과가 도착한 순간의 세션에 적용했다. 세션 세대가 각 갱신과 요청을 그것을 시작한 세션에 묶으므로, 로그아웃 시점을 조정하는 대신 낡은 결과가 상태를 바꾸려는 바로 그 지점에서 버려진다.
+
+**RED 증거**(구현 전): `npx vitest run src/api/session.test.ts src/api/client.test.ts src/features/auth/queries.test.ts` → 6 failed / 43 passed(`red-F1-F2.txt`). 실패 내용: F2 갱신 2회(1회 기대), F6 재전송 응답 status undefined(401 기대), F1 `ensureSession()`이 true(false 기대)·토큰 `access-2`(null 기대), 새 로그인 뒤 늦은 200이 true를 돌려줌·늦은 401이 새 토큰 `access-9`를 지움. 네트워크 오류 분기는 따로 RED를 받았다(`red-F1-stale-branches.txt`, 1 failed: 거부 대신 false 기대).
+
+**수정**(`src/api/session.ts`, `src/api/client.ts`)
+
+- `clearSession()`(로그아웃·갱신 401)이 모듈 수준 세션 세대를 올린다. 갱신 성공은 올리지 않는다(편차 4 — 옛 토큰 401의 새 토큰 재전송 — 유지).
+- `refreshSession()`은 시작할 때 세대를 잡는다. 끝났을 때(응답 도착·네트워크 오류) 세대가 바뀌었으면 아무것도 저장하거나 지우지 않고 false다. `inflight`를 지우는 시점은 그대로다.
+- 401 재시도 미들웨어는 보낼 때의 세대를 복제본 옆에 기록한다. 세대가 바뀐 뒤 온 401은 갱신·재전송·만료 처리기 없이 그 401로 끝난다.
+- 다시 보낼 토큰이 없으면 빈 Bearer를 보내지 않고 원래 401로 끝난다(`?? ""` 삭제).
+- 지시에 없던 추가 한 가지: `isSessionExpired()`. 토큰을 실어 보낸 요청의 401이 갱신을 기다리는 동안 로그아웃하면, 세대 확인만으로는 낡은 갱신의 false를 만료로 보고 만료 처리기를 불렀다. 마지막 세션 삭제가 갱신 401에서 왔을 때만 만료 처리기를 부른다. 이 조건을 뺀 돌연변이 실행에서 해당 시험이 실패한다(`mutation-no-isSessionExpired.txt`, 1 failed: 만료 처리기 1회 호출).
+- 두 `@MX:WARN`/`@MX:REASON`(`refreshSession`, 401 재시도)에 세대 확인을 적었다.
+
+**지시에 없던 경우의 관찰**: 로그아웃 뒤 새 로그인이 앞선 갱신보다 먼저 끝나면, 앞선 갱신의 늦은 200·401 모두 새 토큰 `access-9`를 바꾸지 않고 `ensureSession()`은 false다(시험 2건). 이때 앞선 갱신이 아직 `inflight`이면 새 토큰으로 보낸 요청의 401이 그 낡은 갱신에 합류해 false를 받고, 만료 처리기 없이 401로 끝난다(시험 없음, 코드 읽기로 판단).
+
+**하지 않은 것**: 갱신 응답 본문을 읽는 사이의 로그아웃 확인은 넣지 않았다. 본문을 붙잡는 스트림으로 시험하면 확인이 없어도 통과했다(이 MSW·fetch 환경에서는 로그아웃이 `fetch`가 풀리기 전에 끝나 첫 확인이 잡는다). 실패를 보일 수 없는 분기라 넣지 않고 그 시험도 지웠다. F3·F4·F5·F7·F8·F10은 범위 밖.
+
+**새 시험**(7건): `src/api/session.test.ts` "감사 결함 F1 — 갱신 중 로그아웃" 5건(P1 새로고침 흉내, 토큰 실은 요청, 새 로그인 200·401, 네트워크 오류), `src/api/client.test.ts` 2건(P2 늦은 401, F6 빈 Bearer — 구독자가 알림 안에서 세션을 지우는 일부러 만든 재현)
+
+**GREEN·게이트**(판정 HEAD 1d3e22d)
+
+| 항목 | 결과 |
+|---|---|
+| 대상 3개 파일 | 3 files / 50 tests passed(`green-F1-F2.txt`) |
+| typecheck | exit=0 |
+| lint | exit=0, 125개 파일(첫 실행은 `session.test.ts` 서식 1건 → `biome format --write`로 고친 뒤 통과) |
+| `npm test` | 53 files / 710 tests passed, Duration 14.57s, 직후 load average 10.10, 6.41, 7.60 |
+| `npm run test:coverage` | 문장 98.46 · 분기 95.68 · 함수 99.29 · 줄 99.73(기준 80/80/80/80). `client.ts` 문장 97.67·분기 97.22·함수 88.88, `session.ts` 문장 98.18·분기 86.66·함수 94.11 |
+| `moai gate` | exit=0(pwd=작업 트리, HEAD 1d3e22d), pre-commit도 우회 없이 통과 |
+
+**커밋**
+
+| SHA | 제목 |
+|---|---|
+| 1d3e22d | fix(SPEC-UI-002): M2 로그아웃 중 갱신 응답이 토큰을 되살리지 않게 세션 세대 확인 |
+
 ## §E.3 Run-phase Audit-Ready Signal
 
 _<pending run-phase>_
