@@ -36,6 +36,8 @@ export type { ComboboxCreateAction, ComboboxOption, ComboboxProps } from "./comb
 export { Combobox } from "./combobox";
 export type { ConfirmDialogProps, ConfirmOptions } from "./confirm-dialog";
 export { ConfirmDialog, ConfirmDialogHost, showConfirm } from "./confirm-dialog";
+export type { DateRangePickerProps, DateRangePreset } from "./date-range-picker";
+export { DateRangePicker } from "./date-range-picker";
 export type { DateTimePickerProps } from "./date-time-picker";
 export { DateTimePicker } from "./date-time-picker";
 export type { DrawerProps } from "./drawer";

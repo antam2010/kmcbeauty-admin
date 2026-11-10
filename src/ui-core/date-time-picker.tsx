@@ -6,7 +6,7 @@ import { type ComponentProps, useEffect, useRef, useState } from "react";
 import { Calendar } from "./calendar";
 import { cn } from "./cn";
 import { useFieldControl } from "./field";
-import { FOCUS_RING } from "./internal/class-names";
+import { PICKER_TRIGGER } from "./internal/class-names";
 import { Select } from "./select";
 
 export interface DateTimePickerProps
@@ -74,9 +74,6 @@ const withCurrentTime = (slots: string[], current: string | undefined) =>
   current === undefined || slots.includes(current) ? slots : [...slots, current].sort();
 
 const FULL_DAY = { start: "00:00", end: "23:59" };
-
-// 트리거는 Input과 같은 면이다. 테두리는 input 토큰(D5).
-const triggerClasses = `inline-flex h-10 w-full min-w-0 items-center gap-2 rounded-control border border-input bg-card px-3 text-start text-body text-foreground transition-colors focus-visible:border-ring ${FOCUS_RING} disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:focus-visible:outline-destructive`;
 
 // @MX:NOTE: [AUTO] 시간 표기는 24시간제 HH:mm(D4)이다. 날짜와 시간이 모두 정해질 때만 onValueChange를 부르고, 값이 없을 때 고른 날짜는 대화상자 안의 진행 중 날짜로만 둔다(plan.md §A.6-10).
 /**
@@ -174,7 +171,7 @@ export function DateTimePicker({
         aria-describedby={control.describedBy}
         aria-invalid={control.invalid || undefined}
         aria-required={control.required || undefined}
-        className={cn(triggerClasses, className)}
+        className={cn(PICKER_TRIGGER, className)}
       >
         <CalendarDays className="size-4 shrink-0 text-muted-foreground" />
         <span className={cn("truncate tabular-nums", !value && "text-muted-foreground")}>

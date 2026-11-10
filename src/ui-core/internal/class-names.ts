@@ -12,3 +12,9 @@ export const FOCUS_RING =
  */
 export const SELECTED_ITEM =
   "bg-primary-subtle font-semibold text-primary-subtle-foreground hover:bg-primary-subtle hover:text-primary-subtle-foreground forced-colors:border-2";
+
+/**
+ * 팝오버를 여는 입력 모양 트리거(DateTimePicker·DateRangePicker). Input과 같은 면이고 테두리는 input 토큰(D5),
+ * 포커스는 ring 테두리 + 윤곽선, invalid는 destructive 테두리·윤곽선.
+ */
+export const PICKER_TRIGGER = `inline-flex h-10 w-full min-w-0 items-center gap-2 rounded-control border border-input bg-card px-3 text-start text-body text-foreground transition-colors focus-visible:border-ring ${FOCUS_RING} disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:focus-visible:outline-destructive`;
