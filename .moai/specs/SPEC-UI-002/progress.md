@@ -758,6 +758,168 @@ harness: thorough
 
 - 다음 마일스톤은 M4다. 위임 때 M2의 N1·F5·F3·F4·F8·N2 행을 그대로 옮기고, M4 직후 sync-auditor 독립 평가를 한다.
 
+### M4 — 라우터·앱 셸·로그인·매장 선택·약관·404·미리보기 개발 전용 경로 (2026-11-10, manager-develop, cycle_type=tdd)
+
+- M4 시작 SHA: 0d93b12(작업 트리 브랜치 `worktree-agent-ad12201b731673ec3`, 밀어 올리지 않음)
+- 증거 디렉터리: `.moai/state/verify/f47c2a0d-1c2b-4303-861c-103a59bc6b04/m4/`(작업 트리에서 기록)
+- 시작 기준선(0d93b12): typecheck exit=0, lint exit=0(136개 파일), `npm test` 57 files / 783 tests passed(Duration 13.08s, 직후 load average 7.99) — `preflight-*.txt`
+- M4 범위: plan.md §F M4(§B.2·§B.3·§B.5 폼 훅·§B.9·§B.13), `main.tsx`의 `RouterProvider` 전환, `scripts/check-dist.mjs`(QG-18 부분)와 `check:dist` 스크립트, 넘겨받은 항목 N1·N2·F5·F3·F4·F8·처리기 멱등·일탈 8·S0. 패키지 추가 없음, ui-core·계획 문서·스냅숏 손대지 않음
+
+#### 사전 점검
+
+| 점검 | 결과 |
+|---|---|
+| 브랜치·HEAD·상태 | `worktree-agent-ad12201b731673ec3`, 0d93b12, 깨끗함. `node_modules`가 없어 `npm ci`(exit 0) |
+| grep 판본 | `/usr/bin/grep --version` → `grep (GNU grep) 3.11`. 증거용 grep은 모두 `/usr/bin/grep`으로 불렀다 |
+| react-router 8.5.1 데이터 모드 | `createBrowserRouter`·`createMemoryRouter`·`RouterProvider`·`redirect`·`useNavigation`·`isRouteErrorResponse`·`Link`·`useRouteError`·`useSearchParams`·`useRevalidator`·`useMatches`·`LoaderFunctionArgs`·`RouteObject`·`DataRouter` 타입이 모두 `react-router`에서 나온다(`dist/production/index.d.ts`). `RouterProvider`는 `react-router`와 `react-router/dom` 두 곳에 있고 앱은 `react-router`를 쓴다. 경로 객체의 `lazy: () => import(…)`·`HydrateFallback`도 타입 검사를 통과했다 |
+| `Link`와 ui-core `LinkComponent` | `const RouterLinkProbe: LinkComponent = (props: LinkComponentProps) => <Link {...props} />`가 `tsc --noEmit` exit 0. 임시 파일은 지웠고 사본은 `preflight-router-probe.tsx.txt`, 결과는 `preflight-router-typecheck.txt` |
+
+#### 커밋
+
+| SHA | 제목 |
+|---|---|
+| dd90991 | fix(SPEC-UI-002): M4 로그인이 세션 세대를 올려 부팅 갱신의 늦은 결과를 버림 |
+| 063a210 | fix(SPEC-UI-002): M4 새 세션의 401이 앞 세대 갱신에 합류하지 않게 |
+| c5227b9 | fix(SPEC-UI-002): M4 인증 경로 밖 요청의 credentials를 omit으로 |
+| 540d7cb | feat(SPEC-UI-002): M4 next 매개변수 검사 safeNext |
+| 6cdd1c0 | feat(SPEC-UI-002): M4 폼 훅 useForm |
+| bccc4f8 | feat(SPEC-UI-002): M4 화면 폭 훅과 저장 상태 훅 |
+| 6bd9b2e | feat(SPEC-UI-002): M4 데이터 라우터·경로 보호·로그인·약관·404·미리보기 개발 경로 |
+| 34f3cef | feat(SPEC-UI-002): M4 매장 선택 화면 |
+| 9f5622c | feat(SPEC-UI-002): M4 앱 셸 — 사이드바·상단바·서랍·사용자 메뉴 |
+| bbf53c6 | feat(SPEC-UI-002): M4 빌드 산출물 검사 check:dist(QG-18 미리보기 부분) |
+| 59db12b | fix(SPEC-UI-002): M4 loader가 확인 도중 끝난 세션을 로그인 화면으로 보냄 |
+
+마지막 코드 커밋(판정 HEAD)은 59db12b다. 첫 커밋이 N1이고, 모든 커밋이 pre-commit `moai gate`를 우회 없이 통과했다.
+
+#### 인수 기준(판정 HEAD 59db12b)
+
+| AC | 판정 | 명령 | 관찰 |
+|---|---|---|---|
+| AC-UI-002-09 | PASS | `npx vitest run src/app/routes.test.tsx src/app/safe-next.test.ts` | 70 passed. (가) §3.3 경로 표 16행이 이동 경로·h1과 같고, 로그인·매장 선택으로 가는 보호 경로는 보호 화면 h1을 한 번도 그리지 않는다(문서 전체 h1 기록으로 판정). (나) S2의 `/login?next=` 표본 13개, (다) S0에서 로그인한 뒤의 표본 13개가 모두 거부 → `/reservations`, 허용 → 표의 경로. `safeNext` 단위 표본 13개 + 출처 해석 오류·C0 경계 |
+| AC-UI-002-10 | PASS | `npx vitest run src/app/shell` | 21 passed. 1280·1024px 펼침으로 시작·접으면 `collapsed` 저장·다시 그려도 접힘, 저장값 `expanded`면 펼침. 900·1023·768px 저장값 `expanded`여도 접힘·펼쳐도 저장값 그대로. 375·767px 메뉴 버튼 → `role="dialog"` 서랍 → "고객" → 서랍 닫힘·경로 `/customers`. 첫 Tab → 건너뛰기 링크 → Enter → `#main` 포커스. 상단바 `h-14`, 사이드바 `w-(--sidebar-width)`·`w-(--sidebar-width-collapsed)`, 상단바 다섯 요소("11월 9일 (월)" 포함), 사이드바 머리 "강남점"·`/shops` "매장 변경", 사용자 메뉴의 이름·역할·이메일·매장 변경·로그아웃, 세 폭 axe 0. EC-07·EC-08·EC-40 |
+| AC-UI-002-11 | PASS | `npx vitest run src/features/auth/LoginPage.test.tsx` | 17 passed. (가) 요청 0·두 필드 문구·이메일 포커스, (나) 요청 0·형식 문구·이메일 포커스, (나') 요청 1회(form-urlencoded, `username`·`password`·`grant_type=password`, `credentials: "include"`), (다)(라)(마) §3.2 문구·서로 다름·loading에서 돌아옴, (바)(사)(아)(자) 이동 경로, 처음 값 빈 문자열·`username`·`current-password` |
+| AC-UI-002-12 | PASS | `npx vitest run src/features/shops/ShopSelectPage.test.tsx` | 18 passed. (가)(나)(다) `POST /shops/selected` `{"shop_id":2}` 1회·선택 매장 캐시 id 2·`["shop", 1, …]` 0개·이동 경로(거부 표본 10개 → `/reservations`, 허용 표본 `/customers?q=김`), (라) 500 → 캐시 id 1·`["shop", 1, …]` 1개·경로 `/shops`·destructive Alert, (마) 빈 상태 문구, (바) 299ms 스켈레톤 없음·300ms 있음·응답 뒤 Alert·"다시 시도" → 다시 요청 |
+| AC-UI-002-13 M4 판정 | PASS | `npx vitest run src/app/routes.test.tsx src/features/legal` + §4.1 QG-18 블록 | 54 passed. (가) 개발 경로 목록 `/dev/preview` → "컴포넌트 미리보기", (나) 빈 목록 → "찾을 수 없는 페이지예요.", (라) 이용약관 3문단·개인정보처리방침 2문단이 §3.9와 같은 글자(공백 정규화)·같은 수. (다)는 아래 QG-18 |
+| AC-UI-002-05 (라) | PASS | `npx vitest run src/app/auth-flow.test.tsx` | 1 passed. 로그인 → 새로고침 흉내(새 앱, 갱신 1회 → `access-2`) 뒤 `/customers`가 로그인 화면으로 가지 않고 그려짐 → 사용자 메뉴 로그아웃(응답 없는 처리기) 즉시 토큰 `null`·쿼리 캐시 0개 → `/login`, `POST /auth/logout` 1회 `credentials: "include"`. 저장소 쓰기·쿠키·`indexedDB.open` 0회, 토큰 문자열 4개가 어떤 저장소에도 없음 |
+| AC-UI-002-06 (나) 화면 부분 | PASS | `npx vitest run src/app/routes.test.tsx` | `/customers`에서 동시 401 세 개 + 갱신 401 → `/login?next=%2Fcustomers`, 문구 "로그인이 만료됐어요. 다시 로그인해 주세요." 1개, 쿼리 캐시 0개 |
+| AC-UI-002-22 폼 단위 | PASS | `npx vitest run src/lib/form.test.ts` | 13 passed. 처음 숨김(쳤다 지워도 숨김) → 떠난 필드만 표시 → 이후 바뀔 때마다 재검사, 제출하면 전부 표시·`onSubmit` 0회·등록 순서상 첫 오류 필드 포커스, 서버 오류는 필드별 앱 문구가 있으면 그 문구·없으면 백엔드 msg, 값이 바뀌면 그 필드의 서버 오류 삭제, 경로 이름 필드 |
+| AC-UI-002-04 (나) | PASS | `npm run test:coverage` 뒤 §4.1 AC-04 블록(`tools/ac04-check.cjs`에 글자 그대로 옮김) | `coverage scope ok: 76 files`, exit=0(`final-ac04-coverage-scope.txt`) |
+| S0 결정 | PASS | 위 AC-09 명령 | "첫 방문(새로고침)의 갱신 401은 문구 없이 로그인 화면이다"(`/customers` → `/login?next=%2Fcustomers`, 문구 없음), "/login을 바로 열어도 문구가 없다" ✓ |
+
+#### 품질 게이트(판정 HEAD 59db12b, grep은 `/usr/bin/grep` GNU grep 3.11)
+
+| QG | 판정 | 관찰 |
+|---|---|---|
+| QG-01 | PASS | typecheck exit=0 |
+| QG-02 | PASS | lint exit=0, 180개 파일, 새 지적 0건(기준선 136개 파일 0건) |
+| QG-03 | PASS | 69 files / 949 tests passed, Duration 19.45s, 직후 uptime load average 16.60, 12.03, 9.38. 120초를 넘지 않아 D12 재실행 없음 |
+| QG-04 | PASS | `VITE_API_BASE_URL=https://api-beauty.dongri.kr npm run build` exit=0, `dist/index.html` 2026-11-10 17:09:17. AC-03 산출물 검사(프록시 표지 빌드 17:09:04)는 exit=1·출력 0바이트·stderr 0바이트 |
+| QG-05 | PASS | 기준 80/80/80/80, 줄 99.65 · 문장 98.53 · 함수 99.27 · 분기 94.79. 새 파일은 아래 표 |
+| QG-06 | PASS | 39 passed(sync 6 + contrast 33) |
+| QG-07 | PASS | 22 passed |
+| QG-08 | PASS | 27 passed(공개 이름 44·파일 33, 새 앱 파일도 검사 대상) |
+| QG-09 | PASS | `moai gate` → `gate exit=0`, pwd=작업 트리, `CLAUDE_PROJECT_DIR=<unset>`, HEAD 59db12b(`final-qg09-gate.txt`) |
+| QG-10 | PASS | `moai spec lint .moai/specs/SPEC-UI-002/spec.md` exit=0, "No findings" |
+| QG-11 | PASS | 경계 검사 exit=1·출력 0바이트·stderr 0바이트, 자체 확인 `2`(양성·라벨 검사는 M6) |
+| QG-12 | PASS | 지정자 검사 exit=1·출력 0바이트·stderr 0바이트, 자체 확인 `2`, `package.json` 키 검사 exit=0 |
+| QG-13 | PASS | `deploy-guard.test.ts` 5 passed |
+| QG-14 | PASS | 9 passed |
+| QG-15 | PASS | 26 passed(전시 33개) |
+| QG-16 | PASS | `schema-sync.test.ts` 2 passed |
+| QG-17 | 해당 없음 | M8부터 |
+| QG-18 | PASS | 빌드 exit=0(17:09:17), `check:dist` exit=0("JS 파일 1개에 미리보기 흔적이 없습니다."), JS 검사 exit=1·출력 0바이트·stderr 0바이트, 원본 확인 `1`(`final-qg18-*.txt`) |
+
+새 파일·크게 바뀐 파일 커버리지(`coverage/coverage-summary.json`, `final-qg05-new-files.txt`, 줄·문장·함수·분기)
+
+| 파일 | 줄 | 문장 | 함수 | 분기 |
+|---|---|---|---|---|
+| `src/app/create-app.tsx` | 100 | 97.05 | 100 | 87.5 |
+| `src/app/loaders.ts` · `routes.tsx` · `safe-next.ts` · `providers.tsx` · `PublicLayout.tsx` · `NotFoundPage.tsx` | 100 | 100 | 100 | 100 |
+| `src/app/RouteError.tsx` | 100 | 100 | 100 | 66.66(API 오류가 아닌 예외의 갈래) |
+| `src/app/services.ts` | 100 | 94.44 | 100 | 75(문맥 없음 오류) |
+| `src/app/dev-routes.ts` | 100 | 100 | 100 | 50(운영 빌드 갈래 — 시험 환경은 DEV) |
+| `src/app/shell/AppShell.tsx` | 100 | 94.73 | 100 | 81.25 |
+| `src/app/shell/AccountMenu.tsx` | 100 | 100 | 100 | 75 |
+| `src/app/shell/TopBar.tsx` | 100 | 100 | 100 | 83.33 |
+| `src/app/shell/use-sidebar-state.ts` | 100 | 100 | 100 | 93.75 |
+| `src/app/shell/NavSidebar.tsx` · `RouterLink.tsx` | 100 | 100 | 100 | 100 |
+| `src/features/auth/LoginPage.tsx` | 100 | 100 | 100 | 92.3 |
+| `src/features/shops/ShopSelectPage.tsx` | 100 | 95 | 100 | 83.33 |
+| `src/features/legal/*` · 업무 화면 빈 페이지 4개 | 100 | 100 | 100 | 100 |
+| `src/lib/form.ts` | 100 | 100 | 100 | 92.1 |
+| `src/lib/use-media-query.ts` | 85.71 | 87.5 | 80 | 100(서버 스냅숏 함수) |
+| `src/lib/use-persisted-state.ts` | 100 | 100 | 100 | 100 |
+| `src/api/session.ts` | 98.11 | 98.36 | 94.44 | 90.62 |
+| `src/api/client.ts` | 100 | 97.67 | 88.88 | 97.22 |
+
+**경계 grep(E4)**
+
+- `/usr/bin/grep -rln "react-router-dom" src scripts package.json` → exit=1, 출력·stderr 없음
+- `/usr/bin/grep -rnE "@/ui-core/|ui-core/internal|\.\./ui-core|\.\./\.\./ui-core" src/app src/features src/lib --include=*.ts --include=*.tsx` → exit=1(앱 코드는 `@/ui-core`만 가져온다. design-rules 시험도 통과)
+- `/usr/bin/grep -rnE "\.hint\b" src/app src/features --include=*.tsx` → exit=1(화면이 `hint`를 읽는 곳 없음). 화면 시험의 "hint를 그리지 않는다" 단언: 로그인 401, 매장 선택 500, 경로 오류 화면 403
+- 저장소 문자열: 시험 밖 앱 코드에서 `localStorage`를 쓰는 곳은 `src/lib/use-persisted-state.ts`(사이드바 접힘 값)뿐이고 나머지는 주석이다(`final-e4-storage.txt`)
+
+#### RED 증거(구현 전 실패 출력)
+
+| 묶음 | 파일 |
+|---|---|
+| N1 로그인 세대 | `red-01-n1-login-generation.txt`(3 failed: P8 `expected null to be 'access-9'`, P8b `expected true to be false`, `startSession is not a function`) |
+| N2 다른 세대 합류 | `red-02-n2-join-other-generation.txt`(1 failed: P9 `expected 1 to be 2` — 두 번째 갱신이 생기지 않음) |
+| F5 credentials | `red-03-f5-credentials-omit.txt`(8 failed: 비인증 요청이 `"same-origin"`) |
+| safeNext | `red-04-safe-next.txt`(모듈 없음) |
+| 폼 훅 | `red-05-form.txt`(모듈 없음) |
+| 폭·저장 훅 | `red-06-media-persisted.txt`(모듈 없음) |
+| 경로·로그인·약관·앱 조립 | `red-07-routes-login-legal.txt`(4개 파일 모두 모듈 없음) |
+| 매장 선택 | `red-08-shop-select.txt`(18 failed — 자리 화면) |
+| 앱 셸·인증 흐름 | `red-09-shell-auth-flow.txt`(18 failed / 4 passed — axe 3건 등은 자리 셸에서도 통과) |
+| check:dist | `red-10-check-dist.txt`(6 failed — 스크립트 없음) |
+| loader의 두 갈래 | `red-11-loader-branches.txt`(2 failed) — 시험보다 먼저 쓴 두 갈래(요청 도중 끝난 세션, 로그인 loader의 갱신 오류)를 잠시 지운 채 새 시험을 돌려 실패를 확인하고 되돌렸다(`tools/strip-loader-branches.py`). 그 뒤 첫 갈래의 조건을 "토큰이 없으면"으로 넓혔다(아래 계획과 달라진 점) |
+
+#### 계획과 달라진 점
+
+- **클라이언트의 자리(F8)**: `createApp`(`src/app/create-app.tsx`)이 API 클라이언트·QueryClient·라우터를 함께 만들고, `main.tsx`가 모듈 범위에서 한 번 부른다. 화면은 문맥(`src/app/services.ts`의 `useApiClient`·`useServices`)으로 받는다. 화면이 클라이언트를 만들지 않으므로 StrictMode 이중 렌더링과 무관하다. 시험: `createApiClient(`를 부르는 앱 코드가 `create-app.tsx` 하나, `main.tsx`의 `createApp(`가 들여쓰기 없는 한 줄, StrictMode로 그려도 부팅 갱신 수가 늘지 않음. 그래서 `src/features`가 `@/app/services`를 가져온다(design.md §17은 features → app/env만 적었다)
+- **경로 함수 인자**: `createRoutes({ devRoutes, services })`. loader가 클라이언트·QueryClient를 써야 해서 `services`를 더했다
+- **세션 만료 안내**: 위치 상태 대신 앱마다 하나인 안내 저장소(`createSessionNotice`)에 켠다. 만료 처리기만 켜고(이 탭의 토큰을 실은 요청의 만료일 때만 클라이언트가 부른다 — S0), 로그인 성공·직접 로그아웃이 끈다. 로그인 화면은 그 값을 읽어 warning Alert로 보인다
+- **처리기가 이동하지 않는 때**: 첫 로딩 중·이동 중이면 만료·매장 미선택 처리기는 이동하지 않고 그 loader가 목적지를 next로 실어 보낸다(떠나는 화면이 next가 되지 않게). `/login`·`/shops`·약관 두 화면에서도 이동하지 않는다(로그인 직후 선택 매장 확인의 `SHOP_NOT_SELECTED`가 `/shops?next=/login…`으로 튀지 않게). 만료 처리기는 세션 세대로 한 번만 동작한다
+- **매장 미선택 처리기**: `["shop"]` 범위만 버리고 선택 매장 캐시는 버리지 않는다. 관찰 중인 선택 매장 쿼리를 지우면 다시 만들어져 같은 404를 되풀이할 수 있어서다
+- **loader**: 첫 화면(`/`)의 index loader도 `requireShop`을 먼저 마친 뒤 `/reservations`로 보낸다(부모·자식 loader가 동시에 돌아 로그인·매장 이동이 앞서게). `requireShop`은 확인이 실패했을 때 토큰이 없으면(만료 처리기가 세션을 지우고 캐시를 비워 확인이 401이나 취소로 끝남) 로그인으로 보낸다. 로그인 화면 loader는 갱신이 네트워크·서버 오류여도 오류 화면 대신 로그인 화면을 보인다(보호 경로는 EC-06대로 오류 화면)
+- **이동 주소 직렬화**: `nextDestination(value, origin)`을 `safe-next.ts`에 더했다. `redirect`의 Location 헤더가 한글을 담지 못해 URL로 퍼센트 인코딩한다(이미 있는 `%xx`는 그대로)
+- **셸 내리기**: 세션이 끝나면 `AppShell`이 아무것도 그리지 않는다. 로그아웃 뒤 로그인 화면으로 가는 동안 셸의 쿼리(내 정보·선택 매장)가 토큰 없이 다시 만들어져 비운 캐시에 남던 것을 막는다(AC-05 (라) 시험이 처음에 캐시 1개로 실패해 찾았다)
+- **폼 훅 API**: `register(name)`은 `{ name, value, onChange, onBlur, ref }`만 돌려주고 오류는 `error(name)`으로 읽는다(DOM 입력에 `error` 속성이 새지 않게). `setServerErrors(errors, appMessage?)`는 맞는 필드가 있으면 true이고 그 필드들을 떠난 것으로 표시한다
+- **매장 목록**: `size=100`(openapi.json의 최대값)으로 가져오고 쪽이 둘 이상이면 Pagination을 보인다. 쪽 번호는 URL이 아니라 화면 상태다
+- **F4**: 로그인 변경에 `gcTime: 0`을 두고, 화면이 시도마다 `reset()`으로 관찰자를 뗀다. 실패한 뒤 로그인 화면에 머무는 동안에도 변경 캐시 상태에 비밀번호가 없다(시험 있음)
+- **경로 오류 화면**: API 오류만 정규화한 문구를 보이고, 그 밖의 예외는 원인을 짐작하는 문구 없이 제목과 "다시 시도"만 둔다
+- **AC-12 시계**: 시점 판정이 있는 (바)만 자동 진행 없는 가짜 타이머로 돌리고, 판정 뒤 진짜 타이머로 바꿔 다시 시도 요청을 확인했다. (가)~(마)는 진짜 타이머다
+- **check:dist**: `dist/index.html`이 없거나 JS 파일이 하나도 없어도 실패로 본다(빈 산출물을 통과로 보지 않게). 동작 시험 `src/test/check-dist.test.ts`를 더했다
+- **시험 장치**: `src/test/render-route.tsx`(세 세션 상태, 기본 처리기, 그려진 h1 기록, 경로 비교, 폭 대역 `installViewport`), `src/test/msw/handlers/users.ts`·`userFixture`를 더했다. MSW는 한 번의 `server.use(a, b)` 안에서 앞의 처리기가 이기므로 시험의 처리기는 기본값과 따로 더한다
+- **정본에 글자가 없어 고른 표현(사용자 검토)**: 경로 오류 화면 제목 "페이지를 불러오지 못했어요.", 404 링크 "첫 화면으로 가기", 매장 카드의 "현재 매장" 배지와 "등록일 2026. 11. 1." 앞머리, 버튼 이름 "사이드바 접기"·"사이드바 펼치기"·"메뉴 열기", 서랍 제목 "메뉴", 사용자 메뉴 버튼·Popover 이름 "사용자 메뉴". 아이콘은 예약 캘린더 `CalendarDays`, 시술 이력 `ClipboardList`, 고객 `Users`, 시술 메뉴 `ListTree`, 사용자 메뉴 `CircleUser`
+
+#### 관찰(조치하지 않음)
+
+- 운영 빌드의 JS가 한 파일(586.32 kB, gzip 184.16 kB)이라 Vite가 500 kB 경고를 낸다. 미리보기가 빠진 결과이며 코드 분할은 M4 범위 밖이다
+- S0에서 보호 경로를 열면 그 경로의 loader와 로그인 화면 loader가 각각 쿠키 갱신을 한 번씩 보낸다(합 2회). 로그인 화면 loader는 다른 탭의 로그인으로 쿠키가 살아났을 수 있어 갱신을 다시 시도한다
+- N2: jsdom에는 `navigator.locks`가 없어 시험에서는 앞 세대 갱신과 새 갱신이 겹쳐 돈다. 브라우저에서는 탭 잠금이 둘을 줄 세운다
+- `src/preview/PreviewPage.tsx` 맨 위 주석("라우터 없이 src/main.tsx가 바로 렌더링한다")은 이제 맞지 않는다. 미리보기 폴더는 경로 모듈 하나만 더하는 범위라 고치지 않았다
+- 마무리 실행 때 load average 16~18이었고 시간 초과는 없었다. pre-commit `moai gate`는 11개 커밋에서 한 번도 실패하지 않았다
+- 실패한 로그인 뒤의 비밀번호(F4 질문): `reset()`이 시도마다 관찰자를 떼므로 `/login`에 머무는 동안에도 변경 캐시에서 바로 지워진다. 떠날 때까지 기다리지 않는다
+
+#### 넘겨받은 항목의 처리
+
+| 항목 | 처리 |
+|---|---|
+| N1 로그인 세대(첫 커밋) | `startSession(token)`(세대 +1, 토큰 저장, 알림)을 두고 `login`이 쓴다. P8·P8b를 시험으로 옮겨 실패를 확인한 뒤 고쳤다(`red-01`). 로그아웃 → 로그인 기존 시험은 그대로 통과. `refreshSession`의 `@MX:WARN`/`@MX:REASON`에 로그인도 새 세대를 시작한다고 적었다 |
+| N2 다른 세대 합류(선택) | 실패를 보일 수 있어(P9, `red-02`) 따로 커밋했다(063a210). `inflight`를 시작한 세대를 함께 두고, 다른 세대의 호출은 자기 갱신을 시작한다. 401 재시도 미들웨어는 바꾸지 않았다 |
+| F5 credentials | 인증 3개 경로 밖은 `"omit"`. 요청 기록 시험이 모든 요청의 값을 판정한다(`"include"`는 `/auth/login`·`/auth/refresh`·`/auth/logout`만). design.md §4.1은 sync 단계 |
+| F3 hint 비표시 | 정규화 결과의 `hint`는 그대로 두고(AC-08), 로그인 401·매장 선택 500·경로 오류 화면 403 시험에 "hint를 그리지 않는다" 단언을 두었다 |
+| F4 비밀번호 | 위 계획과 달라진 점. 성공해 떠난 뒤·실패한 뒤 모두 변경 캐시 상태에 비밀번호 없음(시험 2건) |
+| F8 클라이언트 한 번 | 위 계획과 달라진 점(모듈 범위 `createApp` + 문맥). 시험 2건 |
+| 처리기 멱등 | 같은 만료로 두 번 불러도 이동 1회·문구 1개(시험 있음). 세션 세대로 판정한다 |
+| 일탈 8(합성 502) | 화면은 status로 가르지 않고 정규화 문구를 보인다. 로그인 401·429만 화면 전용 문구다. `access_token` 없는 응답 → "서버에 문제가 생겼어요. 잠시 뒤 다시 시도해 주세요."·세션 없음(시험 있음) |
+| S0 | 첫 방문·`/login` 직접 열기에서 문구 없음 단언 2건, 이 탭의 세션 만료에서는 문구 1개(AC-06 (나) 화면 부분과 loader 갈래 시험) |
+| D12 | Duration 19.45s라 재실행하지 않았다 |
+| M2 관찰(가짜 타이머) | 매장 선택 (바)에서 시점 판정 뒤 진짜 타이머로 바꾸고 다시 시도 요청을 확인했다. 셸 시험은 날짜만 가짜로 둔다(`toFake: ["Date"]`) |
+
 ## §E.3 Run-phase Audit-Ready Signal
 
 _<pending run-phase>_
