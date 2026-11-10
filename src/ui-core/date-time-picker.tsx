@@ -64,6 +64,14 @@ const withTime = (date: Date, time: string) => {
   );
 };
 
+/**
+ * 간격 칸에 없는 현재 시각(예: 30분 간격의 14:10)을 순서에 맞는 자리에 끼운다.
+ * 값을 간격에 맞춰 몰래 바꾸지 않고 그대로 보이기 위해서다(SPEC-UI-002 후속 과제 2).
+ * "HH:mm"은 두 자리 고정이라 문자열 비교가 시각 순서와 같다.
+ */
+const withCurrentTime = (slots: string[], current: string | undefined) =>
+  current === undefined || slots.includes(current) ? slots : [...slots, current].sort();
+
 const FULL_DAY = { start: "00:00", end: "23:59" };
 
 // 트리거는 Input과 같은 면이다. 테두리는 input 토큰(D5).
@@ -103,8 +111,11 @@ export function DateTimePicker({
     if (focusTimeRequest > 0) timeTriggerRef.current?.focus();
   }, [focusTimeRequest]);
 
-  const slots = getTimeSlots(timeRange.start, timeRange.end, minuteStep);
   const currentTime = value ? format(value, "HH:mm") : draftTime;
+  const slots = withCurrentTime(
+    getTimeSlots(timeRange.start, timeRange.end, minuteStep),
+    currentTime,
+  );
   const shownDate = draftDate ?? value;
 
   const handleOpenChange = (next: boolean) => {

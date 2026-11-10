@@ -252,6 +252,25 @@ describe("DateTimePicker — 키보드 흐름과 값 결합(AC-UI-001-21, AC-UI-
     expect(screen.getAllByRole("option").at(-1)).toHaveTextContent("20:30");
   });
 
+  it("간격 밖 값(14:10, 30분 간격)은 트리거와 시간 칸에 그대로 보이고 값을 바꾸지 않는다(SPEC-UI-002 후속 과제 2)", async () => {
+    const user = userEvent.setup();
+    const onValueChange = vi.fn();
+    render(<Harness initial={new Date(2026, 9, 29, 14, 10)} onValueChange={onValueChange} />);
+    expect(trigger()).toHaveTextContent("2026. 10. 29. (목) 14:10");
+    await user.click(trigger());
+    expect(timeTrigger()).toHaveTextContent("14:10");
+    await user.click(timeTrigger());
+    expect(screen.getByRole("option", { name: "14:10" })).toHaveAttribute("aria-selected", "true");
+    // 간격 칸은 그대로 있고, 간격 밖 시각은 순서에 맞는 자리에 끼운다
+    const names = screen.getAllByRole("option").map((option) => option.textContent);
+    expect(names.slice(names.indexOf("14:00"), names.indexOf("14:30") + 1)).toEqual([
+      "14:00",
+      "14:10",
+      "14:30",
+    ]);
+    expect(onValueChange).not.toHaveBeenCalled();
+  });
+
   it("timeRange가 없으면 하루 전체(00:00~23:30, 30분)를 칸으로 쓴다", async () => {
     const user = userEvent.setup();
     render(<DateTimePicker aria-label="예약 일시" value={null} onValueChange={vi.fn()} />);
