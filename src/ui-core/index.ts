@@ -38,6 +38,8 @@ export type { ConfirmDialogProps, ConfirmOptions } from "./confirm-dialog";
 export { ConfirmDialog, ConfirmDialogHost, showConfirm } from "./confirm-dialog";
 export type { DateTimePickerProps } from "./date-time-picker";
 export { DateTimePicker } from "./date-time-picker";
+export type { DrawerProps } from "./drawer";
+export { Drawer } from "./drawer";
 export type { EmptyStateProps } from "./empty-state";
 export { EmptyState } from "./empty-state";
 export type { FieldProps } from "./field";
