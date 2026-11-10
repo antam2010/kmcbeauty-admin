@@ -12,7 +12,7 @@ import {
 import type { ApiClient } from "@/api/client";
 import { ApiError, SERVER_ERROR_MESSAGE, unwrap } from "@/api/errors";
 import { qk } from "@/api/query-keys";
-import { clearSession, sessionStore, setAccessToken } from "@/api/session";
+import { clearSession, sessionStore, startSession } from "@/api/session";
 import { useExternalStore } from "@/lib/external-store";
 
 export interface LoginInput {
@@ -34,7 +34,8 @@ export async function login(client: ApiClient, input: LoginInput): Promise<undef
     // 계약과 다른 응답(EC-04: refresh_token만 있음) — 세션을 만들지 않고 서버 문제로 끝낸다
     throw new ApiError({ status: 502, kind: "http", message: SERVER_ERROR_MESSAGE });
   }
-  setAccessToken(token);
+  // 로그인은 새 세션이다 — 세대를 올려 그 전에 시작된 갱신의 늦은 결과를 버린다(감사 결함 N1)
+  startSession(token);
   return undefined;
 }
 

@@ -515,3 +515,66 @@ describe("감사 결함 F1 — 갱신 중 로그아웃", () => {
     expect(getAccessToken()).toBeNull();
   });
 });
+
+// ── 감사 결함 N1: 로그인이 세션 세대를 올리지 않음 ──────────────────────────────────────────
+// 새로고침 뒤 부팅 갱신(ensureSession)이 진행 중일 때 로그아웃 없이 로그인하면, 늦게 끝난 그 갱신이
+// 새 로그인 세션에 반영되면 안 된다(M2 감사 탐침 P8·P8b).
+
+describe("감사 결함 N1 — 부팅 갱신이 도는 동안 로그인", () => {
+  it("P8: 부팅 갱신의 늦은 401이 로그인이 저장한 토큰을 지우지 않는다(조용한 로그아웃 방지)", async () => {
+    const refresh = gatedRefresh(() => new HttpResponse(null, { status: 401 }));
+    server.use(
+      refresh.handler,
+      loginHandler(BASE, () => HttpResponse.json(loginBody("access-9", "refresh-9"))),
+    );
+    const expired = vi.fn<() => void>();
+    const client = createApiClient({
+      baseUrl: BASE,
+      fetch: log.fetch,
+      onSessionExpired: expired,
+      onShopNotSelected: () => undefined,
+    });
+
+    const boot = ensureSession(); // 새로고침 뒤 route loader의 부팅 갱신
+    await refresh.reached;
+    await login(client, { email: "owner@kmc.test", password: "pw" });
+    const afterLogin = getAccessToken();
+    refresh.release();
+
+    await expect(boot).resolves.toBe(false);
+    expect(afterLogin).toBe("access-9");
+    expect(getAccessToken()).toBe("access-9");
+    expect(sessionModule.isSessionExpired()).toBe(false);
+    expect(expired).not.toHaveBeenCalled();
+  });
+
+  it("P8b: 이전 사용자 쿠키로 시작된 부팅 갱신의 늦은 200이 새 사용자의 토큰을 덮어쓰지 않는다(계정 바뀜 방지)", async () => {
+    const refresh = gatedRefresh(() => HttpResponse.json(loginBody("access-userA", "refresh-A")));
+    server.use(
+      refresh.handler,
+      loginHandler(BASE, () => HttpResponse.json(loginBody("access-userB", "refresh-B"))),
+    );
+    const client = makeClient();
+
+    const boot = ensureSession();
+    await refresh.reached;
+    await login(client, { email: "userb@kmc.test", password: "pw" });
+    const afterLogin = getAccessToken();
+    refresh.release();
+
+    await expect(boot).resolves.toBe(false);
+    expect(afterLogin).toBe("access-userB");
+    expect(getAccessToken()).toBe("access-userB");
+  });
+
+  it("startSession은 세대를 올리고 토큰을 저장한 뒤 구독자에게 알린다", () => {
+    const listener = vi.fn();
+    const unsubscribe = sessionStore.subscribe(listener);
+    const before = sessionModule.getSessionGeneration();
+    sessionModule.startSession("access-5");
+    unsubscribe();
+    expect(sessionModule.getSessionGeneration()).toBe(before + 1);
+    expect(getAccessToken()).toBe("access-5");
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+});
