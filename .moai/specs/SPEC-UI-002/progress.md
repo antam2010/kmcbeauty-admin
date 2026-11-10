@@ -361,6 +361,28 @@ harness: thorough
 - 백엔드가 M1 도중(2026-11-10 11:29) `c626dd3`로 빨리 감기되었다(다른 작업, 이 실행은 백엔드에 쓰지 않음). `api:check` 결과 차이는 `DELETE /users/me/force`의 `description` 글 한 줄뿐이고 머리 값(3.1.0·31·50·58)은 같다. R3에 따라 스냅숏을 다시 내보내지 않았다. 차이: `final-api-drift-eb8b06d-vs-c626dd3.diff`.
 - `vite-plugins.ts:20`(https 주소의 빈 호스트 분기)은 `new URL`이 먼저 던져 도달하지 않는 방어 분기다.
 
+#### 오케스트레이터 재검증(2026-11-10)
+
+- 대상: 작업 트리 브랜치 `worktree-agent-aadb15dba7b55a5f5`의 HEAD `3d664cb`(M1 커밋 5개, `cc36b4d..3d664cb`, 파일 28개). 증거: `.moai/state/verify/2478a668-aa6d-41e3-b880-f00c9220f306/m1-orchestrator/`.
+- 범위: PRESERVE 경로(`src/ui-core/`·`src/preview/`·`src/styles/`·`deploy.sh`·`deploy-guard.test.ts`·`.moai/design/`) 변경 0건(grep exit=1). spec.md 변경은 `status: draft → in-progress` 한 줄이다. `.moai/specs` 아래 중첩 `.moai` 폴더는 없다.
+
+| 확인 | 결과 |
+|---|---|
+| QG-01·QG-02 | typecheck exit=0, lint exit=0(106개 파일) |
+| QG-03 | `npm test` exit=0, 45 files / 590 tests passed, Duration 10.20s, 직후 load average 7.63 |
+| QG-05 | `npm run test:coverage` exit=0, 줄 99.82 · 문장 98.42 · 함수 100 · 분기 96.16 |
+| QG-09 | `moai gate` exit=0(작업 트리, HEAD 3d664cb) |
+| QG-04·AC-03(다) | 빌드 exit=0(`dist/index.html` 11:39:07), 프록시 표식 grep exit=1·stderr 0바이트. `VITE_API_BASE_URL=` 빌드와 `http://api.example.test` 빌드는 둘 다 exit=1 |
+| QG-10 | spec lint 결과 없음 |
+| QG-11·QG-12 | 경계 검사·지정자 검사 exit=1·stderr 0바이트, 자체 확인 2·2, `package.json` 키 검사 exit=0(GNU grep 3.11) |
+| AC-01 | 새 패키지 7개의 설치 버전이 §3.4와 같다. `TZ=UTC` 시간대 시험 2 passed |
+| AC-02 | 스냅숏 머리 값 3.1.0 · 31 · 50 · 58 |
+| 주 체크아웃 | `moai worktree verify` exit=0(HEAD·브랜치·추적 파일 변화 없음) |
+
+- 통합: 주 체크아웃에서 `git merge --ff-only` 뒤 `git push origin main`(`cc36b4d..3d664cb`, 차이 `0 0`). 작업 트리의 증거 53개를 위 증거 디렉터리의 `m1/`로 옮긴 뒤 작업 트리와 임시 브랜치를 지웠다. 주 체크아웃은 `npm ci` 뒤 typecheck exit=0이다.
+- 백엔드 드리프트 판단: 백엔드 reflog에 2026-11-10 11:29:24 `pull --ff-only`(`eb8b06d → c626dd3`)가 있다. 이 SPEC 밖의 작업이다. 스냅숏과의 차이는 `DELETE /users/me/force`의 설명 글 하나이고, 이 엔드포인트는 범위 밖인 계정 관리 기능이다(plan.md §M.2). REQ-002·AC-02가 스냅숏 출처를 `eb8b06d`로 정했으므로 스냅숏은 그대로 둔다. 다시 맞추려면 R3 절차(blocker → REQ-002·AC-02·QG-16 개정 → `api:sync`)를 밟는다. 그 전까지 `api:check`의 exit 1은 예상된 결과이며, 다음 위임 지시문에 이 사실을 적는다.
+- 작업 트리 환경: `.worktreeinclude`가 주 체크아웃의 `.env`를 작업 트리로 복사하고, 그 안의 값은 예전 API 주소다. 검증 명령은 앞에 넘긴 `VITE_API_BASE_URL`이 이 값을 덮어쓴다. 로컬 `.env` 정리는 동기화 단계의 README 항목(S-F10)에서 다룬다.
+
 ## §E.3 Run-phase Audit-Ready Signal
 
 _<pending run-phase>_
