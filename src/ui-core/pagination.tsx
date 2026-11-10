@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { ComponentProps } from "react";
 import { Button } from "./button";
 import { cn } from "./cn";
+import { SELECTED_ITEM } from "./internal/class-names";
 
 export type PageItem = number | "start-ellipsis" | "end-ellipsis";
 
@@ -73,8 +74,7 @@ export function Pagination({
                 className={cn(
                   "min-w-8 px-2 tabular-nums",
                   // 현재 쪽: primary-subtle 면 + 강제 색 모드에서도 남는 단서(font-semibold + 테두리, REQ-UI-001-025)
-                  item === page &&
-                    "bg-primary-subtle font-semibold text-primary-subtle-foreground hover:bg-primary-subtle hover:text-primary-subtle-foreground forced-colors:border-2",
+                  item === page && SELECTED_ITEM,
                 )}
               >
                 {item}

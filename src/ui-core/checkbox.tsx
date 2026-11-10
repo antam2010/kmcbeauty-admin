@@ -3,6 +3,7 @@ import { Check, Minus } from "lucide-react";
 import { type ComponentProps, type ReactNode, useId } from "react";
 import { cn } from "./cn";
 import { useFieldControl } from "./field";
+import { FOCUS_RING } from "./internal/class-names";
 
 export interface CheckboxProps
   extends Omit<
@@ -51,7 +52,7 @@ export function Checkbox({
       aria-describedby={control.describedBy}
       className={cn(
         // 20px 상자, 누를 수 있는 영역은 after로 32px까지 넓힌다(system.md §5).
-        "peer relative inline-flex size-5 shrink-0 items-center justify-center rounded-chip border border-input bg-card text-primary-foreground transition-colors after:absolute after:-inset-1.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=indeterminate]:border-primary data-[state=indeterminate]:bg-primary",
+        `peer relative inline-flex size-5 shrink-0 items-center justify-center rounded-chip border border-input bg-card text-primary-foreground transition-colors after:absolute after:-inset-1.5 ${FOCUS_RING} disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=indeterminate]:border-primary data-[state=indeterminate]:bg-primary`,
         className,
       )}
     >

@@ -1,6 +1,7 @@
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "./cn";
+import { FOCUS_RING } from "./internal/class-names";
 import { Skeleton, SkeletonGroup } from "./skeleton";
 
 export interface Column<T> {
@@ -41,9 +42,6 @@ const ALIGN_CLASSES = {
   end: "text-end tabular-nums",
   center: "text-center",
 } as const;
-
-const FOCUS_CLASSES =
-  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 
 function nextSort(current: SortState | undefined, columnId: string): SortState {
   if (current?.columnId !== columnId) return { columnId, direction: "asc" };
@@ -87,7 +85,7 @@ export function Table<T>({
       aria-label={caption}
       // biome-ignore lint/a11y/noNoninteractiveTabindex: 스크롤 영역은 키보드 방향키 스크롤을 위해 포커스를 받아야 한다(WCAG 2.1.1, axe scrollable-region-focusable).
       tabIndex={0}
-      className={cn("overflow-x-auto", FOCUS_CLASSES, className)}
+      className={cn("overflow-x-auto", FOCUS_RING, className)}
     >
       <table className="w-full border-collapse text-body">
         <caption className="sr-only">{caption}</caption>
@@ -192,7 +190,7 @@ function SortButton({
       onClick={onClick}
       className={cn(
         "inline-flex items-center gap-1 rounded-chip font-medium transition-colors hover:text-foreground",
-        FOCUS_CLASSES,
+        FOCUS_RING,
         direction && "text-foreground",
       )}
     >

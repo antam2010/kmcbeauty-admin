@@ -3,6 +3,7 @@ import { CircleAlert, CircleCheck, Info, type LucideIcon, TriangleAlert, X } fro
 import { useSyncExternalStore } from "react";
 import { Button } from "./button";
 import { cn } from "./cn";
+import { FOCUS_RING } from "./internal/class-names";
 
 export interface ToastOptions {
   description?: string;
@@ -94,7 +95,7 @@ function ToastCard({ item }: { item: ToastItem }) {
       // 열린 채로 마운트되는 비제어 Root라 Radix는 닫힘(시간 끝·닫기·Esc·스와이프·동작)만 알린다.
       onOpenChange={() => toast.dismiss(item.id)}
       // 대화상자 3단계 면: popover + border + shadow-overlay(system.md §6)
-      className="pointer-events-auto flex w-full items-start gap-3 rounded-panel border border-border bg-popover p-4 text-popover-foreground shadow-overlay focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-(--radix-toast-swipe-end-x) data-[swipe=move]:translate-x-(--radix-toast-swipe-move-x) motion-safe:data-[state=open]:animate-toast-in"
+      className={`pointer-events-auto flex w-full items-start gap-3 rounded-panel border border-border bg-popover p-4 text-popover-foreground shadow-overlay ${FOCUS_RING} data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-(--radix-toast-swipe-end-x) data-[swipe=move]:translate-x-(--radix-toast-swipe-move-x) motion-safe:data-[state=open]:animate-toast-in`}
     >
       <Icon className={cn("mt-0.75 size-4 shrink-0", iconClass)} />
       <div className="flex min-w-0 flex-1 flex-col gap-1">

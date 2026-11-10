@@ -1,6 +1,7 @@
 import * as ToggleGroup from "@radix-ui/react-toggle-group";
 import { type ComponentProps, type KeyboardEvent, useRef } from "react";
 import { cn } from "./cn";
+import { FOCUS_RING, SELECTED_ITEM } from "./internal/class-names";
 
 // Radix 로빙 포커스가 포커스를 옮기는 키(research.md §6.14). 이 키로 포커스가 옮겨 가면 선택도 함께 옮긴다.
 const NAVIGATION_KEYS = new Set([
@@ -63,9 +64,8 @@ export const segmentGroupClasses =
  */
 export function segmentItemClasses(selected: boolean, className?: string) {
   return cn(
-    "inline-flex h-8 items-center gap-1.5 rounded-chip px-2.5 text-body-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-    selected &&
-      "bg-primary-subtle font-semibold text-primary-subtle-foreground hover:bg-primary-subtle hover:text-primary-subtle-foreground forced-colors:border-2",
+    `inline-flex h-8 items-center gap-1.5 rounded-chip px-2.5 text-body-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground ${FOCUS_RING}`,
+    selected && SELECTED_ITEM,
     className,
   );
 }

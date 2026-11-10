@@ -2,13 +2,13 @@ import { cva } from "class-variance-authority";
 import { type ComponentProps, type ReactNode, useId } from "react";
 import { cn } from "./cn";
 import { joinIds, useFieldControl } from "./field";
+import { FOCUS_RING } from "./internal/class-names";
 
 /**
  * Input·Textarea가 함께 쓰는 입력 면이다(design-direction.md §12.1·§12.3).
  * 테두리는 장식용 border가 아닌 input 토큰(D5), 포커스는 윤곽선과 ring 테두리, invalid는 destructive 테두리·윤곽선.
  */
-export const textFieldClasses =
-  "w-full min-w-0 rounded-control border border-input bg-card text-body text-foreground transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring read-only:bg-muted disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:focus-visible:border-destructive aria-invalid:focus-visible:outline-destructive";
+export const textFieldClasses = `w-full min-w-0 rounded-control border border-input bg-card text-body text-foreground transition-colors placeholder:text-muted-foreground focus-visible:border-ring ${FOCUS_RING} read-only:bg-muted disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:focus-visible:border-destructive aria-invalid:focus-visible:outline-destructive`;
 
 // 컨트롤 높이 sm·default·lg = 32·40·48px(system.md §5)
 const inputVariants = cva(textFieldClasses, {

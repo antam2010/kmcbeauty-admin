@@ -1,6 +1,7 @@
 import { ChevronRight } from "lucide-react";
 import type { ComponentProps, ComponentType, ReactNode } from "react";
 import { cn } from "./cn";
+import { FOCUS_RING } from "./internal/class-names";
 
 export interface LinkComponentProps {
   to: string;
@@ -76,7 +77,7 @@ export function Breadcrumb({
                 to={item.to}
                 className={cn(
                   "rounded-chip text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline",
-                  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                  FOCUS_RING,
                 )}
               >
                 {item.label}

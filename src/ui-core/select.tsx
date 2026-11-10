@@ -4,6 +4,7 @@ import { Check, ChevronDown } from "lucide-react";
 import type { ComponentProps } from "react";
 import { cn } from "./cn";
 import { useFieldControl } from "./field";
+import { FOCUS_RING } from "./internal/class-names";
 
 /** value는 빈 문자열일 수 없다(Radix Select는 빈 문자열을 '선택 없음'으로 쓴다). */
 export interface SelectOption {
@@ -37,7 +38,7 @@ export interface SelectProps
 
 // 컨트롤 높이 sm·default·lg = 32·40·48px(system.md §5). 테두리는 input 토큰(D5).
 const triggerVariants = cva(
-  "inline-flex w-full min-w-0 items-center justify-between gap-2 rounded-control border border-input bg-card text-body text-foreground transition-colors focus-visible:border-ring focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:focus-visible:outline-destructive data-[placeholder]:text-muted-foreground [&>span]:truncate",
+  `inline-flex w-full min-w-0 items-center justify-between gap-2 rounded-control border border-input bg-card text-body text-foreground transition-colors focus-visible:border-ring ${FOCUS_RING} disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:focus-visible:outline-destructive data-[placeholder]:text-muted-foreground [&>span]:truncate`,
   {
     variants: {
       size: {
@@ -58,7 +59,7 @@ function Item({ option }: { option: SelectOption }) {
       value={option.value}
       disabled={option.disabled}
       // 하이라이트된 옵션은 포커스를 받으므로 포커스 윤곽선으로 구분하고, 선택된 옵션은 체크 아이콘으로 구분한다(design.md §4.3).
-      className="relative flex h-8 cursor-default select-none items-center rounded-control ps-8 pe-2 text-body text-popover-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
+      className={`relative flex h-8 cursor-default select-none items-center rounded-control ps-8 pe-2 text-body text-popover-foreground ${FOCUS_RING} data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50`}
     >
       <span className="absolute start-2 flex size-4 items-center justify-center">
         <SelectPrimitive.ItemIndicator>

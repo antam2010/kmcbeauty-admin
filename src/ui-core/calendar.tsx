@@ -3,6 +3,7 @@ import { type ComponentProps, useEffect, useRef } from "react";
 import { type DayButtonProps, DayPicker } from "react-day-picker";
 import { ko } from "react-day-picker/locale";
 import { cn } from "./cn";
+import { FOCUS_RING } from "./internal/class-names";
 
 export interface CalendarProps {
   value: Date | null;
@@ -18,12 +19,9 @@ export interface CalendarProps {
   "aria-label"?: string;
 }
 
-const focusRing =
-  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
-
 const navButton = cn(
   "inline-flex size-8 items-center justify-center rounded-control text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground aria-disabled:pointer-events-none aria-disabled:opacity-50",
-  focusRing,
+  FOCUS_RING,
 );
 
 /**
@@ -102,7 +100,7 @@ export function Calendar({
         day: "size-9 p-0 text-center",
         day_button: cn(
           "inline-flex size-9 items-center justify-center rounded-control border border-transparent tabular-nums transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50",
-          focusRing,
+          FOCUS_RING,
         ),
         selected: "",
         today: "",

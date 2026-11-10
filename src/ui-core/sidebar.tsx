@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import { type ComponentProps, type ReactNode, useId } from "react";
 import { DefaultLink, type LinkComponent } from "./breadcrumb";
 import { cn } from "./cn";
+import { FOCUS_RING, SELECTED_ITEM } from "./internal/class-names";
 import { Tooltip } from "./tooltip";
 
 export interface SidebarItem {
@@ -133,11 +134,10 @@ function SidebarLink({
       aria-current={active ? "page" : undefined}
       className={cn(
         "flex h-10 items-center gap-3 rounded-control px-3 text-body font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
-        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+        FOCUS_RING,
         collapsed && "justify-center px-0",
         // 활성: primary-subtle 면 + 강제 색 모드에서도 남는 단서(font-semibold + 테두리, REQ-UI-001-025)
-        active &&
-          "bg-primary-subtle font-semibold text-primary-subtle-foreground hover:bg-primary-subtle hover:text-primary-subtle-foreground forced-colors:border-2",
+        active && SELECTED_ITEM,
       )}
     >
       <Icon className="size-4.5 shrink-0" />

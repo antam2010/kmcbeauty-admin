@@ -3,10 +3,11 @@ import { cva } from "class-variance-authority";
 import { LoaderCircle } from "lucide-react";
 import type { ComponentProps, MouseEvent } from "react";
 import { cn } from "./cn";
+import { FOCUS_RING } from "./internal/class-names";
 
 // 변형·크기 값은 design-direction.md §12.2와 system.md §5(컨트롤 높이 32/40/48px, 아이콘 버튼 32/40px)를 따른다.
 const buttonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-control text-body font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50 aria-busy:cursor-progress [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  `inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-control text-body font-medium transition-colors ${FOCUS_RING} disabled:cursor-not-allowed disabled:opacity-50 aria-busy:cursor-progress [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0`,
   {
     variants: {
       variant: {
