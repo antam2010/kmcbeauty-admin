@@ -269,7 +269,97 @@ harness: thorough
 
 ## §E.2 Run-phase Evidence
 
-_<pending run-phase>_
+### M1 — 의존성·설정·API 스냅숏과 타입 (2026-11-10, manager-develop, cycle_type=tdd)
+
+- M1 시작 SHA: cc36b4d
+- 백엔드 출처: kmcbeauty-fastapi `eb8b06d`(내보내기 2026-11-10 11:21, 작업 트리 깨끗함, 내보내기 전후 `git status --short` 출력 없음)
+- 증거 디렉터리: `.moai/state/verify/2478a668-aa6d-41e3-b880-f00c9220f306/m1/`(작업 트리에서 기록, 오케스트레이터가 주 체크아웃으로 옮김)
+- M1 범위: plan.md §F M1에서 §E 설계 정본 개정을 뺀 나머지(설계 패스 커밋 69ce28c가 system.md 1.2.0을 이미 반영)
+
+#### 사전 점검
+
+| 점검 | 명령 | 결과 |
+|---|---|---|
+| `test.env.TZ`가 vitest 작업자에 닿는가 | `TZ=UTC npx vitest run src/test/timezone.test.ts` | `test.env.TZ`만 두고 통과(2 passed). `setup.ts`의 `process.env.TZ` 보강은 필요 없다. 같은 시험이 `TZ=America/New_York`에서도 통과 |
+| R18: pre-commit `moai gate`가 빌드를 돌리는가 | `VITE_API_BASE_URL= moai gate` 전후 `stat -c '%y' dist/index.html` | `gate exit=0`, `dist/index.html` 수정 시각이 그대로(11:15:25). 빈 값으로는 빌드가 실패하므로(`VITE_API_BASE_URL= npm run build` → exit 1) 게이트는 빌드 단계를 돌리지 않는다. blocker 없음 |
+
+#### 설치한 새 패키지(acceptance.md §3.4와 같음, `npm ls --depth=0`)
+
+| 패키지 | 고정 버전 | 설치 버전 |
+|---|---|---|
+| `react-router` | 8.5.1 | 8.5.1 |
+| `@tanstack/react-query` | 5.107.1 | 5.107.1 |
+| `@fullcalendar/react` | 7.1.4 | 7.1.4 |
+| `temporal-polyfill` | 1.0.8 | 1.0.8 |
+| `openapi-fetch` | 0.17.0 | 0.17.0 |
+| `msw`(dev) | 3.0.4 | 3.0.4 |
+| `openapi-typescript`(dev) | 7.13.0 | 7.13.0 |
+
+`engines.node`는 `^22.22.0 || ^24.0.0`. 고정 시험은 25 + 19 + engines를 단언한다.
+
+#### 커밋
+
+| SHA | 제목 |
+|---|---|
+| 6d870b7 | feat(SPEC-UI-002): M1 의존성 고정 25+19와 시험 시간대 고정 |
+| fe474ea | feat(SPEC-UI-002): M1 운영 빌드 env 검사·앱 기준 주소·개발 프록시 |
+| 4b389ef | feat(SPEC-UI-002): M1 OpenAPI 스냅숏·내보내기 스크립트·생성 타입 |
+| ae883f9 | feat(SPEC-UI-002): M1 MSW 시험 장치·커버리지 범위 확대·앱 계층 규칙 |
+
+#### 인수 기준(판정 HEAD ae883f9)
+
+| AC | 판정 | 명령 | 관찰 |
+|---|---|---|---|
+| AC-UI-002-01 | PASS | `npx vitest run src/test/dependency-pins.test.ts` · `TZ=UTC npx vitest run src/test/timezone.test.ts` · §4.1 QG-12 두 검사 | 9 passed · 2 passed · 지정자 검사 exit=1·stderr 0바이트 · 자체 확인 2 · 키 검사 exit=0 |
+| AC-UI-002-02 | PASS | `npx vitest run src/api/schema-sync.test.ts src/test/export-openapi.test.ts` | 8 passed(머리 값 3.1.0·31·50·58, CLI 재생성 동일, 쓰기 범위·환경 변수·3.0.3 거부) |
+| AC-UI-002-03 | PASS | `npx vitest run src/test/vite-plugins.test.ts src/app/env.test.ts` · §4.1 AC-03 블록 | 14 passed · build exit=0, `dist/index.html` 11:32:23, grep exit=1·stderr 0바이트 |
+| AC-UI-002-04 (가)(다) | PASS | `npx vitest run src/test/coverage-config.test.ts src/test/design-rules.test.ts` | 31 passed. (나)는 M4·M8 판정 |
+
+#### 품질 게이트(판정 HEAD ae883f9, grep은 GNU grep 3.11)
+
+| QG | 판정 | 관찰 |
+|---|---|---|
+| QG-01 | PASS | typecheck exit=0 |
+| QG-02 | PASS | lint exit=0, 106개 파일, 경고 0 |
+| QG-03 | PASS | 45 files / 590 tests passed, Duration 15.45s, 직후 uptime load average 15.67 |
+| QG-04 | PASS | `VITE_API_BASE_URL=https://api-beauty.dongri.kr npm run build` exit=0, `dist/index.html` 11:32:27 |
+| QG-05 | PASS | 기준 80/80/80/80, 줄 99.82 · 문장 98.42 · 함수 100 · 분기 96.16 |
+| QG-06 | PASS | 39 passed |
+| QG-07 | PASS | 22 passed |
+| QG-08 | PASS | 27 passed(공개 이름 40·파일 29 유지) |
+| QG-09 | PASS | `moai gate` exit=0(pwd=작업 트리, `CLAUDE_PROJECT_DIR` 없음, HEAD ae883f9). 커밋 4개 모두 훅 우회 없이 통과 |
+| QG-10 | PASS | spec lint 오류 0, 경고 0 |
+| QG-11 | PASS | 경계 검사 exit=1·stderr 0바이트, 자체 확인 2(양성·라벨 검사는 M6) |
+| QG-12 | PASS | 지정자 검사 exit=1·stderr 0바이트, 자체 확인 2, 키 검사 exit=0 |
+| QG-13 | PASS | `deploy-guard.test.ts` 5 passed |
+| QG-14 | PASS | 9 passed(25 + 19 + engines) |
+| QG-15 | PASS | 26 passed(전시 29개) |
+| QG-16 | PASS | `schema-sync.test.ts` 통과(재생성 동일, 머리 값) |
+
+#### RED 증거(구현 전 실패 출력)
+
+| 묶음 | 파일 |
+|---|---|
+| 의존성 고정·engines | `red-01-dependency-pins.txt` |
+| 시간대 | `red-02-timezone.txt` |
+| env 검사·기준 주소·프록시 | `red-03-env-proxy-plugin.txt` |
+| 내보내기 스크립트 | `red-04-export-openapi.txt` |
+| 생성 타입 동기 | `red-05-schema-sync.txt` |
+| MSW·IndexedDB 대역 | `red-06-msw-indexeddb.txt`(모듈 없음), `red-06b-msw-indexeddb.txt`(동작 실패 6건) |
+| 커버리지 설정 | `red-07-coverage-config.txt` |
+| 앱 계층 가져오기 규칙 | `red-08-design-rules.txt` |
+
+#### 계획과 달라진 점
+
+- `buildDevProxy`는 `vite.config.ts` 대신 `vite-plugins.ts`에 두었다. 같은 빌드 설정 도우미이고 커버리지 포함 대상이다. `vite.config.ts`는 개발 서버(`command === "serve"`)에서만 프록시를 만든다.
+- 시험 장치 시험 `src/test/harness.test.ts`를 새로 두었다(B-9의 "처리하지 않은 요청이 실패로 보고되는지" 확인). 처리하지 않은 요청은 네트워크 오류로 끝내고 기록했다가 `setup.ts`의 `afterEach`가 시험 실패로 보고한다.
+- `api:check`는 같은 스크립트의 `--check` 옵션으로 만들었다(임시 내보내기 결과를 `--out` 경로의 스냅숏과 비교하고 아무것도 쓰지 않는다).
+- `vite.config.ts`가 `./vite-plugins.ts`를 확장자와 함께 가져오도록 하고 `tsconfig.json`에 `allowImportingTsExtensions`를 더했다(Vite native 설정 로더 경고 제거).
+
+#### 관찰(조치하지 않음)
+
+- 백엔드가 M1 도중(2026-11-10 11:29) `c626dd3`로 빨리 감기되었다(다른 작업, 이 실행은 백엔드에 쓰지 않음). `api:check` 결과 차이는 `DELETE /users/me/force`의 `description` 글 한 줄뿐이고 머리 값(3.1.0·31·50·58)은 같다. R3에 따라 스냅숏을 다시 내보내지 않았다. 차이: `final-api-drift-eb8b06d-vs-c626dd3.diff`.
+- `vite-plugins.ts:20`(https 주소의 빈 호스트 분기)은 `new URL`이 먼저 던져 도달하지 않는 방어 분기다.
 
 ## §E.3 Run-phase Audit-Ready Signal
 
