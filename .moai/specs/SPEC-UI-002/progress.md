@@ -920,6 +920,48 @@ harness: thorough
 | D12 | Duration 19.45s라 재실행하지 않았다 |
 | M2 관찰(가짜 타이머) | 매장 선택 (바)에서 시점 판정 뒤 진짜 타이머로 바꾸고 다시 시도 요청을 확인했다. 셸 시험은 날짜만 가짜로 둔다(`toFake: ["Date"]`) |
 
+#### 오케스트레이터 재검증·통합과 독립 평가(2026-11-10)
+
+- 세션 `f47c2a0d-1c2b-4303-861c-103a59bc6b04`, 시작 HEAD `0d93b12`(차이 `0 0`, 작업 트리는 주 체크아웃 하나, 같은 SPEC의 다른 세션 없음). 증거는 `.moai/state/verify/f47c2a0d-1c2b-4303-861c-103a59bc6b04/`의 `m4/`(에이전트, 작업 트리에서 옮김 — 64개 파일, `diff -rq` 동일)와 `m4-orchestrator/`다.
+- 계획 감사 관문: 캐시 적중을 다시 확인했고 plan-auditor는 부르지 않았다. acceptance·design·plan·research의 sha256이 Run 1 지문과 같고, spec.md는 `status: draft`로 되돌리면 Run 1 지문과 같다. `fd184ee..HEAD`에서 계획 문서 5개를 바꾼 커밋은 6d870b7뿐이다. 일별 기록의 "Audit Run 4"에 남겼다. Phase 4 모드는 §F 판단(serial) 그대로다.
+- M4 재검증(에이전트 작업 트리, HEAD `c2d4b82`. grep은 `/usr/bin/grep` GNU grep 3.11)
+  - 게이트: typecheck 0, lint 0(180개 파일). `npm test` 69 files / 949 tests, Duration 23.94s, 직후 load 7.83.
+  - 같은 트리의 JSON 보고(`ac-gate-files.txt`): AC-09 70(2개 파일), AC-10 21, AC-11 17, AC-12 18, AC-13 54(2개 파일), AC-05 (라) 1, AC-22 폼 단위 13, 넘겨받은 항목 묶음 63(4개 파일), 모두 통과. 게이트별 시험 파일 QG-06 39, QG-07 22, QG-08 27, QG-13 5, QG-14 9, QG-15 26, QG-16 2.
+  - 커버리지 exit 0, 줄 99.65 · 문장 98.53 · 함수 99.27 · 분기 94.79(기준 80/80/80/80), 직후 load 14.95. AC-04 (나) 보고 범위 검사 `coverage scope ok: 76 files`(exit 0). 새 파일 가운데 분기가 가장 낮은 곳은 `dev-routes.ts` 50(운영 빌드 갈래)이다(`qg05-new-files.txt`).
+  - 빌드 exit 0(`dist/index.html` 17:19:43), `check:dist` exit 0, QG-18 JS 검사 exit 1·출력과 stderr 0바이트, 원본 확인 1. AC-03 프록시 표지 빌드(17:19:51) 검사 exit 1·0바이트.
+  - `moai gate` exit 0(pwd=작업 트리, `CLAUDE_PROJECT_DIR`를 비우고 실행, HEAD `c2d4b82`). spec lint 지적 없음.
+  - QG-11 경계 검사 exit 1·0바이트·자체 확인 2. QG-12 지정자 검사 exit 1·0바이트·자체 확인 2, `package.json` 키 검사 exit 0.
+  - 범위: 바뀐 파일 54개(코드 53 + progress.md)가 모두 `src/`·`scripts/check-dist.mjs`·`package.json`(`check:dist` 한 줄)·progress.md 안이다. 보호 경로 변경 0, 커밋 12개 모두 `🗿 MoAI` 줄이 있다. 주 체크아웃 `moai worktree verify` exit 0(갈라짐 없음).
+- 통합: `git merge --ff-only` 뒤 `git push origin main`(`0d93b12..c2d4b82`, 차이 `0 0`). 증거를 옮긴 뒤 작업 트리와 임시 브랜치를 지웠다. 주 체크아웃에서 다시 돌린 typecheck는 exit 0이다(`qg01-typecheck-primary.txt`).
+- 독립 평가(sync-auditor, `.moai/reports/sync-audit/SPEC-UI-002-M4.md`, 증거 `m4-evidence/`): **FAIL**, 조화 평균 64.7(기능 75 · 보안 40 · 품질 85 · 일관성 85). 보안은 필수 통과 차원이라 F-1만으로 FAIL이다. 감사자가 다시 돌린 M4 판정 AC 부분과 QG-01~16·QG-18은 모두 통과했고, 넘겨받은 항목(N1·N2·F3·F4·F5·F8·일탈 7·8·처리기 멱등)은 닫혔다.
+
+**차단 결함(수정 1회차 대상, 최대 3회)**
+
+| ID | 등급 | 내용 | 요구 수정 |
+|---|---|---|---|
+| F-1 | High, 차단 | 열린 리디렉트. `safeNext`(`src/app/safe-next.ts:14-34`)는 원래 값만 검사하고, `nextDestination`이 `new URL`로 다시 직렬화하며 점 구간을 정리한다. 그래서 `/.//evil.example`·`/a/..//evil.example`·`/%2e//evil.example`·`/reservations/..//evil.example/x`가 `//evil.example…`이 된다(탐침 P1). S2에서 `/login?next=%2F.%2F%2Fevil.example`을 열면 loader가 `Location="//evil.example"`(302)을 던지고 라우터가 `location.assign("//evil.example")`로 다른 출처에 문서 이동한다(P2·P2c). 같은 값의 로그인 제출·매장 선택은 `Error: External navigation is not allowed`가 처리되지 않은 채 화면이 멈춘다(P3·P4) | 검사한 문자열과 이동에 쓰는 문자열을 같게 한다. 직렬화 뒤 경로명(`resolved.pathname`)이 `//`로 시작하면 거부한다(`null` → `/reservations`). 표본 `%2F.%2F%2Fevil.example`·`%2Fa%2F..%2F%2Fevil.example`·`%2F%252e%2F%2Fevil.example`을 safe-next 단위·AC-09 (나)(다)·AC-12 (다) 시험에 더한다. 감사자의 한 줄 변형은 기존 대상 시험 101건을 모두 통과했다(`variant-fixed.txt`) |
+| F-2 | Medium, 차단 | `/shops`에서 끝난 세션이 로그인 화면으로 가지 않는다(REQ-UI-002-006 위반). 만료 처리기가 매장 미선택 처리기와 같은 `SELF_ROUTED_PATHS`를 쓴다(`src/app/create-app.tsx:32,41-61`). P6: `/shops`에서 고르기 401 + 갱신 401 → 경로 `/shops` 그대로, Alert "로그인이 필요해요. 다시 로그인해 주세요.", 만료 문구 없음 | 만료 처리기는 `/login`에서만 이동을 건너뛴다(매장 미선택 처리기의 집합은 그대로). 시험: `/shops`에서 만료되면 `/login?next=%2Fshops`, 만료 문구 1개, 쿼리 캐시 0개 |
+
+- 정본 처리(오케스트레이터 판단, 사용자가 다르게 정하면 바꾼다): 감사자는 F-1의 점 구간 규칙과 표본 행을 시험보다 먼저 acceptance.md §3.3에 넣도록 manager-spec 재위임을 권했다. §A.9 원칙(감사를 통과한 계획 문서는 run 단계에서 고치지 않고 위임 지시문에 넣는다)과 M2의 F3 결정을 따라, 수정 1회차는 코드와 시험으로 하고 §3.3 규칙 문구·표본 행, 규칙 5("통과한 값은 그대로 이동에 쓴다")와 Location 직렬화의 관계 정리는 sync 단계로 넘긴다. 새 표본의 기대값(거부 → `/reservations`)은 REQ-UI-002-010의 같은 출처 조건과 §3.3의 거부 규칙에서 나온다.
+- 이 세션은 문맥 사용량이 1M 기준 인계 지점(50%)에 닿아, 수정 위임 전에 기록을 남기고 멈췄다.
+
+**선택 지적과 넘기는 항목**
+
+| ID | 내용 | 처리 |
+|---|---|---|
+| N-1 | S0에서 보호 경로를 열면 갱신이 2회 간다(P5 `refreshCount=2`) | 수용(REQ-007의 "판단하기 전에 한 번"은 보호 경로 loader가 지킨다). 줄이는 일은 후속 과제 |
+| N-2 | 처리기가 "이동 중"이라 건너뛴 직후 이동이 확정되면, 세션이 없어 `AppShell`이 빈 화면을 남길 수 있다(추론, 재현 안 됨) | M5에 시험 1건과 함께 넘긴다 |
+| N-3 | 탭 잠금을 기다리는 동안 세대가 바뀌어도 갱신 요청을 보낸다(결과는 버려짐, 요청 1회 낭비) | 선택 |
+| N-4 | `src/features`가 `@/app/services`·`@/app/safe-next`를 가져온다 — design.md §17 의존 방향 밖, 순환 없음 | sync 단계 문서 갱신 |
+| N-5 | `src/preview/PreviewPage.tsx:31` 주석이 사실과 다르다 | 수정 1회차에서 고쳐도 된다(선택) |
+| N-6 | `LegalDocument`가 문단 글을 `key`로 쓴다 | 수정 1회차에서 고쳐도 된다(선택) |
+| N-7 | AC-12 가짜 타이머를 (바)에만 쓴 것 | 수용 |
+| 표현 | 정본에 글자가 없어 고른 표현: "페이지를 불러오지 못했어요.", "첫 화면으로 가기", "현재 매장", "등록일 …", "사이드바 접기"·"사이드바 펼치기"·"메뉴 열기", 서랍 제목 "메뉴", "사용자 메뉴", 아이콘 선택 | 사용자 검토(감사자 확인: 정본과 어긋남 없음) |
+| M5 | F10(409 필드 오류 변환), AC-07 (가)(나) 화면 부분, N-2 시험, M3 이월(NumberInput 범위 문장과 §3.2 필드 문구 비교, M5~M7) | M5 위임 지시문에 넣는다 |
+| sync | design.md §3.1·§3.2·§17·§4.1(F5·F7)·§4.2·§4.3(N3: 세대·`startSession`·합류 규칙), acceptance.md §3.3(F-1 규칙·표본) | sync 단계에서 manager-spec이 고친다 |
+
+- 다음 단계: F-1·F-2 수정 1회차(manager-develop, 임시 작업 트리, 탐침 P1~P4·P6을 시험으로 옮겨 실패를 확인한 뒤 수정) → 오케스트레이터 재검증·통합 → 차분 재감사(sync-auditor, `m4-evidence/m4.probe.test.tsx` 다시 실행) → M5.
+
 ## §E.3 Run-phase Audit-Ready Signal
 
 _<pending run-phase>_
