@@ -112,6 +112,31 @@ describe("Search — 값과 지우기(AC-UI-001-17)", () => {
     expect(objectRef.current).toBe(searchbox());
     expect(callbackNode).toBe(screen.getByRole("searchbox", { name: "시술 검색" }));
   });
+
+  it("다시 그려도 병합 ref 콜백이 새 함수로 바뀌지 않는다(함수 ref가 한 번만 불린다, SPEC-UI-002 후속 과제 10)", () => {
+    const callbackRef = vi.fn();
+    const { rerender } = render(
+      <Search aria-label="고객 검색" value="" onValueChange={() => undefined} ref={callbackRef} />,
+    );
+    rerender(
+      <Search
+        aria-label="고객 검색"
+        value="김"
+        onValueChange={() => undefined}
+        ref={callbackRef}
+      />,
+    );
+    rerender(
+      <Search
+        aria-label="고객 검색"
+        value="김민"
+        onValueChange={() => undefined}
+        ref={callbackRef}
+      />,
+    );
+    expect(callbackRef).toHaveBeenCalledTimes(1);
+    expect(callbackRef).toHaveBeenCalledWith(searchbox());
+  });
 });
 
 describe("Search — 키보드·포커스(AC-UI-001-11)", () => {

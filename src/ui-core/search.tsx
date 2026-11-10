@@ -1,5 +1,5 @@
 import { Search as SearchIcon, X } from "lucide-react";
-import { type ComponentProps, type Ref, useRef } from "react";
+import { type ComponentProps, type Ref, useCallback, useRef } from "react";
 import { Button } from "./button";
 import { cn } from "./cn";
 import { Input } from "./input";
@@ -35,13 +35,18 @@ export function Search({
   ...props
 }: SearchProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  // 병합 ref는 소비 측 ref가 바뀔 때만 새로 만든다. 매번 새 함수면 React가 렌더마다 null → 요소로 다시 부른다(SPEC-UI-002 후속 과제 10).
+  const mergedRef = useCallback(
+    (node: HTMLInputElement | null) => assignRefs(inputRef, ref)(node),
+    [ref],
+  );
   const hasValue = value !== "";
 
   return (
     <div className="relative w-full">
       <Input
         {...props}
-        ref={assignRefs(inputRef, ref)}
+        ref={mergedRef}
         type="search"
         value={value}
         onChange={(event) => onValueChange(event.target.value)}
