@@ -11,9 +11,8 @@ import {
   showConfirm,
 } from "./confirm-dialog";
 
-// 모듈 수준 저장소가 테스트 사이에 새지 않게 매 테스트 뒤 비운다(plan.md §B B-13).
+// 모듈 수준 저장소는 src/test/setup.ts가 매 테스트 뒤 act 안에서 비운다(plan.md §B B-13). 여기서는 타이머만 되돌린다.
 afterEach(() => {
-  act(() => resetConfirmStore());
   vi.useRealTimers();
 });
 

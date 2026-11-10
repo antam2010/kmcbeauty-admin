@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { expectNoAxeViolations } from "../test/axe";
-import { resetToastStore, Toaster, toast } from "./toast";
+import { Toaster, toast } from "./toast";
 
 // acceptance.md AC-UI-001-23의 문구
 const SAVED = "예약을 저장했어요.";
@@ -16,9 +16,8 @@ beforeEach(() => {
   vi.useFakeTimers();
 });
 
-// 모듈 수준 대기열이 테스트 사이에 새지 않게 매 테스트 뒤 비운다(plan.md §B B-13).
+// 모듈 수준 대기열은 src/test/setup.ts가 매 테스트 뒤 act 안에서 비운다(plan.md §B B-13). 여기서는 타이머만 되돌린다.
 afterEach(() => {
-  act(() => resetToastStore());
   vi.useRealTimers();
 });
 
