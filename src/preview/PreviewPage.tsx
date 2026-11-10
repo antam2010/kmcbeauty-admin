@@ -28,7 +28,7 @@ const TABLE_OF_CONTENTS = [
   { id: "verification", title: "검증" },
 ];
 
-/** 컴포넌트 미리보기 페이지. 라우터 없이 src/main.tsx가 바로 렌더링한다(design.md §9). */
+/** 컴포넌트 미리보기 페이지. 개발 서버에서만 /dev/preview 경로로 lazy로 가져온다(src/preview/route.tsx·src/app/dev-routes.ts, design.md §14). */
 export function PreviewPage() {
   const { preference, resolved } = useTheme();
 

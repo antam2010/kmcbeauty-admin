@@ -6,8 +6,9 @@ export function LegalDocument({ title, paragraphs }: { title: string; paragraphs
     <article className="mx-auto flex w-full max-w-reading flex-col gap-6 py-6">
       <PageHeader title={title} />
       <div className="flex flex-col gap-4 text-body text-foreground">
-        {paragraphs.map((paragraph) => (
-          <p key={paragraph}>{paragraph}</p>
+        {paragraphs.map((paragraph, index) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: 같은 글의 문단이 둘 있어도 키가 겹치지 않게 순서를 붙인다(문단 목록은 정적이라 순서가 바뀌지 않는다)
+          <p key={`${index}-${paragraph}`}>{paragraph}</p>
         ))}
       </div>
     </article>
