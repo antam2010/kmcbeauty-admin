@@ -24,7 +24,7 @@ export interface ApiClientOptions {
   onShopNotSelected: () => void;
 }
 
-// 리프레시 쿠키가 모든 요청에 실려 다니지 않게, 쿠키를 주고받는 인증 경로만 credentials "include"다
+// 리프레시 쿠키가 모든 요청에 실려 다니지 않게, 쿠키를 주고받는 인증 경로만 credentials "include"다(나머지는 "omit")
 const COOKIE_PATHS = new Set(["/auth/login", "/auth/refresh", "/auth/logout"]);
 
 async function isShopNotSelected(response: Response): Promise<boolean> {
@@ -107,7 +107,9 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
   const client = createClient<paths>({
     baseUrl: options.baseUrl,
     fetch: (request) => fetch(request),
-    credentials: "same-origin",
+    // 인증 3개 경로 밖의 요청은 쿠키를 싣지 않는다(사용자 결정 F5). 개발 프록시처럼 같은 출처가 되는 경우에도
+    // 리프레시 쿠키가 일반 요청에 실려 다니지 않게 하려는 것이다. 인증 경로는 미들웨어가 "include"로 바꾼다.
+    credentials: "omit",
   });
   client.use(sessionMiddleware(options));
   return client;

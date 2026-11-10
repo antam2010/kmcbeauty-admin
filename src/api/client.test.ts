@@ -57,13 +57,13 @@ function reasons(results: PromiseSettledResult<unknown>[]): ApiError[] {
   });
 }
 
-/** 모든 요청 기록에서: credentials include는 인증 3개 경로에만, X-Refresh-Token은 어디에도 없다. */
+/** 모든 요청 기록에서: credentials는 인증 3개 경로만 include, 나머지는 omit(사용자 결정 F5), X-Refresh-Token은 어디에도 없다. */
 function expectCookieScope() {
   expect(log.requests.length).toBeGreaterThan(0);
   for (const request of log.requests) {
-    expect({ path: request.path, include: request.credentials === "include" }).toEqual({
+    expect({ path: request.path, credentials: request.credentials }).toEqual({
       path: request.path,
-      include: AUTH_PATHS.has(request.path),
+      credentials: AUTH_PATHS.has(request.path) ? "include" : "omit",
     });
     expect(request.refreshTokenHeader).toBeNull();
   }
@@ -358,7 +358,7 @@ describe("매장 미선택(AC-UI-002-07 (가) M2 부분)", () => {
 });
 
 describe("credentials 범위", () => {
-  it("로그인·갱신·로그아웃만 include, 나머지는 same-origin", async () => {
+  it("로그인·갱신·로그아웃만 include, 나머지는 omit(사용자 결정 F5)", async () => {
     server.use(
       loginHandler(BASE, () => HttpResponse.json(loginBody("access-1", "refresh-1"))),
       http.post(`${BASE}/auth/logout`, () => new HttpResponse(null, { status: 204 })),
@@ -378,7 +378,7 @@ describe("credentials 범위", () => {
     await unwrap(client.POST("/auth/logout"));
     expect(log.requests.map((r) => [r.path, r.credentials])).toEqual([
       ["/auth/login", "include"],
-      ["/shops/selected", "same-origin"],
+      ["/shops/selected", "omit"],
       ["/auth/refresh", "include"],
       ["/auth/logout", "include"],
     ]);
