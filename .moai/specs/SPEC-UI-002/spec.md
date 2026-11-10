@@ -2,7 +2,7 @@
 id: SPEC-UI-002
 title: "업무 화면·API·인증·라우팅 재구축과 배포 가드 제거"
 version: "0.3.0"
-status: draft
+status: in-progress
 created: 2026-11-09
 updated: 2026-11-10
 author: antam2010

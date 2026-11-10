@@ -9,7 +9,11 @@ interface DependencySections {
   devDependencies?: DependencyMap;
 }
 
-// acceptance.md AC-UI-001-01의 고정 목록(plan.md §A.8 표)을 글자 그대로 옮겼다. 기대값을 테스트가 만들지 않는다.
+interface PackageJson extends DependencySections {
+  engines?: Record<string, string>;
+}
+
+// SPEC-UI-002 acceptance.md §3.4 고정 목록(25 + 19)을 글자 그대로 옮겼다. 기대값을 테스트가 만들지 않는다.
 const PINNED = {
   dependencies: {
     "@fontsource-variable/noto-sans-kr": "5.3.1",
@@ -23,15 +27,20 @@ const PINNED = {
     "@radix-ui/react-toast": "1.3.1",
     "@radix-ui/react-toggle-group": "1.2.1",
     "@radix-ui/react-tooltip": "1.4.1",
+    "@fullcalendar/react": "7.1.4",
+    "@tanstack/react-query": "5.107.1",
     "class-variance-authority": "0.7.1",
     clsx: "2.1.1",
     cmdk: "1.1.1",
     "date-fns": "4.4.0",
     "lucide-react": "1.64.0",
+    "openapi-fetch": "0.17.0",
     react: "19.3.1",
     "react-day-picker": "10.0.2",
     "react-dom": "19.3.1",
+    "react-router": "8.5.1",
     "tailwind-merge": "3.7.0",
+    "temporal-polyfill": "1.0.8",
   },
   devDependencies: {
     "@biomejs/biome": "2.6.4",
@@ -47,12 +56,17 @@ const PINNED = {
     "@vitest/coverage-v8": "5.0.5",
     "axe-core": "4.14.0",
     jsdom: "29.1.1",
+    msw: "3.0.4",
+    "openapi-typescript": "7.13.0",
     tailwindcss: "4.3.3",
     typescript: "5.9.3",
     vite: "8.3.5",
     vitest: "5.0.5",
   },
 } satisfies Required<DependencySections>;
+
+// acceptance.md AC-UI-002-01: react-router 8의 node >=22.22.0 요구에 맞춘 engines 값
+const ENGINES_NODE = "^22.22.0 || ^24.0.0";
 
 /** 고정 목록과 다른 점을 한 줄씩 돌려준다. 빈 배열이면 이름과 버전 문자열까지 같다. */
 function diffPins(actual: DependencySections, expected: Required<DependencySections>): string[] {
@@ -76,7 +90,7 @@ function diffPins(actual: DependencySections, expected: Required<DependencySecti
   return problems;
 }
 
-function readPackageJson(): DependencySections {
+function readPackageJson(): PackageJson {
   return JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf8"));
 }
 
@@ -87,14 +101,18 @@ function copyPinned(): Required<DependencySections> {
   };
 }
 
-describe("의존성 정확 고정(AC-UI-001-01)", () => {
+describe("의존성 정확 고정(AC-UI-002-01)", () => {
   it("package.json의 dependencies·devDependencies가 고정 목록과 이름·버전 문자열까지 같다", () => {
     expect(diffPins(readPackageJson(), PINNED)).toEqual([]);
   });
 
-  it("고정 목록은 dependencies 20개, devDependencies 17개다", () => {
-    expect(Object.keys(PINNED.dependencies)).toHaveLength(20);
-    expect(Object.keys(PINNED.devDependencies)).toHaveLength(17);
+  it("고정 목록은 dependencies 25개, devDependencies 19개다", () => {
+    expect(Object.keys(PINNED.dependencies)).toHaveLength(25);
+    expect(Object.keys(PINNED.devDependencies)).toHaveLength(19);
+  });
+
+  it(`engines.node가 "${ENGINES_NODE}"다`, () => {
+    expect(readPackageJson().engines?.node).toBe(ENGINES_NODE);
   });
 
   it("고정 목록의 버전은 모두 범위 기호 없는 정확한 버전이다", () => {

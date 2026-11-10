@@ -15,6 +15,8 @@ export default defineConfig({
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.test.{ts,tsx}"],
     restoreMocks: true,
+    // 밖의 TZ와 상관없이 한국 시간대로 돈다(acceptance.md §0, timezone.test.ts가 증명)
+    env: { TZ: "Asia/Seoul" },
     coverage: {
       provider: "v8",
       include: ["src/ui-core/**/*.{ts,tsx}"],
