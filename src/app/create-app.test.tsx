@@ -63,6 +63,16 @@ describe("세션 만료 처리기", () => {
   });
 });
 
+describe("세션이 없을 때 관찰자가 떠난 쿼리 버리기(M4 감사 F-2)", () => {
+  it("세션이 있으면 화면이 내려가도 그 화면의 쿼리를 캐시에 남긴다", async () => {
+    const { app, router } = renderRoute("/shops", { session: "S2" });
+    await screen.findByRole("button", { name: /키엠씨 뷰티 본점/ });
+    await act(() => router.navigate("/customers"));
+    await screen.findByRole("heading", { level: 1, name: "고객" });
+    expect(app.services.queryClient.getQueryData(qk.shops.list(1))).toBeDefined();
+  });
+});
+
 describe("매장 미선택 처리기(onShopNotSelected)", () => {
   it("업무 화면에서는 매장 범위 캐시를 버리고 /shops?next=<현재 경로>로 보낸다(문서 새로고침 없음)", async () => {
     const { app, router } = renderRoute("/customers", { session: "S2" });

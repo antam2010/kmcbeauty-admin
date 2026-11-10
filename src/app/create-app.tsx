@@ -6,7 +6,7 @@ import { type DataRouter, type RouteObject, RouterProvider } from "react-router"
 import { createApiClient } from "@/api/client";
 import { createQueryClient } from "@/api/query-client";
 import { qk } from "@/api/query-keys";
-import { getSessionGeneration } from "@/api/session";
+import { getAccessToken, getSessionGeneration } from "@/api/session";
 import { Providers } from "./providers";
 import { createRoutes } from "./routes";
 import { type AppServices, createSessionNotice } from "./services";
@@ -45,6 +45,19 @@ export function createApp(options: CreateAppOptions): AppInstance {
   const sessionNotice = createSessionNotice();
   let router: DataRouter | null = null;
   let handledExpiry = -1;
+
+  // 세션이 없을 때 마지막 관찰자가 떠난 쿼리는 캐시에 남기지 않는다(M4 감사 F-2, REQ-UI-002-006).
+  // 만료 처리기가 캐시를 비운 뒤에도 로그인 화면 loader가 도는 동안 떠나는 화면은 아직 붙어 있어, 다시 그려지면
+  // 그 쿼리가 캐시를 다시 채운다. 그 화면이 내려가는 순간(관찰자 제거) 버린다.
+  queryClient.getQueryCache().subscribe((event) => {
+    if (
+      event.type === "observerRemoved" &&
+      event.query.getObserversCount() === 0 &&
+      getAccessToken() === null
+    ) {
+      queryClient.getQueryCache().remove(event.query);
+    }
+  });
 
   /** 지금 이동해도 되는 화면이면 현재 경로(쿼리 포함)를, 아니면 null. skip은 그 처리기가 건너뛰는 경로명이다. */
   const idleAppLocation = (skip: ReadonlySet<string>): string | null => {

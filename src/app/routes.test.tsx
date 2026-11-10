@@ -2,12 +2,12 @@
 // S0 결정(첫 방문에는 만료 문구 없음), 경로 오류 화면(EC-06). 기대값은 acceptance.md §3.3·§3.2 표를 그대로 옮겼다.
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { HttpResponse, http } from "msw";
+import { delay, HttpResponse, http } from "msw";
 import { createBrowserRouter, type LoaderFunctionArgs } from "react-router";
 import { describe, expect, it, onTestFinished, vi } from "vitest";
 import { __resetSessionForTest, setAccessToken } from "@/api/session";
 import { shopFixture, TEST_API_ORIGIN, userFixture } from "@/test/msw/fixtures";
-import { loginBody, loginHandler, refreshWith } from "@/test/msw/handlers/auth";
+import { loginBody, loginHandler, refreshHandler, refreshWith } from "@/test/msw/handlers/auth";
 import { selectedShopHandler, shopsListHandler } from "@/test/msw/handlers/shops";
 import { meHandler } from "@/test/msw/handlers/users";
 import { server } from "@/test/msw/server";
@@ -292,7 +292,49 @@ describe("AC-UI-002-06 (나) 화면 부분 — 이 탭에서 로그인돼 있던
     await heading("로그인");
     expectLocation(router, "/login?next=%2Fshops");
     expect(screen.getAllByText(EXPIRED_MESSAGE)).toHaveLength(1);
-    expect(app.services.queryClient.getQueryCache().getAll()).toHaveLength(0);
+    // 떠난 화면의 관찰자 제거 알림은 비동기로 온다
+    await waitFor(() =>
+      expect(
+        app.services.queryClient
+          .getQueryCache()
+          .getAll()
+          .map((q) => q.queryKey),
+      ).toEqual([]),
+    );
+  });
+
+  // M4 감사 F-2 — 갱신 응답이 늦으면 로그인 화면 loader가 도는 동안 매장 선택 화면이 남아 있다.
+  // 그사이 다시 그려진 화면의 쿼리가 비운 캐시를 다시 채우면 안 된다(REQ-UI-002-006 "쿼리 캐시를 지우고")
+  it("/shops에서 만료될 때 갱신 응답이 늦어도 로그인 화면에 닿은 뒤 쿼리 캐시는 0개다", async () => {
+    const user = userEvent.setup();
+    const { router, app } = renderRoute("/shops", {
+      session: "S2",
+      shops: [shopFixture, { ...shopFixture, id: 2, name: "홍대점" }],
+      handlers: [
+        http.post(
+          `${TEST_API_ORIGIN}/shops/selected`,
+          () => new HttpResponse(null, { status: 401 }),
+        ),
+        refreshHandler(TEST_API_ORIGIN, async () => {
+          await delay(300);
+          return new HttpResponse(null, { status: 401 });
+        }),
+      ],
+    });
+    await heading("매장 선택");
+    await user.click(await screen.findByRole("button", { name: /홍대점/ }));
+
+    await screen.findByRole("heading", { level: 1, name: "로그인" }, { timeout: 3000 });
+    expectLocation(router, "/login?next=%2Fshops");
+    expect(screen.getAllByText(EXPIRED_MESSAGE)).toHaveLength(1);
+    await waitFor(() =>
+      expect(
+        app.services.queryClient
+          .getQueryCache()
+          .getAll()
+          .map((q) => q.queryKey),
+      ).toEqual([]),
+    );
   });
 
   it("S0 결정: 첫 방문(새로고침)의 갱신 401은 문구 없이 로그인 화면이다", async () => {
